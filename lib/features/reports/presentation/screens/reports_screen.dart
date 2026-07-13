@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:artisan_gift_manager/core/utils/theme.dart';
 import 'package:artisan_gift_manager/core/di/injection.dart';
-import 'package:artisan_gift_manager/core/widgets/price_tag_chip.dart';
-import 'package:artisan_gift_manager/core/widgets/primary_button.dart';
 import 'package:artisan_gift_manager/core/widgets/loading_indicator.dart';
+import 'package:artisan_gift_manager/core/widgets/stat_card.dart';
+import 'package:artisan_gift_manager/core/widgets/card_container.dart';
 import 'package:artisan_gift_manager/features/reports/presentation/cubit/reports_cubit.dart';
 import 'package:artisan_gift_manager/features/reports/data/reports_repository.dart';
-import 'package:intl/intl.dart' hide TextDirection;
+import 'package:artisan_gift_manager/features/reports/presentation/widgets/period_filter_row.dart';
+import 'package:artisan_gift_manager/features/reports/presentation/widgets/sales_purchases_comparison_chart.dart';
 
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
@@ -62,7 +63,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // Period Selection Controls
-                  _buildPeriodFilterRow(context, cubit),
+                  PeriodFilterRow(
+                    startDate: _startDate,
+                    endDate: _endDate,
+                    onSelectDateRange: () => _selectDateRange(context, cubit),
+                  ),
                   const SizedBox(height: 24),
                   // Report Panels
                   Expanded(
@@ -73,36 +78,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
             ),
           );
         },
-      ),
-    );
-  }
-
-  Widget _buildPeriodFilterRow(BuildContext context, ReportsCubit cubit) {
-    final startStr = DateFormat('yyyy/MM/dd').format(_startDate);
-    final endStr = DateFormat('yyyy/MM/dd').format(_endDate);
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceElevated,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.date_range, color: AppColors.primary),
-          const SizedBox(width: 12),
-          Text(
-            'الفترة المحددة: من $startStr إلى $endStr',
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-          const Spacer(),
-          TextButton.icon(
-            onPressed: () => _selectDateRange(context, cubit),
-            icon: const Icon(Icons.edit_calendar, color: AppColors.primary),
-            label: const Text('تعديل الفترة', style: TextStyle(color: AppColors.primary)),
-          ),
-        ],
       ),
     );
   }
@@ -126,8 +101,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
   }
 
   Widget _buildReportContent(BuildContext context, ReportsState state) {
-    final theme = Theme.of(context);
-
     if (state is ReportsLoading) {
       return const LoadingIndicator(message: 'جاري احتساب التقارير المالية...');
     }
@@ -147,7 +120,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
             Row(
               children: [
                 Expanded(
-                  child: _buildFinancialCard(
+                  child: StatCard(
                     title: 'صافي أرباح الفترة',
                     value: '${totalProfit.toStringAsFixed(2)} د.أ',
                     color: totalProfit >= 0 ? AppColors.success : AppColors.danger,
@@ -157,7 +130,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 ),
                 const SizedBox(width: 16),
                 Expanded(
-                  child: _buildFinancialCard(
+                  child: StatCard(
                     title: 'إجمالي قيمة المخزون الحالي (سعر التكلفة)',
                     value: '${totalInventoryValuation.toStringAsFixed(2)} د.أ',
                     color: AppColors.primary,
@@ -167,7 +140,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 ),
                 const SizedBox(width: 16),
                 Expanded(
-                  child: _buildFinancialCard(
+                  child: StatCard(
                     title: 'إجمالي الديون المستحقة بذمة العملاء',
                     value: '${state.totalOutstandingDebts.toStringAsFixed(2)} د.أ',
                     color: AppColors.accent,
@@ -185,16 +158,16 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 // Purchases vs Sales Custom Bar Chart
                 Expanded(
                   flex: 3,
-                  child: _buildCardWrapper(
+                  child: CardContainer(
                     title: 'المبيعات مقابل المشتريات خلال الفترة',
-                    child: _buildSalesPurchasesComparisonChart(state.purchasesSalesSummary),
+                    child: SalesPurchasesComparisonChart(summary: state.purchasesSalesSummary),
                   ),
                 ),
                 const SizedBox(width: 24),
                 // Best Sellers
                 Expanded(
                   flex: 3,
-                  child: _buildCardWrapper(
+                  child: CardContainer(
                     title: 'المنتجات الأكثر مبيعاً',
                     child: state.bestSellers.isEmpty
                         ? const Padding(
@@ -241,157 +214,5 @@ class _ReportsScreenState extends State<ReportsScreen> {
     }
 
     return const SizedBox();
-  }
-
-  Widget _buildFinancialCard({
-    required String title,
-    required String value,
-    required Color color,
-    required String subtitle,
-    required IconData icon,
-  }) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceElevated,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(title, style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary)),
-              Icon(icon, color: color.withOpacity(0.8), size: 28),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: AppTheme.numericStyle(
-              fontSize: 26,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(subtitle, style: theme.textTheme.labelSmall),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCardWrapper({required String title, required Widget child}) {
-    final theme = Theme.of(context);
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surfaceElevated,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Text(
-              title,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontFamily: 'ElMessiri',
-                fontWeight: FontWeight.bold,
-                color: AppColors.primary,
-              ),
-            ),
-          ),
-          const Divider(height: 1, color: AppColors.border),
-          child,
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSalesPurchasesComparisonChart(PurchasesSalesSummary summary) {
-    final theme = Theme.of(context);
-    final sales = summary.totalSales;
-    final purchases = summary.totalPurchases;
-
-    final maxVal = sales > purchases ? (sales > 0 ? sales : 1.0) : (purchases > 0 ? purchases : 1.0);
-    final salesWidthPct = (sales / maxVal).clamp(0.05, 1.0);
-    final purchasesWidthPct = (purchases / maxVal).clamp(0.05, 1.0);
-
-    return Padding(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const Text('مقارنة التداول المالي (المبيعات مقابل المشتريات):', style: TextStyle(fontWeight: FontWeight.w600)),
-          const SizedBox(height: 24),
-          // Sales Bar
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('إجمالي المبيعات (+)', style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.success)),
-                  Text(
-                    '${sales.toStringAsFixed(2)} د.أ',
-                    style: AppTheme.numericStyle(fontWeight: FontWeight.bold, color: AppColors.success),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              FractionallySizedBox(
-                widthFactor: salesWidthPct,
-                child: Container(
-                  height: 16,
-                  decoration: BoxDecoration(
-                    color: AppColors.success,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          // Purchases Bar
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('إجمالي المشتريات (-)', style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.danger)),
-                  Text(
-                    '${purchases.toStringAsFixed(2)} د.أ',
-                    style: AppTheme.numericStyle(fontWeight: FontWeight.bold, color: AppColors.danger),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              FractionallySizedBox(
-                widthFactor: purchasesWidthPct,
-                child: Container(
-                  height: 16,
-                  decoration: BoxDecoration(
-                    color: AppColors.danger,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 32),
-          Text(
-            'حجم التداول الكلي: ${(sales + purchases).toStringAsFixed(2)} د.أ',
-            style: theme.textTheme.labelSmall,
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
   }
 }

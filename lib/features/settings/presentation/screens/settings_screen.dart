@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path_provider/path_provider.dart';
@@ -8,7 +7,7 @@ import 'package:artisan_gift_manager/core/di/injection.dart';
 import 'package:artisan_gift_manager/core/sync/sync_service.dart';
 import 'package:artisan_gift_manager/core/widgets/primary_button.dart';
 import 'package:artisan_gift_manager/core/widgets/app_text_field.dart';
-import 'package:artisan_gift_manager/core/database/app_database.dart';
+import 'package:artisan_gift_manager/features/settings/presentation/widgets/settings_section.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -129,7 +128,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Supabase Config Section
-            _buildSection(
+            SettingsSection(
               title: 'إعدادات المزامنة السحابية (Supabase)',
               child: Form(
                 key: _formKey,
@@ -185,7 +184,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 24),
             // Sync & Backup Control
-            _buildSection(
+            SettingsSection(
               title: 'النسخ الاحتياطي والمزامنة اليدوية',
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -223,7 +222,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 24),
             // SQLite Local DB Info
-            _buildSection(
+            SettingsSection(
               title: 'قاعدة البيانات المحلية (أوفلاين)',
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -244,36 +243,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildSection({required String title, required Widget child}) {
-    final theme = Theme.of(context);
-
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceElevated,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontFamily: 'ElMessiri',
-              fontWeight: FontWeight.bold,
-              color: AppColors.primary,
-            ),
-          ),
-          const SizedBox(height: 12),
-          const Divider(color: AppColors.border),
-          const SizedBox(height: 12),
-          child,
-        ],
       ),
     );
   }

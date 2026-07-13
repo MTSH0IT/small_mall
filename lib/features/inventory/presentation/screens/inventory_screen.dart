@@ -8,6 +8,7 @@ import 'package:artisan_gift_manager/core/widgets/app_text_field.dart';
 import 'package:artisan_gift_manager/core/widgets/loading_indicator.dart';
 import 'package:artisan_gift_manager/features/inventory/presentation/cubit/inventory_cubit.dart';
 import 'package:artisan_gift_manager/features/inventory/data/inventory_repository.dart';
+import 'package:artisan_gift_manager/features/inventory/presentation/widgets/inventory_table.dart';
 
 class InventoryScreen extends StatefulWidget {
   const InventoryScreen({super.key});
@@ -119,62 +120,11 @@ class _InventoryScreenState extends State<InventoryScreen> {
     }
 
     if (state is InventoryLoaded) {
-      // Filter list
-      final filtered = state.products.where((p) {
-        final matchQuery = p.product.name.contains(_searchQuery);
-        final matchFilter = !_filterLowStockOnly || p.isLowStock;
-        return matchQuery && matchFilter;
-      }).toList();
-
-      if (filtered.isEmpty) {
-        return const Center(child: Text('لا توجد منتجات مطابقة لخيارات الفلترة'));
-      }
-
-      return Container(
-        decoration: BoxDecoration(
-          color: AppColors.surfaceElevated,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: SingleChildScrollView(
-          child: DataTable(
-            columns: const [
-              DataColumn(label: Text('اسم المنتج')),
-              DataColumn(label: Text('الفئة')),
-              DataColumn(label: Text('تنبيه الحد الأدنى')),
-              DataColumn(label: Text('المخزون الحالي')),
-              DataColumn(label: Text('الحالة')),
-              DataColumn(label: Text('تعديل المخزون')),
-            ],
-            rows: filtered.map((item) {
-              return DataRow(
-                cells: [
-                  DataCell(Text(item.product.name, style: const TextStyle(fontWeight: FontWeight.bold))),
-                  DataCell(Text(item.category?.name ?? 'بدون فئة')),
-                  DataCell(Text(item.product.minStockAlert.toStringAsFixed(0), style: AppTheme.numericStyle())),
-                  DataCell(Text(item.currentStock.toStringAsFixed(0), style: AppTheme.numericStyle(fontWeight: FontWeight.bold))),
-                  DataCell(
-                    PriceTagChip(
-                      label: item.isLowStock ? 'مخزون منخفض' : 'متوفر',
-                      backgroundColor: item.isLowStock ? AppColors.danger : AppColors.success,
-                      cutSize: 6,
-                    ),
-                  ),
-                  DataCell(
-                    OutlinedButton.icon(
-                      onPressed: () => _showAdjustStockDialog(context, cubit, item),
-                      icon: const Icon(Icons.swap_vert, size: 16, color: AppColors.primary),
-                      label: const Text('تعديل', style: TextStyle(color: AppColors.primary, fontSize: 12)),
-                      style: OutlinedButton.styleFrom(
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            }).toList(),
-          ),
-        ),
+      return InventoryTable(
+        products: state.products,
+        searchQuery: _searchQuery,
+        filterLowStockOnly: _filterLowStockOnly,
+        onAdjustStock: (item) => _showAdjustStockDialog(context, cubit, item),
       );
     }
 

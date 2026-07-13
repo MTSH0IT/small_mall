@@ -10,6 +10,9 @@ import 'package:artisan_gift_manager/features/pos/presentation/cubit/pos_cubit.d
 import 'package:artisan_gift_manager/features/inventory/data/inventory_repository.dart';
 import 'package:artisan_gift_manager/features/customers_debts/data/customers_debts_repository.dart';
 import 'package:artisan_gift_manager/core/database/app_database.dart';
+import 'package:artisan_gift_manager/features/pos/presentation/widgets/pos_product_card.dart';
+import 'package:artisan_gift_manager/features/pos/presentation/widgets/cart_item_row.dart';
+import 'package:artisan_gift_manager/features/pos/presentation/widgets/checkout_panel.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 
 class POSScreen extends StatefulWidget {
@@ -168,7 +171,10 @@ class _POSScreenState extends State<POSScreen> {
                                   itemCount: filteredProducts.length,
                                   itemBuilder: (context, index) {
                                     final item = filteredProducts[index];
-                                    return _buildProductCard(context, cubit, item);
+                                    return POSProductCard(
+                                      item: item,
+                                      onPriceSelected: (price) => cubit.addToCart(item, price),
+                                    );
                                   },
                                 ),
                         ),
@@ -218,13 +224,25 @@ class _POSScreenState extends State<POSScreen> {
                                   separatorBuilder: (_, __) => const Divider(color: AppColors.border),
                                   itemBuilder: (context, index) {
                                     final cartItem = state.cart[index];
-                                    return _buildCartItemRow(context, cubit, index, cartItem);
+                                    return CartItemRow(
+                                      item: cartItem,
+                                      onRemove: () => cubit.removeFromCart(index),
+                                      onQuantityChanged: (qty) => cubit.updateCartItemQuantity(index, qty),
+                                      onDiscountChanged: (disc) => cubit.updateCartItemDiscount(index, disc),
+                                    );
                                   },
                                 ),
                         ),
                         const Divider(height: 1, color: AppColors.border),
                         // Checkout Summary Panel
-                        _buildCheckoutPanel(context, cubit, state),
+                        CheckoutPanel(
+                          state: state,
+                          onInvoiceDiscountChanged: (disc) => cubit.setInvoiceDiscount(disc),
+                          onPaymentTypeChanged: (type) => cubit.setPaymentType(type),
+                          onCustomerChanged: (cust) => cubit.selectCustomer(cust),
+                          onAddCustomerPressed: () => _showAddCustomerDialog(context, cubit),
+                          onCheckoutPressed: state.cart.isEmpty ? null : cubit.checkout,
+                        ),
                       ],
                     ),
                   ),
@@ -236,355 +254,6 @@ class _POSScreenState extends State<POSScreen> {
       ),
     );
   }
-
-  Widget _buildProductCard(BuildContext context, POSCubit cubit, ProductWithDetails item) {
-    final theme = Theme.of(context);
-    final inStock = item.currentStock > 0;
-
-    return Card(
-      elevation: 0,
-      color: AppColors.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-        side: BorderSide(
-          color: item.isLowStock ? AppColors.danger.withOpacity(0.4) : AppColors.border,
-          width: item.isLowStock ? 1.5 : 1.0,
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Name
-            Text(
-              item.product.name,
-              style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 4),
-            // Category & Stock Status
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  item.category?.name ?? 'بدون فئة',
-                  style: theme.textTheme.labelSmall,
-                ),
-                PriceTagChip(
-                  label: inStock ? 'متوفر: ${item.currentStock.toStringAsFixed(0)}' : 'نفذ',
-                  backgroundColor: inStock
-                      ? (item.isLowStock ? AppColors.danger : AppColors.success)
-                      : Colors.grey,
-                  cutSize: 6,
-                ),
-              ],
-            ),
-            const Spacer(),
-            const Divider(color: AppColors.border, height: 16),
-            // Available Prices List (Cashier clicks to add)
-            Text(
-              'اختر السعر للإضافة:',
-              style: theme.textTheme.labelSmall?.copyWith(fontSize: 10),
-            ),
-            const SizedBox(height: 6),
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: item.prices.map((price) {
-                final label = price.priceLabel == 'retail'
-                    ? 'مفرق'
-                    : (price.priceLabel == 'wholesale' ? 'جملة' : 'عرض');
-                final color = price.priceLabel == 'retail'
-                    ? AppColors.primary
-                    : (price.priceLabel == 'wholesale' ? AppColors.accent : AppColors.success);
-
-                return InkWell(
-                  onTap: inStock ? () => cubit.addToCart(item, price) : null,
-                  borderRadius: BorderRadius.circular(6),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: inStock ? color.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: inStock ? color : Colors.grey, width: 0.8),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          label,
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: inStock ? color : Colors.grey,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 10,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${price.priceValue.toStringAsFixed(1)}',
-                          style: AppTheme.numericStyle(
-                            fontSize: 11,
-                            color: inStock ? color : Colors.grey,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCartItemRow(BuildContext context, POSCubit cubit, int index, CartItem item) {
-    final theme = Theme.of(context);
-    final label = item.selectedPrice.priceLabel == 'retail'
-        ? 'مفرق'
-        : (item.selectedPrice.priceLabel == 'wholesale' ? 'جملة' : 'عرض');
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Product details
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item.productDetails.product.name,
-                      style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'سعر الـ$label: ${item.selectedPrice.priceValue.toStringAsFixed(2)} د.أ',
-                      style: theme.textTheme.labelSmall,
-                    ),
-                  ],
-                ),
-              ),
-              // Delete Button
-              IconButton(
-                icon: const Icon(Icons.delete_outline, color: AppColors.danger, size: 20),
-                onPressed: () => cubit.removeFromCart(index),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          // Quantity and Discount Inputs
-          Row(
-            children: [
-              // Quantity Adjustment
-              Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.remove_circle_outline, size: 20, color: AppColors.primary),
-                    onPressed: item.quantity > 1
-                        ? () => cubit.updateCartItemQuantity(index, item.quantity - 1)
-                        : null,
-                  ),
-                  Container(
-                    alignment: Alignment.center,
-                    width: 40,
-                    child: Text(
-                      item.quantity.toStringAsFixed(0),
-                      style: AppTheme.numericStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.add_circle_outline, size: 20, color: AppColors.primary),
-                    onPressed: () => cubit.updateCartItemQuantity(index, item.quantity + 1),
-                  ),
-                ],
-              ),
-              const SizedBox(width: 16),
-              // Item-level Discount Field
-              Expanded(
-                child: SizedBox(
-                  height: 36,
-                  child: TextField(
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    style: AppTheme.numericStyle(fontSize: 13),
-                    decoration: InputDecoration(
-                      prefixIcon: const Icon(Icons.local_offer_outlined, size: 14, color: AppColors.textSecondary),
-                      hintText: 'خصم (مبلغ)',
-                      hintStyle: theme.textTheme.labelSmall,
-                      contentPadding: EdgeInsets.zero,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
-                    ),
-                    onChanged: (val) {
-                      final discount = double.tryParse(val) ?? 0.0;
-                      cubit.updateCartItemDiscount(index, discount);
-                    },
-                  ),
-                ),
-              ),
-              const SizedBox(width: 16),
-              // Subtotal
-              Text(
-                '${item.subtotal.toStringAsFixed(2)} د.أ',
-                style: AppTheme.numericStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCheckoutPanel(BuildContext context, POSCubit cubit, POSState state) {
-    final theme = Theme.of(context);
-
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Subtotal Row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('المجموع الفرعي:', style: theme.textTheme.bodyMedium),
-              Text(
-                '${state.cartSubtotal.toStringAsFixed(2)} د.أ',
-                style: AppTheme.numericStyle(fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          // Discount total field
-          Row(
-            children: [
-              Text('خصم إضافي:', style: theme.textTheme.bodyMedium),
-              const SizedBox(width: 16),
-              Expanded(
-                child: SizedBox(
-                  height: 38,
-                  child: TextField(
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    style: AppTheme.numericStyle(fontSize: 14),
-                    decoration: InputDecoration(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 10),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
-                      hintText: '0.00 د.أ',
-                    ),
-                    onChanged: (val) {
-                      final discount = double.tryParse(val) ?? 0.0;
-                      cubit.setInvoiceDiscount(discount);
-                    },
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          // Payment type toggle
-          Row(
-            children: [
-              Text('طريقة الدفع:', style: theme.textTheme.bodyMedium),
-              const SizedBox(width: 16),
-              Expanded(
-                child: SegmentedButton<String>(
-                  segments: const [
-                    ButtonSegment<String>(
-                      value: 'cash',
-                      label: Text('نقدي'),
-                      icon: Icon(Icons.payments_outlined, size: 16),
-                    ),
-                    ButtonSegment<String>(
-                      value: 'debt',
-                      label: Text('آجل / دين'),
-                      icon: Icon(Icons.assignment_ind_outlined, size: 16),
-                    ),
-                  ],
-                  selected: {state.paymentType},
-                  onSelectionChanged: (selection) {
-                    cubit.setPaymentType(selection.first);
-                  },
-                  style: SegmentedButton.styleFrom(
-                    selectedBackgroundColor: AppColors.primary,
-                    selectedForegroundColor: Colors.white,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          // Customer selector (Required for debt, optional for cash)
-          Row(
-            children: [
-              Text('العميل:', style: theme.textTheme.bodyMedium),
-              const SizedBox(width: 16),
-              Expanded(
-                child: DropdownButtonFormField<Customer>(
-                  value: state.selectedCustomer,
-                  hint: const Text('اختر عميلاً (اختياري)'),
-                  decoration: InputDecoration(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 10),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
-                  ),
-                  items: state.customers.map((c) {
-                    return DropdownMenuItem<Customer>(
-                      value: c.customer,
-                      child: Text('${c.customer.name} (دين: ${c.totalDebt.toStringAsFixed(1)})'),
-                    );
-                  }).toList(),
-                  onChanged: (cust) {
-                    cubit.selectCustomer(cust);
-                  },
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.person_add_alt_1_outlined, color: AppColors.primary),
-                onPressed: () => _showAddCustomerDialog(context, cubit),
-              )
-            ],
-          ),
-          const SizedBox(height: 16),
-          const Divider(color: AppColors.border, height: 16),
-          // Total Amount Row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'المجموع النهائي:',
-                style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: AppColors.primary),
-              ),
-              Text(
-                '${state.totalAmount.toStringAsFixed(2)} د.أ',
-                style: AppTheme.numericStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.accent,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          // Checkout Button
-          PrimaryButton(
-            label: state.paymentType == 'debt' ? 'تأكيد البيع الآجل' : 'تأكيد البيع النقدي',
-            icon: Icons.check,
-            onPressed: state.cart.isEmpty ? null : cubit.checkout,
-            isLoading: state.status == POSStatus.loading,
-          ),
-        ],
-      ),
-    );
-  }
-
   void _showAddCustomerDialog(BuildContext context, POSCubit cubit) {
     final nameController = TextEditingController();
     final phoneController = TextEditingController();

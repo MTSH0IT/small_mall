@@ -7,6 +7,9 @@ import 'package:artisan_gift_manager/features/pos/data/pos_repository.dart';
 import 'package:artisan_gift_manager/features/customers_debts/data/customers_debts_repository.dart';
 import 'package:artisan_gift_manager/core/widgets/price_tag_chip.dart';
 import 'package:artisan_gift_manager/core/widgets/loading_indicator.dart';
+import 'package:artisan_gift_manager/core/widgets/stat_card.dart';
+import 'package:artisan_gift_manager/core/widgets/card_container.dart';
+import 'package:artisan_gift_manager/features/dashboard/presentation/widgets/quick_action_button.dart';
 import 'package:artisan_gift_manager/core/database/app_database.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 
@@ -106,7 +109,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Row(
               children: [
                 Expanded(
-                  child: _buildStatCard(
+                  child: StatCard(
                     title: 'مبيعات اليوم',
                     value: '${_todaySales.toStringAsFixed(2)} د.أ',
                     icon: Icons.monetization_on_outlined,
@@ -115,7 +118,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 const SizedBox(width: 16),
                 Expanded(
-                  child: _buildStatCard(
+                  child: StatCard(
                     title: 'تنبيهات المخزون',
                     value: _lowStockCount.toString(),
                     icon: Icons.warning_amber_rounded,
@@ -125,7 +128,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 const SizedBox(width: 16),
                 Expanded(
-                  child: _buildStatCard(
+                  child: StatCard(
                     title: 'الديون المستحقة للعملاء',
                     value: '${_outstandingDebts.toStringAsFixed(2)} د.أ',
                     icon: Icons.account_balance_wallet_outlined,
@@ -146,29 +149,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
             const SizedBox(height: 12),
             Row(
               children: [
-                _buildQuickActionBtn(
-                  context,
+                QuickActionButton(
                   label: 'بيع منتجات',
                   icon: Icons.shopping_basket_outlined,
                   route: '/pos',
                 ),
                 const SizedBox(width: 12),
-                _buildQuickActionBtn(
-                  context,
+                QuickActionButton(
                   label: 'إضافة منتج',
                   icon: Icons.add_circle_outline,
                   route: '/products',
                 ),
                 const SizedBox(width: 12),
-                _buildQuickActionBtn(
-                  context,
+                QuickActionButton(
                   label: 'إضافة عميل',
                   icon: Icons.person_add_alt,
                   route: '/customers',
                 ),
                 const SizedBox(width: 12),
-                _buildQuickActionBtn(
-                  context,
+                QuickActionButton(
                   label: 'فاتورة مشتريات',
                   icon: Icons.receipt_long_outlined,
                   route: '/suppliers',
@@ -183,7 +182,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 // Low Stock Warning List
                 Expanded(
                   flex: 3,
-                  child: _buildCardContainer(
+                  child: CardContainer(
                     title: 'المنتجات منخفضة المخزون',
                     child: _lowStockProducts.isEmpty
                         ? const Padding(
@@ -216,7 +215,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 // Recent Invoices List
                 Expanded(
                   flex: 4,
-                  child: _buildCardContainer(
+                  child: CardContainer(
                     title: 'آخر المبيعات اليومية',
                     child: _recentSales.isEmpty
                         ? const Padding(
@@ -253,129 +252,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildStatCard({
-    required String title,
-    required String value,
-    required IconData icon,
-    required Color color,
-    String? badge,
-  }) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceElevated,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                value,
-                style: AppTheme.numericStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                ),
-              ),
-              if (badge != null) ...[
-                const SizedBox(height: 6),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    badge,
-                    style: theme.textTheme.labelSmall?.copyWith(color: color, fontWeight: FontWeight.bold),
-                  ),
-                )
-              ]
-            ],
-          ),
-          Icon(icon, size: 40, color: color.withOpacity(0.6)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildQuickActionBtn(
-    BuildContext context, {
-    required String label,
-    required IconData icon,
-    required String route,
-  }) {
-    return SizedBox(
-      height: 52,
-      child: OutlinedButton.icon(
-        onPressed: () => context.go(route),
-        style: OutlinedButton.styleFrom(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          side: const BorderSide(color: AppColors.primary, width: 1.2),
-          backgroundColor: AppColors.surfaceElevated,
-          foregroundColor: AppColors.primary,
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-        ),
-        icon: Icon(icon, size: 20),
-        label: Text(
-          label,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppColors.primary,
-              ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCardContainer({required String title, required Widget child}) {
-    final theme = Theme.of(context);
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surfaceElevated,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Text(
-              title,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontFamily: 'ElMessiri',
-                fontWeight: FontWeight.bold,
-                color: AppColors.primary,
-              ),
-            ),
-          ),
-          const Divider(height: 1, color: AppColors.border),
-          child,
-        ],
       ),
     );
   }
