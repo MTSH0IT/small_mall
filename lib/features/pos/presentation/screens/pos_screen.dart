@@ -1,19 +1,15 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:artisan_gift_manager/core/utils/theme.dart';
-import 'package:artisan_gift_manager/core/di/injection.dart';
-import 'package:artisan_gift_manager/core/widgets/price_tag_chip.dart';
-import 'package:artisan_gift_manager/core/widgets/primary_button.dart';
-import 'package:artisan_gift_manager/core/widgets/app_text_field.dart';
-import 'package:artisan_gift_manager/core/widgets/loading_indicator.dart';
-import 'package:artisan_gift_manager/features/pos/presentation/cubit/pos_cubit.dart';
-import 'package:artisan_gift_manager/features/inventory/data/inventory_repository.dart';
-import 'package:artisan_gift_manager/features/customers_debts/data/customers_debts_repository.dart';
 import 'package:artisan_gift_manager/core/database/app_database.dart';
-import 'package:artisan_gift_manager/features/pos/presentation/widgets/pos_product_card.dart';
+import 'package:artisan_gift_manager/core/di/injection.dart';
+import 'package:artisan_gift_manager/core/utils/theme.dart';
+import 'package:artisan_gift_manager/core/widgets/app_text_field.dart';
+import 'package:artisan_gift_manager/core/widgets/primary_button.dart';
+import 'package:artisan_gift_manager/features/customers_debts/data/customers_debts_repository.dart';
+import 'package:artisan_gift_manager/features/pos/presentation/cubit/pos_cubit.dart';
 import 'package:artisan_gift_manager/features/pos/presentation/widgets/cart_item_row.dart';
 import 'package:artisan_gift_manager/features/pos/presentation/widgets/checkout_panel.dart';
-import 'package:intl/intl.dart' hide TextDirection;
+import 'package:artisan_gift_manager/features/pos/presentation/widgets/pos_product_card.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class POSScreen extends StatefulWidget {
   const POSScreen({super.key});
@@ -221,7 +217,7 @@ class _POSScreenState extends State<POSScreen> {
                               : ListView.separated(
                                   padding: const EdgeInsets.all(12),
                                   itemCount: state.cart.length,
-                                  separatorBuilder: (_, __) => const Divider(color: AppColors.border),
+                                  separatorBuilder: (_, _) => const Divider(color: AppColors.border),
                                   itemBuilder: (context, index) {
                                     final cartItem = state.cart[index];
                                     return CartItemRow(

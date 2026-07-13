@@ -1,5 +1,5 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:artisan_gift_manager/features/reports/data/reports_repository.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 abstract class ReportsState {}
 
@@ -8,13 +8,6 @@ class ReportsInitial extends ReportsState {}
 class ReportsLoading extends ReportsState {}
 
 class ReportsLoaded extends ReportsState {
-  final ProfitReportData profitData;
-  final List<ProductSalesSummary> bestSellers;
-  final List<InventoryReportItem> inventoryReport;
-  final double totalOutstandingDebts;
-  final PurchasesSalesSummary purchasesSalesSummary;
-  final DateTime startDate;
-  final DateTime endDate;
 
   ReportsLoaded({
     required this.profitData,
@@ -25,17 +18,24 @@ class ReportsLoaded extends ReportsState {
     required this.startDate,
     required this.endDate,
   });
+  final ProfitReportData profitData;
+  final List<ProductSalesSummary> bestSellers;
+  final List<InventoryReportItem> inventoryReport;
+  final double totalOutstandingDebts;
+  final PurchasesSalesSummary purchasesSalesSummary;
+  final DateTime startDate;
+  final DateTime endDate;
 }
 
 class ReportsError extends ReportsState {
-  final String message;
   ReportsError(this.message);
+  final String message;
 }
 
 class ReportsCubit extends Cubit<ReportsState> {
-  final ReportsRepository _repository;
 
   ReportsCubit(this._repository) : super(ReportsInitial());
+  final ReportsRepository _repository;
 
   Future<void> loadReports({DateTime? start, DateTime? end}) async {
     emit(ReportsLoading());

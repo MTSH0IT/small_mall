@@ -1,11 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:drift/drift.dart';
+
 import 'package:artisan_gift_manager/core/database/app_database.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 enum SyncStatus { idle, syncing, success, error, offline }
 
@@ -28,7 +29,7 @@ class SyncService {
 
     if (url.isNotEmpty && anonKey.isNotEmpty) {
       try {
-        await Supabase.initialize(url: url, anonKey: anonKey, debug: false);
+        await Supabase.initialize(url: url, publishableKey: anonKey, debug: false);
         _isInitialized = true;
       } catch (e) {
         debugPrint('Supabase init failed: $e');
@@ -65,7 +66,7 @@ class SyncService {
       // In Flutter, to avoid crash we can try direct replacement or show restart needed.
     } catch (_) {
       try {
-        await Supabase.initialize(url: url, anonKey: anonKey);
+        await Supabase.initialize(url: url, publishableKey: anonKey);
         _isInitialized = true;
       } catch (e) {
         debugPrint('Supabase init failed: $e');

@@ -1,56 +1,56 @@
-import 'package:drift/drift.dart';
 import 'package:artisan_gift_manager/core/database/app_database.dart';
+import 'package:drift/drift.dart';
 
 class ProfitReportData {
-  final double totalRevenue;
-  final double totalCost;
-  final double totalProfit;
 
   ProfitReportData({
     required this.totalRevenue,
     required this.totalCost,
     required this.totalProfit,
   });
+  final double totalRevenue;
+  final double totalCost;
+  final double totalProfit;
 }
 
 class ProductSalesSummary {
-  final Product product;
-  final double totalQuantity;
-  final double totalRevenue;
 
   ProductSalesSummary({
     required this.product,
     required this.totalQuantity,
     required this.totalRevenue,
   });
+  final Product product;
+  final double totalQuantity;
+  final double totalRevenue;
 }
 
 class InventoryReportItem {
-  final Product product;
-  final double currentStock;
-  final double totalCostValue;
 
   InventoryReportItem({
     required this.product,
     required this.currentStock,
     required this.totalCostValue,
   });
+  final Product product;
+  final double currentStock;
+  final double totalCostValue;
 }
 
 class PurchasesSalesSummary {
-  final double totalPurchases;
-  final double totalSales;
 
   PurchasesSalesSummary({
     required this.totalPurchases,
     required this.totalSales,
   });
+  final double totalPurchases;
+  final double totalSales;
 }
 
 class ReportsRepository {
-  final AppDatabase _db;
 
   ReportsRepository(this._db);
+  final AppDatabase _db;
 
   // --- Profit Report ---
 

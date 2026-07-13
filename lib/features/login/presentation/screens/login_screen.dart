@@ -1,9 +1,8 @@
+import 'package:artisan_gift_manager/core/utils/theme.dart';
+import 'package:artisan_gift_manager/features/login/presentation/widgets/pin_pad.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:artisan_gift_manager/core/utils/theme.dart';
-import 'package:artisan_gift_manager/core/widgets/primary_button.dart';
-import 'package:artisan_gift_manager/features/login/presentation/widgets/pin_pad.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -122,7 +121,7 @@ class _LoginScreenState extends State<LoginScreen> {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.04),
+                color: Colors.black.withValues(alpha: 0.04),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               )

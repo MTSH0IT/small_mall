@@ -1,26 +1,26 @@
-import 'package:drift/drift.dart';
 import 'package:artisan_gift_manager/core/database/app_database.dart';
 import 'package:artisan_gift_manager/core/sync/sync_service.dart';
+import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
 class SupplierWithPurchases {
-  final Supplier supplier;
-  final double totalPurchasesAmount;
-  final int invoicesCount;
 
   SupplierWithPurchases({
     required this.supplier,
     required this.totalPurchasesAmount,
     required this.invoicesCount,
   });
+  final Supplier supplier;
+  final double totalPurchasesAmount;
+  final int invoicesCount;
 }
 
 class SuppliersPurchasingRepository {
+
+  SuppliersPurchasingRepository(this._db, this._sync);
   final AppDatabase _db;
   final SyncService _sync;
   final _uuid = const Uuid();
-
-  SuppliersPurchasingRepository(this._db, this._sync);
 
   // --- Suppliers ---
 

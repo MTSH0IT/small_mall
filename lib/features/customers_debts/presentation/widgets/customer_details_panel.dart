@@ -1,15 +1,12 @@
-import 'package:flutter/material.dart';
-import 'package:intl/intl.dart' hide TextDirection;
 import 'package:artisan_gift_manager/core/utils/theme.dart';
+import 'package:artisan_gift_manager/core/widgets/loading_indicator.dart';
 import 'package:artisan_gift_manager/core/widgets/price_tag_chip.dart';
 import 'package:artisan_gift_manager/core/widgets/primary_button.dart';
-import 'package:artisan_gift_manager/core/widgets/loading_indicator.dart';
 import 'package:artisan_gift_manager/features/customers_debts/data/customers_debts_repository.dart';
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart' hide TextDirection;
 
 class CustomerDetailsPanel extends StatelessWidget {
-  final CustomerWithDebts customerData;
-  final List<DebtWithPayments>? debts;
-  final ValueChanged<DebtWithPayments> onRecordPayment;
 
   const CustomerDetailsPanel({
     super.key,
@@ -17,6 +14,9 @@ class CustomerDetailsPanel extends StatelessWidget {
     required this.debts,
     required this.onRecordPayment,
   });
+  final CustomerWithDebts customerData;
+  final List<DebtWithPayments>? debts;
+  final ValueChanged<DebtWithPayments> onRecordPayment;
 
   @override
   Widget build(BuildContext context) {
@@ -69,7 +69,7 @@ class CustomerDetailsPanel extends StatelessWidget {
                     Text('إجمالي الدين المستحق:', style: theme.textTheme.labelSmall),
                     const SizedBox(height: 4),
                     Text(
-                      '${customerData.totalDebt.toStringAsFixed(2)} د.أ',
+                      customerData.totalDebt.toStringAsFixed(2),
                       style: AppTheme.numericStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
@@ -101,7 +101,7 @@ class CustomerDetailsPanel extends StatelessWidget {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: debts!.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              separatorBuilder: (_, _) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
                 final debtData = debts![index];
                 final dateStr = DateFormat('yyyy/MM/dd hh:mm a').format(debtData.debt.createdAt);
@@ -145,7 +145,7 @@ class CustomerDetailsPanel extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text('القيمة الأصلية للبيع:', style: theme.textTheme.labelSmall),
-                              Text('${debtData.debt.amount.toStringAsFixed(2)} د.أ', style: AppTheme.numericStyle()),
+                              Text(debtData.debt.amount.toStringAsFixed(2), style: AppTheme.numericStyle()),
                             ],
                           ),
                           Column(
@@ -153,7 +153,7 @@ class CustomerDetailsPanel extends StatelessWidget {
                             children: [
                               Text('المتبقي للتسديد:', style: theme.textTheme.labelSmall),
                               Text(
-                                '${debtData.debt.remainingAmount.toStringAsFixed(2)} د.أ',
+                                debtData.debt.remainingAmount.toStringAsFixed(2),
                                 style: AppTheme.numericStyle(
                                   fontWeight: FontWeight.bold,
                                   color: debtData.debt.remainingAmount > 0 ? AppColors.accent : AppColors.success,
@@ -182,7 +182,7 @@ class CustomerDetailsPanel extends StatelessWidget {
                               children: [
                                 Text('دفعة سداد بتاريخ: $payDate', style: theme.textTheme.labelSmall),
                                 Text(
-                                  '- ${p.amountPaid.toStringAsFixed(2)} د.أ',
+                                  '- ${p.amountPaid.toStringAsFixed(2)}',
                                   style: AppTheme.numericStyle(color: AppColors.success, fontWeight: FontWeight.bold),
                                 ),
                               ],

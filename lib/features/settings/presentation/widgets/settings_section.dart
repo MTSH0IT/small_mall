@@ -1,15 +1,15 @@
-import 'package:flutter/material.dart';
 import 'package:artisan_gift_manager/core/utils/theme.dart';
+import 'package:flutter/material.dart';
 
 class SettingsSection extends StatelessWidget {
-  final String title;
-  final Widget child;
 
   const SettingsSection({
     super.key,
     required this.title,
     required this.child,
   });
+  final String title;
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {

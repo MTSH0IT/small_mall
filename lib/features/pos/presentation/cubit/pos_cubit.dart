@@ -1,14 +1,10 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:artisan_gift_manager/features/pos/data/pos_repository.dart';
-import 'package:artisan_gift_manager/features/inventory/data/inventory_repository.dart';
-import 'package:artisan_gift_manager/features/customers_debts/data/customers_debts_repository.dart';
 import 'package:artisan_gift_manager/core/database/app_database.dart';
+import 'package:artisan_gift_manager/features/customers_debts/data/customers_debts_repository.dart';
+import 'package:artisan_gift_manager/features/inventory/data/inventory_repository.dart';
+import 'package:artisan_gift_manager/features/pos/data/pos_repository.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-class CartItem {
-  final ProductWithDetails productDetails;
-  final ProductPrice selectedPrice;
-  double quantity;
-  double discount; // discount per item
+class CartItem { // discount per item
 
   CartItem({
     required this.productDetails,
@@ -16,6 +12,10 @@ class CartItem {
     this.quantity = 1.0,
     this.discount = 0.0,
   });
+  final ProductWithDetails productDetails;
+  final ProductPrice selectedPrice;
+  double quantity;
+  double discount;
 
   double get subtotal => (selectedPrice.priceValue * quantity) - discount;
 }
@@ -23,14 +23,6 @@ class CartItem {
 enum POSStatus { idle, loading, success, error }
 
 class POSState {
-  final List<ProductWithDetails> products;
-  final List<CustomerWithDebts> customers;
-  final List<CartItem> cart;
-  final Customer? selectedCustomer;
-  final double invoiceDiscount;
-  final String paymentType; // 'cash' or 'debt'
-  final POSStatus status;
-  final String? errorMessage;
 
   POSState({
     required this.products,
@@ -42,6 +34,14 @@ class POSState {
     required this.status,
     this.errorMessage,
   });
+  final List<ProductWithDetails> products;
+  final List<CustomerWithDebts> customers;
+  final List<CartItem> cart;
+  final Customer? selectedCustomer;
+  final double invoiceDiscount;
+  final String paymentType; // 'cash' or 'debt'
+  final POSStatus status;
+  final String? errorMessage;
 
   POSState copyWith({
     List<ProductWithDetails>? products,
@@ -70,9 +70,6 @@ class POSState {
 }
 
 class POSCubit extends Cubit<POSState> {
-  final POSRepository _posRepository;
-  final InventoryRepository _inventoryRepository;
-  final CustomersDebtsRepository _customersRepository;
 
   POSCubit(
     this._posRepository,
@@ -86,6 +83,9 @@ class POSCubit extends Cubit<POSState> {
           paymentType: 'cash',
           status: POSStatus.idle,
         ));
+  final POSRepository _posRepository;
+  final InventoryRepository _inventoryRepository;
+  final CustomersDebtsRepository _customersRepository;
 
   Future<void> loadPOSData() async {
     try {

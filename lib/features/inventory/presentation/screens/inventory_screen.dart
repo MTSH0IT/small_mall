@@ -1,14 +1,13 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:artisan_gift_manager/core/utils/theme.dart';
 import 'package:artisan_gift_manager/core/di/injection.dart';
-import 'package:artisan_gift_manager/core/widgets/price_tag_chip.dart';
-import 'package:artisan_gift_manager/core/widgets/primary_button.dart';
+import 'package:artisan_gift_manager/core/utils/theme.dart';
 import 'package:artisan_gift_manager/core/widgets/app_text_field.dart';
 import 'package:artisan_gift_manager/core/widgets/loading_indicator.dart';
-import 'package:artisan_gift_manager/features/inventory/presentation/cubit/inventory_cubit.dart';
+import 'package:artisan_gift_manager/core/widgets/primary_button.dart';
 import 'package:artisan_gift_manager/features/inventory/data/inventory_repository.dart';
+import 'package:artisan_gift_manager/features/inventory/presentation/cubit/inventory_cubit.dart';
 import 'package:artisan_gift_manager/features/inventory/presentation/widgets/inventory_table.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class InventoryScreen extends StatefulWidget {
   const InventoryScreen({super.key});
@@ -90,7 +89,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                               _filterLowStockOnly = val;
                             });
                           },
-                          selectedColor: AppColors.danger.withOpacity(0.1),
+                          selectedColor: AppColors.danger.withValues(alpha: 0.1),
                           checkmarkColor: AppColors.danger,
                           labelStyle: TextStyle(
                             color: _filterLowStockOnly ? AppColors.danger : AppColors.textPrimary,
@@ -152,30 +151,27 @@ class _InventoryScreenState extends State<InventoryScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Choice of increase or decrease
-                      Row(
-                        children: [
-                          Expanded(
-                            child: RadioListTile<String>(
-                              title: const Text('زيادة (+)'),
-                              value: 'add',
-                              groupValue: direction,
-                              onChanged: (val) {
-                                setStateDialog(() => direction = val!);
-                              },
+                      RadioGroup<String>(
+                        groupValue: direction,
+                        onChanged: (val) {
+                          setStateDialog(() => direction = val!);
+                        },
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: RadioListTile<String>(
+                                title: const Text('زيادة (+)'),
+                                value: 'add',
+                              ),
                             ),
-                          ),
-                          Expanded(
-                            child: RadioListTile<String>(
-                              title: const Text('تسوية / إنقاص (-)'),
-                              value: 'subtract',
-                              groupValue: direction,
-                              onChanged: (val) {
-                                setStateDialog(() => direction = val!);
-                              },
+                            Expanded(
+                              child: RadioListTile<String>(
+                                title: const Text('تسوية / إنقاص (-)'),
+                                value: 'subtract',
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                       const SizedBox(height: 12),
                       AppTextField(

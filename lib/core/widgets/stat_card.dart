@@ -1,13 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:artisan_gift_manager/core/utils/theme.dart';
+import 'package:flutter/material.dart';
 
 class StatCard extends StatelessWidget {
-  final String title;
-  final String value;
-  final IconData icon;
-  final Color color;
-  final String? subtitle;
-  final String? badge;
 
   const StatCard({
     super.key,
@@ -18,6 +12,12 @@ class StatCard extends StatelessWidget {
     this.subtitle,
     this.badge,
   });
+  final String title;
+  final String value;
+  final IconData icon;
+  final Color color;
+  final String? subtitle;
+  final String? badge;
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +39,7 @@ class StatCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(title, style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary)),
-                Icon(icon, color: color.withOpacity(0.8), size: 28),
+                Icon(icon, color: color.withValues(alpha: 0.8), size: 28),
               ],
             ),
             const SizedBox(height: 12),
@@ -66,7 +66,7 @@ class StatCard extends StatelessWidget {
           border: Border.all(color: AppColors.border),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.02),
+              color: Colors.black.withValues(alpha: 0.02),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),
@@ -98,7 +98,7 @@ class StatCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
-                      color: color.withOpacity(0.1),
+                      color: color.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
@@ -109,7 +109,7 @@ class StatCard extends StatelessWidget {
                 ]
               ],
             ),
-            Icon(icon, size: 40, color: color.withOpacity(0.6)),
+            Icon(icon, size: 40, color: color.withValues(alpha: 0.6)),
           ],
         ),
       );

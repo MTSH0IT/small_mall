@@ -1,11 +1,8 @@
+import 'package:artisan_gift_manager/core/utils/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:artisan_gift_manager/core/utils/theme.dart';
 
 class QuickActionButton extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final String route;
 
   const QuickActionButton({
     super.key,
@@ -13,6 +10,9 @@ class QuickActionButton extends StatelessWidget {
     required this.icon,
     required this.route,
   });
+  final String label;
+  final IconData icon;
+  final String route;
 
   @override
   Widget build(BuildContext context) {

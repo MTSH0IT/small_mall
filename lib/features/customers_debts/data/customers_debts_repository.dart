@@ -1,38 +1,38 @@
-import 'package:drift/drift.dart';
 import 'package:artisan_gift_manager/core/database/app_database.dart';
 import 'package:artisan_gift_manager/core/sync/sync_service.dart';
+import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
 class CustomerWithDebts {
-  final Customer customer;
-  final double totalDebt;
-  final int openDebtsCount;
 
   CustomerWithDebts({
     required this.customer,
     required this.totalDebt,
     required this.openDebtsCount,
   });
+  final Customer customer;
+  final double totalDebt;
+  final int openDebtsCount;
 }
 
 class DebtWithPayments {
-  final Debt debt;
-  final List<DebtPayment> payments;
-  final Invoice? invoice;
 
   DebtWithPayments({
     required this.debt,
     required this.payments,
     this.invoice,
   });
+  final Debt debt;
+  final List<DebtPayment> payments;
+  final Invoice? invoice;
 }
 
 class CustomersDebtsRepository {
+
+  CustomersDebtsRepository(this._db, this._sync);
   final AppDatabase _db;
   final SyncService _sync;
   final _uuid = const Uuid();
-
-  CustomersDebtsRepository(this._db, this._sync);
 
   // --- Customers ---
 

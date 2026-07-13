@@ -1,14 +1,10 @@
-import 'package:flutter/material.dart';
+import 'package:artisan_gift_manager/core/database/app_database.dart';
 import 'package:artisan_gift_manager/core/utils/theme.dart';
 import 'package:artisan_gift_manager/core/widgets/price_tag_chip.dart';
-import 'package:artisan_gift_manager/core/database/app_database.dart';
 import 'package:artisan_gift_manager/features/suppliers_purchasing/data/suppliers_purchasing_repository.dart';
+import 'package:flutter/material.dart';
 
 class SuppliersList extends StatelessWidget {
-  final List<SupplierWithPurchases> suppliers;
-  final String? selectedSupplierId;
-  final String searchQuery;
-  final ValueChanged<Supplier> onSelectSupplier;
 
   const SuppliersList({
     super.key,
@@ -17,6 +13,10 @@ class SuppliersList extends StatelessWidget {
     required this.searchQuery,
     required this.onSelectSupplier,
   });
+  final List<SupplierWithPurchases> suppliers;
+  final String? selectedSupplierId;
+  final String searchQuery;
+  final ValueChanged<Supplier> onSelectSupplier;
 
   @override
   Widget build(BuildContext context) {
@@ -36,18 +36,18 @@ class SuppliersList extends StatelessWidget {
       ),
       child: ListView.separated(
         itemCount: filtered.length,
-        separatorBuilder: (_, __) => const Divider(height: 1, color: AppColors.border),
+        separatorBuilder: (_, _) => const Divider(height: 1, color: AppColors.border),
         itemBuilder: (context, index) {
           final item = filtered[index];
           final isSelected = selectedSupplierId == item.supplier.id;
 
           return ListTile(
             selected: isSelected,
-            selectedTileColor: AppColors.primary.withOpacity(0.05),
+            selectedTileColor: AppColors.primary.withValues(alpha: 0.05),
             title: Text(item.supplier.name, style: const TextStyle(fontWeight: FontWeight.bold)),
             subtitle: Text(item.supplier.phone ?? 'بدون هاتف'),
             trailing: PriceTagChip(
-              label: 'مشتريات: ${item.totalPurchasesAmount.toStringAsFixed(1)} د.أ',
+              label: 'مشتريات: ${item.totalPurchasesAmount.toStringAsFixed(1)}',
               backgroundColor: AppColors.primary,
               cutSize: 6,
             ),

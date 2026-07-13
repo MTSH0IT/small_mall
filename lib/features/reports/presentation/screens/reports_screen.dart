@@ -1,14 +1,14 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:artisan_gift_manager/core/utils/theme.dart';
 import 'package:artisan_gift_manager/core/di/injection.dart';
+import 'package:artisan_gift_manager/core/utils/theme.dart';
+import 'package:artisan_gift_manager/core/widgets/card_container.dart';
 import 'package:artisan_gift_manager/core/widgets/loading_indicator.dart';
 import 'package:artisan_gift_manager/core/widgets/stat_card.dart';
-import 'package:artisan_gift_manager/core/widgets/card_container.dart';
-import 'package:artisan_gift_manager/features/reports/presentation/cubit/reports_cubit.dart';
 import 'package:artisan_gift_manager/features/reports/data/reports_repository.dart';
+import 'package:artisan_gift_manager/features/reports/presentation/cubit/reports_cubit.dart';
 import 'package:artisan_gift_manager/features/reports/presentation/widgets/period_filter_row.dart';
 import 'package:artisan_gift_manager/features/reports/presentation/widgets/sales_purchases_comparison_chart.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
@@ -122,7 +122,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 Expanded(
                   child: StatCard(
                     title: 'صافي أرباح الفترة',
-                    value: '${totalProfit.toStringAsFixed(2)} د.أ',
+                    value: totalProfit.toStringAsFixed(2),
                     color: totalProfit >= 0 ? AppColors.success : AppColors.danger,
                     subtitle: 'الإيرادات: ${revenue.toStringAsFixed(1)} | التكاليف: ${cost.toStringAsFixed(1)}',
                     icon: Icons.payments_outlined,
@@ -132,7 +132,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 Expanded(
                   child: StatCard(
                     title: 'إجمالي قيمة المخزون الحالي (سعر التكلفة)',
-                    value: '${totalInventoryValuation.toStringAsFixed(2)} د.أ',
+                    value: totalInventoryValuation.toStringAsFixed(2),
                     color: AppColors.primary,
                     subtitle: 'إجمالي عدد المنتجات المخزنة: ${state.inventoryReport.length}',
                     icon: Icons.inventory_2_outlined,
@@ -142,7 +142,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 Expanded(
                   child: StatCard(
                     title: 'إجمالي الديون المستحقة بذمة العملاء',
-                    value: '${state.totalOutstandingDebts.toStringAsFixed(2)} د.أ',
+                    value: state.totalOutstandingDebts.toStringAsFixed(2),
                     color: AppColors.accent,
                     subtitle: 'ديون معلقة تحتاج للمتابعة',
                     icon: Icons.account_balance_wallet_outlined,
@@ -178,7 +178,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
                             itemCount: state.bestSellers.length,
-                            separatorBuilder: (_, __) => const Divider(color: AppColors.border),
+                            separatorBuilder: (_, _) => const Divider(color: AppColors.border),
                             itemBuilder: (context, index) {
                               final item = state.bestSellers[index];
                               return ListTile(
@@ -198,7 +198,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                                 title: Text(item.product.name),
                                 subtitle: Text('الكمية المباعة: ${item.totalQuantity.toStringAsFixed(0)}'),
                                 trailing: Text(
-                                  '${item.totalRevenue.toStringAsFixed(2)} د.أ',
+                                  item.totalRevenue.toStringAsFixed(2),
                                   style: AppTheme.numericStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
                                 ),
                               );

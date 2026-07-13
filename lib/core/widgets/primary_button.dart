@@ -1,13 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:artisan_gift_manager/core/utils/theme.dart';
+import 'package:flutter/material.dart';
 
 class PrimaryButton extends StatefulWidget {
-  final String label;
-  final VoidCallback? onPressed;
-  final IconData? icon;
-  final Color backgroundColor;
-  final Color textColor;
-  final bool isLoading;
 
   const PrimaryButton({
     super.key,
@@ -18,6 +12,12 @@ class PrimaryButton extends StatefulWidget {
     this.textColor = Colors.white,
     this.isLoading = false,
   });
+  final String label;
+  final VoidCallback? onPressed;
+  final IconData? icon;
+  final Color backgroundColor;
+  final Color textColor;
+  final bool isLoading;
 
   @override
   State<PrimaryButton> createState() => _PrimaryButtonState();
@@ -32,7 +32,7 @@ class _PrimaryButtonState extends State<PrimaryButton> {
     final isEnabled = widget.onPressed != null && !widget.isLoading;
     final currentBg = isEnabled
         ? (_isHovered ? AppColors.primaryDark : widget.backgroundColor)
-        : AppColors.textSecondary.withOpacity(0.3);
+        : AppColors.textSecondary.withValues(alpha: 0.3);
 
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
@@ -47,7 +47,7 @@ class _PrimaryButtonState extends State<PrimaryButton> {
           boxShadow: _isHovered && isEnabled
               ? [
                   BoxShadow(
-                    color: AppColors.primary.withOpacity(0.2),
+                    color: AppColors.primary.withValues(alpha: 0.2),
                     blurRadius: 6,
                     offset: const Offset(0, 3),
                   )

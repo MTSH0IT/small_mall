@@ -1,11 +1,8 @@
+import 'package:artisan_gift_manager/core/utils/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' hide TextDirection;
-import 'package:artisan_gift_manager/core/utils/theme.dart';
 
 class PeriodFilterRow extends StatelessWidget {
-  final DateTime startDate;
-  final DateTime endDate;
-  final VoidCallback onSelectDateRange;
 
   const PeriodFilterRow({
     super.key,
@@ -13,6 +10,9 @@ class PeriodFilterRow extends StatelessWidget {
     required this.endDate,
     required this.onSelectDateRange,
   });
+  final DateTime startDate;
+  final DateTime endDate;
+  final VoidCallback onSelectDateRange;
 
   @override
   Widget build(BuildContext context) {

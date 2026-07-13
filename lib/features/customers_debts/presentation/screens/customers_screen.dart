@@ -1,16 +1,14 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:artisan_gift_manager/core/utils/theme.dart';
 import 'package:artisan_gift_manager/core/di/injection.dart';
-import 'package:artisan_gift_manager/core/widgets/price_tag_chip.dart';
-import 'package:artisan_gift_manager/core/widgets/primary_button.dart';
+import 'package:artisan_gift_manager/core/utils/theme.dart';
 import 'package:artisan_gift_manager/core/widgets/app_text_field.dart';
 import 'package:artisan_gift_manager/core/widgets/loading_indicator.dart';
-import 'package:artisan_gift_manager/features/customers_debts/presentation/cubit/customers_debts_cubit.dart';
+import 'package:artisan_gift_manager/core/widgets/primary_button.dart';
 import 'package:artisan_gift_manager/features/customers_debts/data/customers_debts_repository.dart';
-import 'package:artisan_gift_manager/features/customers_debts/presentation/widgets/customers_list.dart';
+import 'package:artisan_gift_manager/features/customers_debts/presentation/cubit/customers_debts_cubit.dart';
 import 'package:artisan_gift_manager/features/customers_debts/presentation/widgets/customer_details_panel.dart';
-import 'package:intl/intl.dart' hide TextDirection;
+import 'package:artisan_gift_manager/features/customers_debts/presentation/widgets/customers_list.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class CustomersScreen extends StatefulWidget {
   const CustomersScreen({super.key});
@@ -238,10 +236,10 @@ class _CustomersScreenState extends State<CustomersScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('الحد الأقصى للدفع: ${debtData.debt.remainingAmount.toStringAsFixed(2)} د.أ'),
+                  Text('الحد الأقصى للدفع: ${debtData.debt.remainingAmount.toStringAsFixed(2)}'),
                   const SizedBox(height: 12),
                   AppTextField(
-                    label: 'قيمة الدفعة المسددة (د.أ) *',
+                    label: 'قيمة الدفعة المسددة *',
                     controller: amountController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     validator: (val) {

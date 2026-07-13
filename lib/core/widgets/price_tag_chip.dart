@@ -1,11 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:artisan_gift_manager/core/utils/theme.dart';
+import 'package:flutter/material.dart';
 
 class PriceTagChip extends StatelessWidget {
-  final String label;
-  final Color backgroundColor;
-  final Color textColor;
-  final double cutSize;
 
   const PriceTagChip({
     super.key,
@@ -14,6 +10,10 @@ class PriceTagChip extends StatelessWidget {
     this.textColor = Colors.white,
     this.cutSize = 10.0,
   });
+  final String label;
+  final Color backgroundColor;
+  final Color textColor;
+  final double cutSize;
 
   @override
   Widget build(BuildContext context) {
@@ -42,10 +42,10 @@ class PriceTagChip extends StatelessWidget {
 }
 
 class _PriceTagPainter extends CustomPainter {
-  final Color color;
-  final double cutSize;
 
   _PriceTagPainter({required this.color, required this.cutSize});
+  final Color color;
+  final double cutSize;
 
   @override
   void paint(Canvas canvas, Size size) {

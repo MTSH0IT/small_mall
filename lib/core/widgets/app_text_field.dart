@@ -1,18 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:artisan_gift_manager/core/utils/theme.dart';
+import 'package:flutter/material.dart';
 
 class AppTextField extends StatelessWidget {
-  final String label;
-  final String? hint;
-  final TextEditingController? controller;
-  final TextInputType keyboardType;
-  final bool isPassword;
-  final Widget? suffixIcon;
-  final Widget? prefixIcon;
-  final String? Function(String?)? validator;
-  final void Function(String)? onChanged;
-  final bool readOnly;
-  final VoidCallback? onTap;
 
   const AppTextField({
     super.key,
@@ -28,6 +17,17 @@ class AppTextField extends StatelessWidget {
     this.readOnly = false,
     this.onTap,
   });
+  final String label;
+  final String? hint;
+  final TextEditingController? controller;
+  final TextInputType keyboardType;
+  final bool isPassword;
+  final Widget? suffixIcon;
+  final Widget? prefixIcon;
+  final String? Function(String?)? validator;
+  final void Function(String)? onChanged;
+  final bool readOnly;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -58,7 +58,7 @@ class AppTextField extends StatelessWidget {
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: theme.textTheme.bodyMedium?.copyWith(
-              color: AppColors.textSecondary.withOpacity(0.6),
+              color: AppColors.textSecondary.withValues(alpha: 0.6),
             ),
             fillColor: AppColors.surfaceElevated,
             filled: true,

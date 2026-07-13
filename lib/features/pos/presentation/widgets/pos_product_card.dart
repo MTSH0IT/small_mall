@@ -1,18 +1,18 @@
-import 'package:flutter/material.dart';
+import 'package:artisan_gift_manager/core/database/app_database.dart';
 import 'package:artisan_gift_manager/core/utils/theme.dart';
 import 'package:artisan_gift_manager/core/widgets/price_tag_chip.dart';
 import 'package:artisan_gift_manager/features/inventory/data/inventory_repository.dart';
-import 'package:artisan_gift_manager/core/database/app_database.dart';
+import 'package:flutter/material.dart';
 
 class POSProductCard extends StatelessWidget {
-  final ProductWithDetails item;
-  final Function(ProductPrice) onPriceSelected;
 
   const POSProductCard({
     super.key,
     required this.item,
     required this.onPriceSelected,
   });
+  final ProductWithDetails item;
+  final Function(ProductPrice) onPriceSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +25,7 @@ class POSProductCard extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10),
         side: BorderSide(
-          color: item.isLowStock ? AppColors.danger.withOpacity(0.4) : AppColors.border,
+          color: item.isLowStock ? AppColors.danger.withValues(alpha: 0.4) : AppColors.border,
           width: item.isLowStock ? 1.5 : 1.0,
         ),
       ),
@@ -84,7 +84,7 @@ class POSProductCard extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: inStock ? color.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
+                      color: inStock ? color.withValues(alpha: 0.1) : Colors.grey.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(6),
                       border: Border.all(color: inStock ? color : Colors.grey, width: 0.8),
                     ),
@@ -101,7 +101,7 @@ class POSProductCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          '${price.priceValue.toStringAsFixed(1)}',
+                          price.priceValue.toStringAsFixed(1),
                           style: AppTheme.numericStyle(
                             fontSize: 11,
                             color: inStock ? color : Colors.grey,

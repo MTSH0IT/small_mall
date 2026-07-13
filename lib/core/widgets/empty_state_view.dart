@@ -1,11 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:artisan_gift_manager/core/utils/theme.dart';
+import 'package:flutter/material.dart';
 
 class EmptyStateView extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String description;
-  final Widget? action;
 
   const EmptyStateView({
     super.key,
@@ -14,6 +10,10 @@ class EmptyStateView extends StatelessWidget {
     required this.description,
     this.action,
   });
+  final IconData icon;
+  final String title;
+  final String description;
+  final Widget? action;
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +28,7 @@ class EmptyStateView extends StatelessWidget {
             Icon(
               icon,
               size: 64,
-              color: AppColors.textSecondary.withOpacity(0.5),
+              color: AppColors.textSecondary.withValues(alpha: 0.5),
             ),
             const SizedBox(height: 16),
             Text(

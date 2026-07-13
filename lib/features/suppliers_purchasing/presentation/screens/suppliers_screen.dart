@@ -1,16 +1,16 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:artisan_gift_manager/core/utils/theme.dart';
+import 'package:artisan_gift_manager/core/database/app_database.dart';
 import 'package:artisan_gift_manager/core/di/injection.dart';
-import 'package:artisan_gift_manager/core/widgets/primary_button.dart';
+import 'package:artisan_gift_manager/core/utils/theme.dart';
 import 'package:artisan_gift_manager/core/widgets/app_text_field.dart';
 import 'package:artisan_gift_manager/core/widgets/loading_indicator.dart';
-import 'package:artisan_gift_manager/features/suppliers_purchasing/presentation/cubit/suppliers_purchasing_cubit.dart';
-import 'package:artisan_gift_manager/features/suppliers_purchasing/data/suppliers_purchasing_repository.dart';
+import 'package:artisan_gift_manager/core/widgets/primary_button.dart';
 import 'package:artisan_gift_manager/features/inventory/data/inventory_repository.dart';
-import 'package:artisan_gift_manager/core/database/app_database.dart';
-import 'package:artisan_gift_manager/features/suppliers_purchasing/presentation/widgets/suppliers_list.dart';
+import 'package:artisan_gift_manager/features/suppliers_purchasing/data/suppliers_purchasing_repository.dart';
+import 'package:artisan_gift_manager/features/suppliers_purchasing/presentation/cubit/suppliers_purchasing_cubit.dart';
 import 'package:artisan_gift_manager/features/suppliers_purchasing/presentation/widgets/record_purchase_panel.dart';
+import 'package:artisan_gift_manager/features/suppliers_purchasing/presentation/widgets/suppliers_list.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class SuppliersScreen extends StatefulWidget {
   const SuppliersScreen({super.key});
@@ -172,7 +172,7 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
           totalAmount: totalAmount,
           items: items,
         );
-        if (mounted) {
+        if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('تم تسجيل فاتورة المشتريات وتحديث مخزون المنتجات بنجاح')),
           );

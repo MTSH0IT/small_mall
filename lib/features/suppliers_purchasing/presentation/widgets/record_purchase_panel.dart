@@ -1,14 +1,11 @@
-import 'package:flutter/material.dart';
-import 'package:artisan_gift_manager/core/utils/theme.dart';
-import 'package:artisan_gift_manager/core/widgets/primary_button.dart';
-import 'package:artisan_gift_manager/core/widgets/app_text_field.dart';
 import 'package:artisan_gift_manager/core/database/app_database.dart';
+import 'package:artisan_gift_manager/core/utils/theme.dart';
+import 'package:artisan_gift_manager/core/widgets/app_text_field.dart';
+import 'package:artisan_gift_manager/core/widgets/primary_button.dart';
 import 'package:artisan_gift_manager/features/inventory/data/inventory_repository.dart';
+import 'package:flutter/material.dart';
 
 class RecordPurchasePanel extends StatefulWidget {
-  final Supplier selectedSupplier;
-  final List<ProductWithDetails> availableProducts;
-  final Future<void> Function(List<Map<String, dynamic>> items, double totalAmount) onConfirmPurchase;
 
   const RecordPurchasePanel({
     super.key,
@@ -16,6 +13,9 @@ class RecordPurchasePanel extends StatefulWidget {
     required this.availableProducts,
     required this.onConfirmPurchase,
   });
+  final Supplier selectedSupplier;
+  final List<ProductWithDetails> availableProducts;
+  final Future<void> Function(List<Map<String, dynamic>> items, double totalAmount) onConfirmPurchase;
 
   @override
   State<RecordPurchasePanel> createState() => _RecordPurchasePanelState();
@@ -110,7 +110,7 @@ class _RecordPurchasePanelState extends State<RecordPurchasePanel> {
                     child: ListView.separated(
                       padding: const EdgeInsets.all(12),
                       itemCount: _purchaseItems.length,
-                      separatorBuilder: (_, __) => const Divider(color: AppColors.border),
+                      separatorBuilder: (_, _) => const Divider(color: AppColors.border),
                       itemBuilder: (context, index) {
                         final item = _purchaseItems[index];
                         final subtotal = (item['quantity'] as double) * (item['unitCost'] as double);
@@ -153,7 +153,7 @@ class _RecordPurchasePanelState extends State<RecordPurchasePanel> {
                                   // Unit Cost Field
                                   Expanded(
                                     child: AppTextField(
-                                      label: 'سعر التكلفة الجديد (د.أ)',
+                                      label: 'سعر التكلفة الجديد',
                                       hint: 'التكلفة بالقطعة',
                                       keyboardType: const TextInputType.numberWithOptions(decimal: true),
                                       onChanged: (val) {
@@ -169,7 +169,7 @@ class _RecordPurchasePanelState extends State<RecordPurchasePanel> {
                                     children: [
                                       Text('المجموع:', style: theme.textTheme.labelSmall),
                                       Text(
-                                        '${subtotal.toStringAsFixed(2)} د.أ',
+                                        subtotal.toStringAsFixed(2),
                                         style: AppTheme.numericStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
                                       ),
                                     ],
@@ -194,7 +194,7 @@ class _RecordPurchasePanelState extends State<RecordPurchasePanel> {
                 style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: AppColors.primary),
               ),
               Text(
-                '${_totalPurchaseAmount.toStringAsFixed(2)} د.أ',
+                _totalPurchaseAmount.toStringAsFixed(2),
                 style: AppTheme.numericStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,

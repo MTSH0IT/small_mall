@@ -1,5 +1,5 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:artisan_gift_manager/features/customers_debts/data/customers_debts_repository.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 abstract class CustomersDebtsState {}
 
@@ -8,15 +8,15 @@ class CustomersDebtsInitial extends CustomersDebtsState {}
 class CustomersDebtsLoading extends CustomersDebtsState {}
 
 class CustomersDebtsLoaded extends CustomersDebtsState {
-  final List<CustomerWithDebts> customers;
-  final List<DebtWithPayments>? selectedCustomerDebts;
-  final String? selectedCustomerId;
 
   CustomersDebtsLoaded({
     required this.customers,
     this.selectedCustomerDebts,
     this.selectedCustomerId,
   });
+  final List<CustomerWithDebts> customers;
+  final List<DebtWithPayments>? selectedCustomerDebts;
+  final String? selectedCustomerId;
 
   CustomersDebtsLoaded copyWith({
     List<CustomerWithDebts>? customers,
@@ -32,14 +32,14 @@ class CustomersDebtsLoaded extends CustomersDebtsState {
 }
 
 class CustomersDebtsError extends CustomersDebtsState {
-  final String message;
   CustomersDebtsError(this.message);
+  final String message;
 }
 
 class CustomersDebtsCubit extends Cubit<CustomersDebtsState> {
-  final CustomersDebtsRepository _repository;
 
   CustomersDebtsCubit(this._repository) : super(CustomersDebtsInitial());
+  final CustomersDebtsRepository _repository;
 
   Future<void> loadCustomers() async {
     emit(CustomersDebtsLoading());

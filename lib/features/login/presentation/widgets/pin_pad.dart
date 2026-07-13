@@ -1,10 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:artisan_gift_manager/core/utils/theme.dart';
+import 'package:flutter/material.dart';
 
 class PinPad extends StatelessWidget {
-  final ValueChanged<int> onNumberPressed;
-  final VoidCallback onDeletePressed;
-  final VoidCallback onConfirmPressed;
 
   const PinPad({
     super.key,
@@ -12,6 +9,9 @@ class PinPad extends StatelessWidget {
     required this.onDeletePressed,
     required this.onConfirmPressed,
   });
+  final ValueChanged<int> onNumberPressed;
+  final VoidCallback onDeletePressed;
+  final VoidCallback onConfirmPressed;
 
   @override
   Widget build(BuildContext context) {

@@ -1,16 +1,10 @@
-import 'package:flutter/material.dart';
+import 'package:artisan_gift_manager/core/database/app_database.dart';
 import 'package:artisan_gift_manager/core/utils/theme.dart';
 import 'package:artisan_gift_manager/core/widgets/primary_button.dart';
 import 'package:artisan_gift_manager/features/pos/presentation/cubit/pos_cubit.dart';
-import 'package:artisan_gift_manager/core/database/app_database.dart';
+import 'package:flutter/material.dart';
 
 class CheckoutPanel extends StatelessWidget {
-  final POSState state;
-  final ValueChanged<double> onInvoiceDiscountChanged;
-  final ValueChanged<String> onPaymentTypeChanged;
-  final ValueChanged<Customer?> onCustomerChanged;
-  final VoidCallback onAddCustomerPressed;
-  final VoidCallback? onCheckoutPressed;
 
   const CheckoutPanel({
     super.key,
@@ -21,6 +15,12 @@ class CheckoutPanel extends StatelessWidget {
     required this.onAddCustomerPressed,
     required this.onCheckoutPressed,
   });
+  final POSState state;
+  final ValueChanged<double> onInvoiceDiscountChanged;
+  final ValueChanged<String> onPaymentTypeChanged;
+  final ValueChanged<Customer?> onCustomerChanged;
+  final VoidCallback onAddCustomerPressed;
+  final VoidCallback? onCheckoutPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +37,7 @@ class CheckoutPanel extends StatelessWidget {
             children: [
               Text('المجموع الفرعي:', style: theme.textTheme.bodyMedium),
               Text(
-                '${state.cartSubtotal.toStringAsFixed(2)} د.أ',
+                state.cartSubtotal.toStringAsFixed(2),
                 style: AppTheme.numericStyle(fontWeight: FontWeight.bold),
               ),
             ],
@@ -57,7 +57,7 @@ class CheckoutPanel extends StatelessWidget {
                     decoration: InputDecoration(
                       contentPadding: const EdgeInsets.symmetric(horizontal: 10),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
-                      hintText: '0.00 د.أ',
+                      hintText: '0.00',
                     ),
                     onChanged: (val) {
                       final discount = double.tryParse(val) ?? 0.0;
@@ -108,7 +108,7 @@ class CheckoutPanel extends StatelessWidget {
               const SizedBox(width: 16),
               Expanded(
                 child: DropdownButtonFormField<Customer>(
-                  value: state.selectedCustomer,
+                  initialValue: state.selectedCustomer,
                   hint: const Text('اختر عميلاً (اختياري)'),
                   decoration: InputDecoration(
                     contentPadding: const EdgeInsets.symmetric(horizontal: 10),
@@ -140,7 +140,7 @@ class CheckoutPanel extends StatelessWidget {
                 style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: AppColors.primary),
               ),
               Text(
-                '${state.totalAmount.toStringAsFixed(2)} د.أ',
+                state.totalAmount.toStringAsFixed(2),
                 style: AppTheme.numericStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,

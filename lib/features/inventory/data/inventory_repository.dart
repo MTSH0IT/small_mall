@@ -1,13 +1,9 @@
-import 'package:drift/drift.dart';
 import 'package:artisan_gift_manager/core/database/app_database.dart';
 import 'package:artisan_gift_manager/core/sync/sync_service.dart';
+import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
 class ProductWithDetails {
-  final Product product;
-  final Category? category;
-  final List<ProductPrice> prices;
-  final double currentStock;
 
   ProductWithDetails({
     required this.product,
@@ -15,16 +11,20 @@ class ProductWithDetails {
     required this.prices,
     required this.currentStock,
   });
+  final Product product;
+  final Category? category;
+  final List<ProductPrice> prices;
+  final double currentStock;
 
   bool get isLowStock => product.minStockAlert > 0 && currentStock <= product.minStockAlert;
 }
 
 class InventoryRepository {
+
+  InventoryRepository(this._db, this._sync);
   final AppDatabase _db;
   final SyncService _sync;
   final _uuid = const Uuid();
-
-  InventoryRepository(this._db, this._sync);
 
   // --- Categories ---
 

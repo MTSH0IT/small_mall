@@ -1,16 +1,15 @@
-import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import 'package:artisan_gift_manager/core/utils/theme.dart';
+import 'package:artisan_gift_manager/core/database/app_database.dart';
 import 'package:artisan_gift_manager/core/di/injection.dart';
+import 'package:artisan_gift_manager/core/utils/theme.dart';
+import 'package:artisan_gift_manager/core/widgets/card_container.dart';
+import 'package:artisan_gift_manager/core/widgets/loading_indicator.dart';
+import 'package:artisan_gift_manager/core/widgets/price_tag_chip.dart';
+import 'package:artisan_gift_manager/core/widgets/stat_card.dart';
+import 'package:artisan_gift_manager/features/customers_debts/data/customers_debts_repository.dart';
+import 'package:artisan_gift_manager/features/dashboard/presentation/widgets/quick_action_button.dart';
 import 'package:artisan_gift_manager/features/inventory/data/inventory_repository.dart';
 import 'package:artisan_gift_manager/features/pos/data/pos_repository.dart';
-import 'package:artisan_gift_manager/features/customers_debts/data/customers_debts_repository.dart';
-import 'package:artisan_gift_manager/core/widgets/price_tag_chip.dart';
-import 'package:artisan_gift_manager/core/widgets/loading_indicator.dart';
-import 'package:artisan_gift_manager/core/widgets/stat_card.dart';
-import 'package:artisan_gift_manager/core/widgets/card_container.dart';
-import 'package:artisan_gift_manager/features/dashboard/presentation/widgets/quick_action_button.dart';
-import 'package:artisan_gift_manager/core/database/app_database.dart';
+import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 
 class DashboardScreen extends StatefulWidget {
@@ -111,7 +110,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 Expanded(
                   child: StatCard(
                     title: 'مبيعات اليوم',
-                    value: '${_todaySales.toStringAsFixed(2)} د.أ',
+                    value: _todaySales.toStringAsFixed(2),
                     icon: Icons.monetization_on_outlined,
                     color: AppColors.primary,
                   ),
@@ -130,7 +129,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 Expanded(
                   child: StatCard(
                     title: 'الديون المستحقة للعملاء',
-                    value: '${_outstandingDebts.toStringAsFixed(2)} د.أ',
+                    value: _outstandingDebts.toStringAsFixed(2),
                     icon: Icons.account_balance_wallet_outlined,
                     color: AppColors.accent,
                   ),
@@ -195,7 +194,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
                             itemCount: _lowStockProducts.length,
-                            separatorBuilder: (_, __) => const Divider(color: AppColors.border),
+                            separatorBuilder: (_, _) => const Divider(color: AppColors.border),
                             itemBuilder: (context, index) {
                               final item = _lowStockProducts[index];
                               return ListTile(
@@ -228,7 +227,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
                             itemCount: _recentSales.length,
-                            separatorBuilder: (_, __) => const Divider(color: AppColors.border),
+                            separatorBuilder: (_, _) => const Divider(color: AppColors.border),
                             itemBuilder: (context, index) {
                               final item = _recentSales[index];
                               final timeStr = DateFormat('hh:mm a').format(item.createdAt);
@@ -240,7 +239,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 title: Text('فاتورة مبيعات - $typeStr'),
                                 subtitle: Text(timeStr),
                                 trailing: Text(
-                                  '${item.totalAmount.toStringAsFixed(2)} د.أ',
+                                  item.totalAmount.toStringAsFixed(2),
                                   style: AppTheme.numericStyle(fontWeight: FontWeight.bold, color: color),
                                 ),
                               );

@@ -1,13 +1,13 @@
+import 'package:artisan_gift_manager/core/di/injection.dart';
+import 'package:artisan_gift_manager/core/sync/sync_service.dart';
+import 'package:artisan_gift_manager/core/utils/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:artisan_gift_manager/core/utils/theme.dart';
-import 'package:artisan_gift_manager/core/sync/sync_service.dart';
-import 'package:artisan_gift_manager/core/di/injection.dart';
 
 class MainLayout extends StatefulWidget {
-  final Widget child;
 
   const MainLayout({super.key, required this.child});
+  final Widget child;
 
   @override
   State<MainLayout> createState() => _MainLayoutState();
@@ -135,7 +135,7 @@ class _MainLayoutState extends State<MainLayout> {
                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                               decoration: BoxDecoration(
                                 color: isSelected
-                                    ? AppColors.primary.withOpacity(0.08)
+                                    ? AppColors.primary.withValues(alpha: 0.08)
                                     : Colors.transparent,
                                 borderRadius: BorderRadius.circular(10),
                               ),
@@ -271,9 +271,9 @@ class _MainLayoutState extends State<MainLayout> {
 }
 
 class _NavItem {
+
+  _NavItem({required this.icon, required this.activeIcon, required this.label});
   final IconData icon;
   final IconData activeIcon;
   final String label;
-
-  _NavItem({required this.icon, required this.activeIcon, required this.label});
 }

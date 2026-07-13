@@ -1,12 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:artisan_gift_manager/core/utils/theme.dart';
 import 'package:artisan_gift_manager/features/pos/presentation/cubit/pos_cubit.dart';
+import 'package:flutter/material.dart';
 
 class CartItemRow extends StatelessWidget {
-  final CartItem item;
-  final VoidCallback onRemove;
-  final ValueChanged<double> onQuantityChanged;
-  final ValueChanged<double> onDiscountChanged;
 
   const CartItemRow({
     super.key,
@@ -15,6 +11,10 @@ class CartItemRow extends StatelessWidget {
     required this.onQuantityChanged,
     required this.onDiscountChanged,
   });
+  final CartItem item;
+  final VoidCallback onRemove;
+  final ValueChanged<double> onQuantityChanged;
+  final ValueChanged<double> onDiscountChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +44,7 @@ class CartItemRow extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'سعر الـ$label: ${item.selectedPrice.priceValue.toStringAsFixed(2)} د.أ',
+                      'سعر الـ$label: ${item.selectedPrice.priceValue.toStringAsFixed(2)}',
                       style: theme.textTheme.labelSmall,
                     ),
                   ],
@@ -109,7 +109,7 @@ class CartItemRow extends StatelessWidget {
               const SizedBox(width: 16),
               // Subtotal
               Text(
-                '${item.subtotal.toStringAsFixed(2)} د.أ',
+                item.subtotal.toStringAsFixed(2),
                 style: AppTheme.numericStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
               ),
             ],

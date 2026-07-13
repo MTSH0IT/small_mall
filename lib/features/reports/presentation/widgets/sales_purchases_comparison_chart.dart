@@ -1,14 +1,14 @@
-import 'package:flutter/material.dart';
 import 'package:artisan_gift_manager/core/utils/theme.dart';
 import 'package:artisan_gift_manager/features/reports/data/reports_repository.dart';
+import 'package:flutter/material.dart';
 
 class SalesPurchasesComparisonChart extends StatelessWidget {
-  final PurchasesSalesSummary summary;
 
   const SalesPurchasesComparisonChart({
     super.key,
     required this.summary,
   });
+  final PurchasesSalesSummary summary;
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +36,7 @@ class SalesPurchasesComparisonChart extends StatelessWidget {
                 children: [
                   Text('إجمالي المبيعات (+)', style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.success)),
                   Text(
-                    '${sales.toStringAsFixed(2)} د.أ',
+                    sales.toStringAsFixed(2),
                     style: AppTheme.numericStyle(fontWeight: FontWeight.bold, color: AppColors.success),
                   ),
                 ],
@@ -64,7 +64,7 @@ class SalesPurchasesComparisonChart extends StatelessWidget {
                 children: [
                   Text('إجمالي المشتريات (-)', style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.danger)),
                   Text(
-                    '${purchases.toStringAsFixed(2)} د.أ',
+                    purchases.toStringAsFixed(2),
                     style: AppTheme.numericStyle(fontWeight: FontWeight.bold, color: AppColors.danger),
                   ),
                 ],
@@ -84,7 +84,7 @@ class SalesPurchasesComparisonChart extends StatelessWidget {
           ),
           const SizedBox(height: 32),
           Text(
-            'حجم التداول الكلي: ${(sales + purchases).toStringAsFixed(2)} د.أ',
+            'حجم التداول الكلي: ${(sales + purchases).toStringAsFixed(2)}',
             style: theme.textTheme.labelSmall,
             textAlign: TextAlign.center,
           ),

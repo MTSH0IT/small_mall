@@ -1,13 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:artisan_gift_manager/core/utils/theme.dart';
 import 'package:artisan_gift_manager/core/widgets/price_tag_chip.dart';
 import 'package:artisan_gift_manager/features/inventory/data/inventory_repository.dart';
+import 'package:flutter/material.dart';
 
 class InventoryTable extends StatelessWidget {
-  final List<ProductWithDetails> products;
-  final String searchQuery;
-  final bool filterLowStockOnly;
-  final ValueChanged<ProductWithDetails> onAdjustStock;
 
   const InventoryTable({
     super.key,
@@ -16,6 +12,10 @@ class InventoryTable extends StatelessWidget {
     required this.filterLowStockOnly,
     required this.onAdjustStock,
   });
+  final List<ProductWithDetails> products;
+  final String searchQuery;
+  final bool filterLowStockOnly;
+  final ValueChanged<ProductWithDetails> onAdjustStock;
 
   @override
   Widget build(BuildContext context) {

@@ -1,14 +1,14 @@
-import 'package:drift/drift.dart';
 import 'package:artisan_gift_manager/core/database/app_database.dart';
 import 'package:artisan_gift_manager/core/sync/sync_service.dart';
+import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
 class POSRepository {
+
+  POSRepository(this._db, this._sync);
   final AppDatabase _db;
   final SyncService _sync;
   final _uuid = const Uuid();
-
-  POSRepository(this._db, this._sync);
 
   Future<void> createSale({
     required String? customerId,

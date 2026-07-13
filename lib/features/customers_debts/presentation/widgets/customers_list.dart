@@ -1,13 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:artisan_gift_manager/core/utils/theme.dart';
 import 'package:artisan_gift_manager/core/widgets/price_tag_chip.dart';
 import 'package:artisan_gift_manager/features/customers_debts/data/customers_debts_repository.dart';
+import 'package:flutter/material.dart';
 
 class CustomersList extends StatelessWidget {
-  final List<CustomerWithDebts> customers;
-  final String? selectedCustomerId;
-  final String searchQuery;
-  final ValueChanged<String> onSelectCustomer;
 
   const CustomersList({
     super.key,
@@ -16,6 +12,10 @@ class CustomersList extends StatelessWidget {
     required this.searchQuery,
     required this.onSelectCustomer,
   });
+  final List<CustomerWithDebts> customers;
+  final String? selectedCustomerId;
+  final String searchQuery;
+  final ValueChanged<String> onSelectCustomer;
 
   @override
   Widget build(BuildContext context) {
@@ -37,18 +37,18 @@ class CustomersList extends StatelessWidget {
       ),
       child: ListView.separated(
         itemCount: filtered.length,
-        separatorBuilder: (_, __) => const Divider(height: 1, color: AppColors.border),
+        separatorBuilder: (_, _) => const Divider(height: 1, color: AppColors.border),
         itemBuilder: (context, index) {
           final item = filtered[index];
           final isSelected = selectedCustomerId == item.customer.id;
 
           return ListTile(
             selected: isSelected,
-            selectedTileColor: AppColors.primary.withOpacity(0.05),
+            selectedTileColor: AppColors.primary.withValues(alpha: 0.05),
             title: Text(item.customer.name, style: const TextStyle(fontWeight: FontWeight.bold)),
             subtitle: Text(item.customer.phone ?? 'بدون هاتف'),
             trailing: PriceTagChip(
-              label: 'الدين: ${item.totalDebt.toStringAsFixed(1)} د.أ',
+              label: 'الدين: ${item.totalDebt.toStringAsFixed(1)}',
               backgroundColor: item.totalDebt > 0 ? AppColors.accent : AppColors.success,
               cutSize: 6,
             ),

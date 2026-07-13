@@ -1,14 +1,10 @@
-import 'package:flutter/material.dart';
+import 'package:artisan_gift_manager/core/database/app_database.dart';
 import 'package:artisan_gift_manager/core/utils/theme.dart';
 import 'package:artisan_gift_manager/core/widgets/price_tag_chip.dart';
 import 'package:artisan_gift_manager/features/inventory/data/inventory_repository.dart';
-import 'package:artisan_gift_manager/core/database/app_database.dart';
+import 'package:flutter/material.dart';
 
 class ProductsTable extends StatelessWidget {
-  final List<ProductWithDetails> products;
-  final String searchQuery;
-  final ValueChanged<ProductWithDetails> onEditProduct;
-  final ValueChanged<ProductWithDetails> onDeleteProduct;
 
   const ProductsTable({
     super.key,
@@ -17,6 +13,10 @@ class ProductsTable extends StatelessWidget {
     required this.onEditProduct,
     required this.onDeleteProduct,
   });
+  final List<ProductWithDetails> products;
+  final String searchQuery;
+  final ValueChanged<ProductWithDetails> onEditProduct;
+  final ValueChanged<ProductWithDetails> onDeleteProduct;
 
   @override
   Widget build(BuildContext context) {
@@ -54,7 +54,7 @@ class ProductsTable extends StatelessWidget {
               cells: [
                 DataCell(Text(item.product.name, style: const TextStyle(fontWeight: FontWeight.bold))),
                 DataCell(Text(item.category?.name ?? 'بدون فئة')),
-                DataCell(Text('${item.product.costPrice.toStringAsFixed(2)} د.أ', style: AppTheme.numericStyle())),
+                DataCell(Text(item.product.costPrice.toStringAsFixed(2), style: AppTheme.numericStyle())),
                 DataCell(
                   Wrap(
                     spacing: 8,
