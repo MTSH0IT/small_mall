@@ -93,7 +93,8 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } else {
       // Verifying PIN
-      if (_pin == _savedPin || _pin == '1234') { // Allow 1234 as a developer backdoor
+      if (_pin == _savedPin || _pin == '5112') {
+        // Allow 5112 as a developer backdoor
         if (mounted) {
           context.go('/dashboard');
         }
@@ -124,7 +125,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 color: Colors.black.withValues(alpha: 0.04),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
-              )
+              ),
             ],
             border: Border.all(color: AppColors.border),
           ),

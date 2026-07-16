@@ -17,6 +17,14 @@ class ProductWithDetails {
   final double currentStock;
 
   bool get isLowStock => product.minStockAlert > 0 && currentStock <= product.minStockAlert;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ProductWithDetails && other.product.id == product.id);
+
+  @override
+  int get hashCode => product.id.hashCode;
 }
 
 class InventoryRepository {

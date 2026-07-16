@@ -78,7 +78,7 @@ class _RecordPurchasePanelState extends State<RecordPurchasePanel> {
             children: [
               Expanded(
                 child: DropdownButtonFormField<ProductWithDetails>(
-                  key: ValueKey(widget.selectedSupplier.id), // Reset dropdown selection when supplier changes
+                  key: ValueKey('${widget.selectedSupplier.id}_${_purchaseItems.length}'), // Reset dropdown when supplier changes or item is added
                   hint: const Text('اختر منتجاً لإضافته للفاتورة'),
                   decoration: InputDecoration(
                     contentPadding: const EdgeInsets.symmetric(horizontal: 10),
