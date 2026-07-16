@@ -23,17 +23,14 @@ class SyncService {
   StreamSubscription<ConnectivityResult>? _connectivitySubscription;
 
   Future<void> initialize() async {
-    final prefs = await SharedPreferences.getInstance();
-    final url = prefs.getString('supabase_url') ?? '';
-    final anonKey = prefs.getString('supabase_anon_key') ?? '';
+    const url = 'https://xkhmfkrdwuupfqrecfzj.supabase.co';
+    const anonKey = 'sb_publishable__1btQ5ObojRmxcBCx1DRzw_RW0yVrXx';
 
-    if (url.isNotEmpty && anonKey.isNotEmpty) {
-      try {
-        await Supabase.initialize(url: url, publishableKey: anonKey, debug: false);
-        _isInitialized = true;
-      } catch (e) {
-        debugPrint('Supabase init failed: $e');
-      }
+    try {
+      await Supabase.initialize(url: url, publishableKey: anonKey, debug: false);
+      _isInitialized = true;
+    } catch (e) {
+      debugPrint('Supabase init failed: $e');
     }
 
     // Monitor connectivity
@@ -54,40 +51,15 @@ class SyncService {
     sync();
   }
 
-  Future<void> saveCredentials(String url, String anonKey) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('supabase_url', url);
-    await prefs.setString('supabase_anon_key', anonKey);
-
-    // Re-initialize
-    try {
-      // Supabase already initialized, it cannot be re-initialized in the same process usually.
-      // We can dispose or let the user restart the app, or attempt direct client replacement.
-      // In Flutter, to avoid crash we can try direct replacement or show restart needed.
-    } catch (_) {
-      try {
-        await Supabase.initialize(url: url, publishableKey: anonKey);
-        _isInitialized = true;
-      } catch (e) {
-        debugPrint('Supabase init failed: $e');
-        rethrow;
-      }
-    }
-    sync();
-  }
+  // Removed saveCredentials as it is no longer used.
 
   Future<void> clearCredentials() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('supabase_url');
-    await prefs.remove('supabase_anon_key');
     _isInitialized = false;
     status.value = SyncStatus.idle;
   }
 
   Future<bool> hasCredentials() async {
-    final prefs = await SharedPreferences.getInstance();
-    final url = prefs.getString('supabase_url') ?? '';
-    return url.isNotEmpty;
+    return true;
   }
 
   Future<void> updatePendingCount() async {
@@ -155,6 +127,7 @@ class SyncService {
       }
 
       final client = Supabase.instance.client;
+      bool hasErrors = false;
 
       for (final item in pendingItems) {
         try {
@@ -179,11 +152,12 @@ class SyncService {
           debugPrint('Failed to sync item ${item.id}: $e');
           await (_db.update(_db.syncQueue)..where((t) => t.id.equals(item.id)))
               .write(const SyncQueueCompanion(status: Value('failed')));
+          hasErrors = true;
         }
       }
 
       await updatePendingCount();
-      status.value = SyncStatus.success;
+      status.value = hasErrors ? SyncStatus.error : SyncStatus.success;
     } catch (e) {
       debugPrint('Sync failed: $e');
       status.value = SyncStatus.error;

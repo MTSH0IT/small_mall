@@ -1,11 +1,14 @@
+import 'package:artisan_gift_manager/core/bloc/app_bloc_observer.dart';
 import 'package:artisan_gift_manager/core/di/injection.dart';
 import 'package:artisan_gift_manager/core/utils/router.dart';
 import 'package:artisan_gift_manager/core/utils/theme.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  Bloc.observer = const AppBlocObserver();
 
   // Initialize Dependency Injection (Drift database + SyncService)
   await setupDependencyInjection();

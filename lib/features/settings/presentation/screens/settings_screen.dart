@@ -17,13 +17,8 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  final _urlController = TextEditingController();
-  final _keyController = TextEditingController();
-  final _formKey = GlobalKey<FormState>();
-
   String _dbPath = 'جاري التحميل...';
   int _pendingCount = 0;
-  bool _isSaving = false;
   final _syncService = getIt<SyncService>();
 
   @override
@@ -33,12 +28,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _loadSettings() async {
-    final prefs = await SharedPreferences.getInstance();
     final dbFolder = await getApplicationDocumentsDirectory();
 
     setState(() {
-      _urlController.text = prefs.getString('supabase_url') ?? '';
-      _keyController.text = prefs.getString('supabase_anon_key') ?? '';
       _dbPath = p.join(dbFolder.path, 'artisan_gift_manager.db');
       _pendingCount = _syncService.pendingCount.value;
     });
@@ -57,52 +49,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void dispose() {
     _syncService.pendingCount.removeListener(_onPendingCountChanged);
-    _urlController.dispose();
-    _keyController.dispose();
     super.dispose();
-  }
-
-  Future<void> _saveSupabaseConfig() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    setState(() => _isSaving = true);
-    try {
-      await _syncService.saveCredentials(
-        _urlController.text.trim(),
-        _keyController.text.trim(),
-      );
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('تم حفظ إعدادات Supabase والاتصال بنجاح. يرجى إعادة تشغيل التطبيق لتفعيل الاتصال الكامل.'),
-            backgroundColor: AppColors.success,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('فشل الاتصال: $e'), backgroundColor: AppColors.danger),
-        );
-      }
-    } finally {
-      setState(() => _isSaving = false);
-    }
-  }
-
-  Future<void> _clearConfig() async {
-    setState(() => _isSaving = true);
-    await _syncService.clearCredentials();
-    _urlController.clear();
-    _keyController.clear();
-    setState(() => _isSaving = false);
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تم حذف إعدادات الاتصال بنجاح. التطبيق يعمل الآن في وضع أوفلاين محلي.'), backgroundColor: AppColors.primary),
-      );
-    }
   }
 
   @override
@@ -127,61 +74,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Supabase Config Section
-            SettingsSection(
-              title: 'إعدادات المزامنة السحابية (Supabase)',
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'قم بربط تطبيقك بقاعدة بيانات Supabase لتمكين المزامنة والنسخ الاحتياطي التلقائي عند توفر الإنترنت.',
-                      style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
-                    ),
-                    const SizedBox(height: 20),
-                    AppTextField(
-                      label: 'رابط المشروع (Supabase URL) *',
-                      controller: _urlController,
-                      hint: 'https://xxxxxx.supabase.co',
-                      validator: (val) {
-                        if (val == null || val.isEmpty) return 'الرجاء إدخال رابط المشروع';
-                        if (!val.startsWith('http')) return 'يجب أن يبدأ الرابط بـ http أو https';
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    AppTextField(
-                      label: 'مفتاح الوصول العام (Anon Key) *',
-                      controller: _keyController,
-                      hint: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-                      validator: (val) => val == null || val.isEmpty ? 'الرجاء إدخال مفتاح الوصول' : null,
-                    ),
-                    const SizedBox(height: 24),
-                    Row(
-                      children: [
-                        PrimaryButton(
-                          label: 'حفظ وإعادة الاتصال',
-                          icon: Icons.save_outlined,
-                          onPressed: _saveSupabaseConfig,
-                          isLoading: _isSaving,
-                        ),
-                        const SizedBox(width: 12),
-                        OutlinedButton.icon(
-                          onPressed: _clearConfig,
-                          icon: const Icon(Icons.delete_forever_outlined, color: AppColors.danger),
-                          label: const Text('حذف الإعدادات', style: TextStyle(color: AppColors.danger)),
-                          style: OutlinedButton.styleFrom(
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
             const SizedBox(height: 24),
             // Sync & Backup Control
             SettingsSection(
