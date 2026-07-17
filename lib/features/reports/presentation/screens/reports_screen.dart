@@ -5,6 +5,7 @@ import 'package:artisan_gift_manager/core/widgets/loading_indicator.dart';
 import 'package:artisan_gift_manager/core/widgets/stat_card.dart';
 import 'package:artisan_gift_manager/features/reports/data/reports_repository.dart';
 import 'package:artisan_gift_manager/features/reports/presentation/cubit/reports_cubit.dart';
+import 'package:artisan_gift_manager/features/reports/presentation/cubit/reports_state.dart';
 import 'package:artisan_gift_manager/features/reports/presentation/widgets/period_filter_row.dart';
 import 'package:artisan_gift_manager/features/reports/presentation/widgets/sales_purchases_comparison_chart.dart';
 import 'package:flutter/material.dart';

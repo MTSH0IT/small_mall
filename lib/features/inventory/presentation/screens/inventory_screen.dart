@@ -5,6 +5,7 @@ import 'package:artisan_gift_manager/core/widgets/loading_indicator.dart';
 import 'package:artisan_gift_manager/core/widgets/primary_button.dart';
 import 'package:artisan_gift_manager/features/inventory/data/inventory_repository.dart';
 import 'package:artisan_gift_manager/features/inventory/presentation/cubit/inventory_cubit.dart';
+import 'package:artisan_gift_manager/features/inventory/presentation/cubit/inventory_state.dart';
 import 'package:artisan_gift_manager/features/inventory/presentation/widgets/inventory_table.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

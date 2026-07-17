@@ -1,13 +1,11 @@
 import 'package:artisan_gift_manager/core/di/injection.dart';
 import 'package:artisan_gift_manager/core/sync/sync_service.dart';
 import 'package:artisan_gift_manager/core/utils/theme.dart';
-import 'package:artisan_gift_manager/core/widgets/app_text_field.dart';
 import 'package:artisan_gift_manager/core/widgets/primary_button.dart';
 import 'package:artisan_gift_manager/features/settings/presentation/widgets/settings_section.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -31,7 +29,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final dbFolder = await getApplicationDocumentsDirectory();
 
     setState(() {
-      _dbPath = p.join(dbFolder.path, 'artisan_gift_manager.db');
+      _dbPath = p.join(dbFolder.path, 'small_mall.db');
       _pendingCount = _syncService.pendingCount.value;
     });
 

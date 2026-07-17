@@ -1,5 +1,5 @@
 import 'package:artisan_gift_manager/core/utils/theme.dart';
-import 'package:artisan_gift_manager/features/pos/presentation/cubit/pos_cubit.dart';
+import 'package:artisan_gift_manager/features/pos/presentation/cubit/pos_state.dart';
 import 'package:flutter/material.dart';
 
 class CartItemRow extends StatelessWidget {

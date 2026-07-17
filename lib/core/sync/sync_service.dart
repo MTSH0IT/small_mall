@@ -5,7 +5,6 @@ import 'package:artisan_gift_manager/core/database/app_database.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 enum SyncStatus { idle, syncing, success, error, offline }

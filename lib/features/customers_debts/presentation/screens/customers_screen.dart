@@ -5,6 +5,7 @@ import 'package:artisan_gift_manager/core/widgets/loading_indicator.dart';
 import 'package:artisan_gift_manager/core/widgets/primary_button.dart';
 import 'package:artisan_gift_manager/features/customers_debts/data/customers_debts_repository.dart';
 import 'package:artisan_gift_manager/features/customers_debts/presentation/cubit/customers_debts_cubit.dart';
+import 'package:artisan_gift_manager/features/customers_debts/presentation/cubit/customers_debts_state.dart';
 import 'package:artisan_gift_manager/features/customers_debts/presentation/widgets/customer_details_panel.dart';
 import 'package:artisan_gift_manager/features/customers_debts/presentation/widgets/customers_list.dart';
 import 'package:flutter/material.dart';

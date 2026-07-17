@@ -5,6 +5,7 @@ import 'package:artisan_gift_manager/core/widgets/app_text_field.dart';
 import 'package:artisan_gift_manager/core/widgets/primary_button.dart';
 import 'package:artisan_gift_manager/features/customers_debts/data/customers_debts_repository.dart';
 import 'package:artisan_gift_manager/features/pos/presentation/cubit/pos_cubit.dart';
+import 'package:artisan_gift_manager/features/pos/presentation/cubit/pos_state.dart';
 import 'package:artisan_gift_manager/features/pos/presentation/widgets/cart_item_row.dart';
 import 'package:artisan_gift_manager/features/pos/presentation/widgets/checkout_panel.dart';
 import 'package:artisan_gift_manager/features/pos/presentation/widgets/pos_product_card.dart';
