@@ -22,9 +22,10 @@ class CustomersDebtsCubit extends Cubit<CustomersDebtsState> {
     if (currentState is CustomersDebtsLoaded) {
       try {
         final debts = await _repository.getCustomerDebts(customerId);
-        emit(currentState.copyWith(
-          selectedCustomerId: () => customerId,
-          selectedCustomerDebts: () => debts,
+        emit(CustomersDebtsLoaded(
+          customers: currentState.customers,
+          selectedCustomerId: customerId,
+          selectedCustomerDebts: debts,
         ));
       } catch (e) {
         emit(CustomersDebtsError(e.toString()));

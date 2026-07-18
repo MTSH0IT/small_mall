@@ -15,18 +15,6 @@ class CustomersDebtsLoaded extends CustomersDebtsState {
   final List<CustomerWithDebts> customers;
   final List<DebtWithPayments>? selectedCustomerDebts;
   final String? selectedCustomerId;
-
-  CustomersDebtsLoaded copyWith({
-    List<CustomerWithDebts>? customers,
-    List<DebtWithPayments>? Function()? selectedCustomerDebts,
-    String? Function()? selectedCustomerId,
-  }) {
-    return CustomersDebtsLoaded(
-      customers: customers ?? this.customers,
-      selectedCustomerDebts: selectedCustomerDebts != null ? selectedCustomerDebts() : this.selectedCustomerDebts,
-      selectedCustomerId: selectedCustomerId != null ? selectedCustomerId() : this.selectedCustomerId,
-    );
-  }
 }
 
 class CustomersDebtsError extends CustomersDebtsState {
