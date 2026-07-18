@@ -192,6 +192,32 @@ class POSCubit extends Cubit<POSState> {
     ));
   }
 
+  Future<void> createReturn({
+    required String originalInvoiceId,
+    required List<Map<String, dynamic>> itemsToReturn,
+  }) async {
+    emit(POSLoading());
+    try {
+      await _posRepository.createReturn(
+        originalInvoiceId: originalInvoiceId,
+        itemsToReturn: itemsToReturn,
+      );
+
+      emit(POSCheckoutSuccess());
+      await loadPOSData();
+    } catch (e) {
+      emit(POSError(e.toString()));
+    }
+  }
+
+  Future<List<Invoice>> getRecentSales() {
+    return _posRepository.getRecentSales();
+  }
+
+  Future<List<InvoiceItem>> getInvoiceItems(String invoiceId) {
+    return _posRepository.getInvoiceItems(invoiceId);
+  }
+
   Future<void> checkout() async {
     if (state is! POSLoaded) return;
     final loaded = state as POSLoaded;

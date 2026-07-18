@@ -9,6 +9,7 @@ import 'package:artisan_gift_manager/features/pos/presentation/cubit/pos_state.d
 import 'package:artisan_gift_manager/features/pos/presentation/widgets/cart_item_row.dart';
 import 'package:artisan_gift_manager/features/pos/presentation/widgets/checkout_panel.dart';
 import 'package:artisan_gift_manager/features/pos/presentation/widgets/pos_product_card.dart';
+import 'package:artisan_gift_manager/features/pos/presentation/widgets/return_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -123,6 +124,11 @@ class _POSScreenState extends State<POSScreen> {
               backgroundColor: Colors.transparent,
               elevation: 0,
               actions: [
+                IconButton(
+                  icon: const Icon(Icons.replay, color: AppColors.accent),
+                  tooltip: 'إرجاع منتجات',
+                  onPressed: () => showDialog(context: context, builder: (_) => BlocProvider.value(value: cubit, child: const ReturnDialog())),
+                ),
                 IconButton(
                   icon: const Icon(Icons.refresh, color: AppColors.primary),
                   onPressed: () => cubit.loadPOSData(),
