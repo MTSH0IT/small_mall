@@ -5,17 +5,18 @@ import 'package:artisan_gift_manager/features/pos/presentation/cubit/pos_state.d
 import 'package:flutter/material.dart';
 
 class CheckoutPanel extends StatelessWidget {
-
   const CheckoutPanel({
     super.key,
     required this.state,
+    required this.isLoading,
     required this.onInvoiceDiscountChanged,
     required this.onPaymentTypeChanged,
     required this.onCustomerChanged,
     required this.onAddCustomerPressed,
     required this.onCheckoutPressed,
   });
-  final POSState state;
+  final POSLoaded state;
+  final bool isLoading;
   final ValueChanged<double> onInvoiceDiscountChanged;
   final ValueChanged<String> onPaymentTypeChanged;
   final ValueChanged<Customer?> onCustomerChanged;
@@ -155,7 +156,7 @@ class CheckoutPanel extends StatelessWidget {
             label: state.paymentType == 'debt' ? 'تأكيد البيع الآجل' : 'تأكيد البيع النقدي',
             icon: Icons.check,
             onPressed: onCheckoutPressed,
-            isLoading: state.status == POSStatus.loading,
+            isLoading: isLoading,
           ),
         ],
       ),

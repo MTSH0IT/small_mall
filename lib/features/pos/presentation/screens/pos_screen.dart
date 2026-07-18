@@ -25,6 +25,12 @@ class _POSScreenState extends State<POSScreen> {
   String? _selectedCategory;
 
   @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
@@ -36,18 +42,58 @@ class _POSScreenState extends State<POSScreen> {
       )..loadPOSData(),
       child: BlocConsumer<POSCubit, POSState>(
         listener: (context, state) {
-          if (state.status == POSStatus.success) {
+          if (state is POSCheckoutSuccess) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('تمت عملية البيع بنجاح'), backgroundColor: AppColors.success),
             );
-          } else if (state.status == POSStatus.error && state.errorMessage != null) {
+          } else if (state is POSError) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.errorMessage!), backgroundColor: AppColors.danger),
+              SnackBar(content: Text(state.message), backgroundColor: AppColors.danger),
             );
           }
         },
         builder: (context, state) {
           final cubit = context.read<POSCubit>();
+
+          if (state is! POSLoaded) {
+            if (state is POSError) {
+              return Scaffold(
+                backgroundColor: AppColors.surface,
+                appBar: AppBar(
+                  title: Text('نقطة البيع', style: theme.textTheme.displayMedium?.copyWith(
+                    fontFamily: 'ElMessiri', color: AppColors.primary,
+                  )),
+                  backgroundColor: Colors.transparent, elevation: 0,
+                ),
+                body: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.error_outline, size: 48, color: AppColors.danger),
+                      const SizedBox(height: 16),
+                      Text('حدث خطأ: ${state.message}', textAlign: TextAlign.center),
+                      const SizedBox(height: 16),
+                      ElevatedButton.icon(
+                        onPressed: cubit.loadPOSData,
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('إعادة المحاولة'),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+            return Scaffold(
+              backgroundColor: AppColors.surface,
+              appBar: AppBar(
+                title: Text('نقطة البيع', style: theme.textTheme.displayMedium?.copyWith(
+                  fontFamily: 'ElMessiri', color: AppColors.primary,
+                )),
+                backgroundColor: Colors.transparent, elevation: 0,
+              ),
+              body: const Center(child: CircularProgressIndicator()),
+            );
+          }
 
           // Filter products based on search query and category
           final filteredProducts = state.products.where((p) {
@@ -65,6 +111,7 @@ class _POSScreenState extends State<POSScreen> {
               .toList();
 
           return Scaffold(
+            backgroundColor: AppColors.surface,
             appBar: AppBar(
               title: Text(
                 'نقطة البيع',
@@ -234,6 +281,7 @@ class _POSScreenState extends State<POSScreen> {
                         // Checkout Summary Panel
                         CheckoutPanel(
                           state: state,
+                          isLoading: cubit.state is POSLoading,
                           onInvoiceDiscountChanged: (disc) => cubit.setInvoiceDiscount(disc),
                           onPaymentTypeChanged: (type) => cubit.setPaymentType(type),
                           onCustomerChanged: (cust) => cubit.selectCustomer(cust),
@@ -251,6 +299,7 @@ class _POSScreenState extends State<POSScreen> {
       ),
     );
   }
+
   void _showAddCustomerDialog(BuildContext context, POSCubit cubit) {
     final nameController = TextEditingController();
     final phoneController = TextEditingController();
@@ -303,8 +352,8 @@ class _POSScreenState extends State<POSScreen> {
                       phone: phoneController.text.isNotEmpty ? phoneController.text : null,
                       notes: notesController.text.isNotEmpty ? notesController.text : null,
                     );
-                    await cubit.loadPOSData(); // Reload customer list
-                    cubit.selectCustomer(customer); // Auto-select added customer
+                    await cubit.loadPOSData();
+                    cubit.selectCustomer(customer);
                     if (context.mounted) {
                       Navigator.pop(dialogCtx);
                     }
