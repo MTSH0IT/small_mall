@@ -30,6 +30,20 @@ class SuppliersPurchasingCubit extends Cubit<SuppliersPurchasingState> {
     }
   }
 
+  Future<void> updateSupplier({
+    required String id,
+    required String name,
+    required String? phone,
+    required String? notes,
+  }) async {
+    try {
+      await _repository.updateSupplier(id: id, name: name, phone: phone, notes: notes);
+      await loadSuppliers();
+    } catch (e) {
+      emit(SuppliersPurchasingError(e.toString()));
+    }
+  }
+
   Future<void> recordPurchase({
     required String supplierId,
     required double totalAmount,

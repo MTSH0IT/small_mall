@@ -45,6 +45,20 @@ class CustomersDebtsCubit extends Cubit<CustomersDebtsState> {
     }
   }
 
+  Future<void> updateCustomer({
+    required String id,
+    required String name,
+    required String? phone,
+    required String? notes,
+  }) async {
+    try {
+      await _repository.updateCustomer(id: id, name: name, phone: phone, notes: notes);
+      await loadCustomers();
+    } catch (e) {
+      emit(CustomersDebtsError(e.toString()));
+    }
+  }
+
   Future<void> recordPayment({
     required String customerId,
     required String debtId,

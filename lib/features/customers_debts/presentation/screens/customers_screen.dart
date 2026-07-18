@@ -1,3 +1,4 @@
+import 'package:artisan_gift_manager/core/database/app_database.dart';
 import 'package:artisan_gift_manager/core/di/injection.dart';
 import 'package:artisan_gift_manager/core/utils/theme.dart';
 import 'package:artisan_gift_manager/core/widgets/app_text_field.dart';
@@ -151,6 +152,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
         customerData: customerData,
         debts: debts,
         onRecordPayment: (debtData) => _showRecordPaymentDialog(context, cubit, customerData.customer.id, debtData),
+        onEditCustomer: () => _showEditCustomerDialog(context, cubit, customerData.customer),
       );
     }
 
@@ -201,6 +203,66 @@ class _CustomersScreenState extends State<CustomersScreen> {
                 onPressed: () {
                   if (formKey.currentState?.validate() ?? false) {
                     cubit.addCustomer(
+                      name: nameController.text,
+                      phone: phoneController.text.isNotEmpty ? phoneController.text : null,
+                      notes: notesController.text.isNotEmpty ? notesController.text : null,
+                    );
+                    Navigator.pop(ctx);
+                  }
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showEditCustomerDialog(BuildContext context, CustomersDebtsCubit cubit, Customer customer) {
+    final nameController = TextEditingController(text: customer.name);
+    final phoneController = TextEditingController(text: customer.phone);
+    final notesController = TextEditingController(text: customer.notes);
+    final formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return Directionality(
+          textDirection: TextDirection.rtl,
+          child: AlertDialog(
+            title: const Text('تعديل بيانات العميل', style: TextStyle(fontFamily: 'ElMessiri', color: AppColors.primary)),
+            content: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  AppTextField(
+                    label: 'اسم العميل *',
+                    controller: nameController,
+                    validator: (val) => val == null || val.isEmpty ? 'الرجاء إدخال الاسم' : null,
+                  ),
+                  const SizedBox(height: 12),
+                  AppTextField(
+                    label: 'رقم الهاتف',
+                    controller: phoneController,
+                    keyboardType: TextInputType.phone,
+                  ),
+                  const SizedBox(height: 12),
+                  AppTextField(
+                    label: 'ملاحظات',
+                    controller: notesController,
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
+              PrimaryButton(
+                label: 'حفظ التعديلات',
+                onPressed: () {
+                  if (formKey.currentState?.validate() ?? false) {
+                    cubit.updateCustomer(
+                      id: customer.id,
                       name: nameController.text,
                       phone: phoneController.text.isNotEmpty ? phoneController.text : null,
                       notes: notesController.text.isNotEmpty ? notesController.text : null,

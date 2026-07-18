@@ -164,20 +164,110 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
       return const Center(child: Text('اختر مورداً من القائمة للبدء بتسجيل فاتورة مشتريات'));
     }
 
-    return RecordPurchasePanel(
-      selectedSupplier: _selectedSupplier!,
-      availableProducts: _availableProducts,
-      onConfirmPurchase: (items, totalAmount) async {
-        await cubit.recordPurchase(
-          supplierId: _selectedSupplier!.id,
-          totalAmount: totalAmount,
-          items: items,
+    final supplier = _selectedSupplier!;
+    final theme = Theme.of(context);
+
+    return Column(
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+          child: Row(
+            children: [
+              Text(
+                supplier.name,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontFamily: 'ElMessiri',
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(width: 8),
+              InkWell(
+                onTap: () => _showEditSupplierDialog(context, cubit, supplier),
+                child: const Icon(Icons.edit, size: 18, color: AppColors.primary),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: RecordPurchasePanel(
+            selectedSupplier: supplier,
+            availableProducts: _availableProducts,
+            onConfirmPurchase: (items, totalAmount) async {
+              await cubit.recordPurchase(
+                supplierId: supplier.id,
+                totalAmount: totalAmount,
+                items: items,
+              );
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('تم تسجيل فاتورة المشتريات وتحديث مخزون المنتجات بنجاح')),
+                );
+              }
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showEditSupplierDialog(BuildContext context, SuppliersPurchasingCubit cubit, Supplier supplier) {
+    final nameController = TextEditingController(text: supplier.name);
+    final phoneController = TextEditingController(text: supplier.phone);
+    final notesController = TextEditingController(text: supplier.notes);
+    final formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return Directionality(
+          textDirection: TextDirection.rtl,
+          child: AlertDialog(
+            title: const Text('تعديل بيانات المورد', style: TextStyle(fontFamily: 'ElMessiri', color: AppColors.primary)),
+            content: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  AppTextField(
+                    label: 'اسم المورد *',
+                    controller: nameController,
+                    validator: (val) => val == null || val.isEmpty ? 'الرجاء إدخال الاسم' : null,
+                  ),
+                  const SizedBox(height: 12),
+                  AppTextField(
+                    label: 'رقم الهاتف',
+                    controller: phoneController,
+                    keyboardType: TextInputType.phone,
+                  ),
+                  const SizedBox(height: 12),
+                  AppTextField(
+                    label: 'ملاحظات / البضائع',
+                    controller: notesController,
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
+              PrimaryButton(
+                label: 'حفظ التعديلات',
+                onPressed: () {
+                  if (formKey.currentState?.validate() ?? false) {
+                    cubit.updateSupplier(
+                      id: supplier.id,
+                      name: nameController.text,
+                      phone: phoneController.text.isNotEmpty ? phoneController.text : null,
+                      notes: notesController.text.isNotEmpty ? notesController.text : null,
+                    );
+                    Navigator.pop(ctx);
+                  }
+                },
+              ),
+            ],
+          ),
         );
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('تم تسجيل فاتورة المشتريات وتحديث مخزون المنتجات بنجاح')),
-          );
-        }
       },
     );
   }

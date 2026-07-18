@@ -13,10 +13,12 @@ class CustomerDetailsPanel extends StatelessWidget {
     required this.customerData,
     required this.debts,
     required this.onRecordPayment,
+    required this.onEditCustomer,
   });
   final CustomerWithDebts customerData;
   final List<DebtWithPayments>? debts;
   final ValueChanged<DebtWithPayments> onRecordPayment;
+  final VoidCallback onEditCustomer;
 
   @override
   Widget build(BuildContext context) {
@@ -41,12 +43,21 @@ class CustomerDetailsPanel extends StatelessWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      customerData.customer.name,
-                      style: theme.textTheme.displaySmall?.copyWith(
-                        fontFamily: 'ElMessiri',
-                        color: AppColors.primary,
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          customerData.customer.name,
+                          style: theme.textTheme.displaySmall?.copyWith(
+                            fontFamily: 'ElMessiri',
+                            color: AppColors.primary,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        InkWell(
+                          onTap: onEditCustomer,
+                          child: const Icon(Icons.edit, size: 18, color: AppColors.primary),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 6),
                     if (customerData.customer.phone != null) ...[
