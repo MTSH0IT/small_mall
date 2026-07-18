@@ -1,9 +1,13 @@
 import 'package:artisan_gift_manager/core/database/app_database.dart';
 import 'package:artisan_gift_manager/core/di/injection.dart';
 import 'package:artisan_gift_manager/core/utils/theme.dart';
+import 'package:artisan_gift_manager/core/widgets/app_screen_scaffold.dart';
 import 'package:artisan_gift_manager/core/widgets/app_text_field.dart';
+import 'package:artisan_gift_manager/core/widgets/entity_form_dialog.dart';
 import 'package:artisan_gift_manager/core/widgets/loading_indicator.dart';
 import 'package:artisan_gift_manager/core/widgets/primary_button.dart';
+import 'package:artisan_gift_manager/core/widgets/search_bar_with_action.dart';
+import 'package:artisan_gift_manager/core/widgets/split_pane_layout.dart';
 import 'package:artisan_gift_manager/features/customers_debts/data/customers_debts_repository.dart';
 import 'package:artisan_gift_manager/features/customers_debts/presentation/cubit/customers_debts_cubit.dart';
 import 'package:artisan_gift_manager/features/customers_debts/presentation/cubit/customers_debts_state.dart';
@@ -25,8 +29,6 @@ class _CustomersScreenState extends State<CustomersScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return BlocProvider<CustomersDebtsCubit>(
       create: (context) => CustomersDebtsCubit(getIt<CustomersDebtsRepository>())..loadCustomers(),
       child: BlocConsumer<CustomersDebtsCubit, CustomersDebtsState>(
@@ -40,78 +42,30 @@ class _CustomersScreenState extends State<CustomersScreen> {
         builder: (context, state) {
           final cubit = context.read<CustomersDebtsCubit>();
 
-          return Scaffold(
-            backgroundColor: AppColors.surface,
-            appBar: AppBar(
-              title: Text(
-                'العملاء والديون',
-                style: theme.textTheme.displayMedium?.copyWith(
-                  fontFamily: 'ElMessiri',
-                  color: AppColors.primary,
+          return AppScreenScaffold(
+            title: 'العملاء والديون',
+            onRefresh: () => cubit.loadCustomers(),
+            body: SplitPaneLayout(
+              leftChild: Container(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    SearchBarWithAction(
+                      searchLabel: 'بحث عن عميل',
+                      searchHint: 'ابحث بالاسم أو الهاتف...',
+                      searchController: _searchController,
+                      onSearchChanged: (val) => _searchQuery = val,
+                      actionLabel: 'إضافة عميل',
+                      actionIcon: Icons.person_add,
+                      onActionPressed: () => _showAddCustomerDialog(context, cubit),
+                    ),
+                    const SizedBox(height: 16),
+                    Expanded(child: _buildCustomersList(context, cubit, state)),
+                  ],
                 ),
               ),
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.refresh, color: AppColors.primary),
-                  onPressed: () => cubit.loadCustomers(),
-                ),
-              ],
-            ),
-            body: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Right Pane: Customers List (40% width)
-                Expanded(
-                  flex: 2,
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Search bar & Add Customer Button
-                        Row(
-                          children: [
-                            Expanded(
-                              child: AppTextField(
-                                label: 'بحث عن عميل',
-                                hint: 'ابحث بالاسم أو الهاتف...',
-                                controller: _searchController,
-                                onChanged: (val) {
-                                  setState(() => _searchQuery = val);
-                                },
-                                prefixIcon: const Icon(Icons.search, color: AppColors.textSecondary),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Padding(
-                              padding: const EdgeInsets.only(top: 22.0),
-                              child: PrimaryButton(
-                                label: 'إضافة عميل',
-                                icon: Icons.person_add,
-                                onPressed: () => _showAddCustomerDialog(context, cubit),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        // List
-                        Expanded(
-                          child: _buildCustomersList(context, cubit, state),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                // Divider
-                const VerticalDivider(width: 1, thickness: 1, color: AppColors.border),
-                // Left Pane: Customer Details (60% width)
-                Expanded(
-                  flex: 3,
-                  child: _buildCustomerDetails(context, cubit, state),
-                ),
-              ],
+              rightChild: _buildCustomerDetails(context, cubit, state),
             ),
           );
         },
@@ -163,58 +117,23 @@ class _CustomersScreenState extends State<CustomersScreen> {
     final nameController = TextEditingController();
     final phoneController = TextEditingController();
     final notesController = TextEditingController();
-    final formKey = GlobalKey<FormState>();
 
     showDialog(
       context: context,
-      builder: (ctx) {
-        return Directionality(
-          textDirection: TextDirection.rtl,
-          child: AlertDialog(
-            title: const Text('إضافة عميل جديد', style: TextStyle(fontFamily: 'ElMessiri', color: AppColors.primary)),
-            content: Form(
-              key: formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  AppTextField(
-                    label: 'اسم العميل *',
-                    controller: nameController,
-                    validator: (val) => val == null || val.isEmpty ? 'الرجاء إدخال الاسم' : null,
-                  ),
-                  const SizedBox(height: 12),
-                  AppTextField(
-                    label: 'رقم الهاتف',
-                    controller: phoneController,
-                    keyboardType: TextInputType.phone,
-                  ),
-                  const SizedBox(height: 12),
-                  AppTextField(
-                    label: 'ملاحظات',
-                    controller: notesController,
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
-              PrimaryButton(
-                label: 'حفظ العميل',
-                onPressed: () {
-                  if (formKey.currentState?.validate() ?? false) {
-                    cubit.addCustomer(
-                      name: nameController.text,
-                      phone: phoneController.text.isNotEmpty ? phoneController.text : null,
-                      notes: notesController.text.isNotEmpty ? notesController.text : null,
-                    );
-                    Navigator.pop(ctx);
-                  }
-                },
-              ),
-            ],
-          ),
-        );
-      },
+      builder: (_) => EntityFormDialog(
+        title: 'إضافة عميل جديد',
+        saveLabel: 'حفظ العميل',
+        nameController: nameController,
+        phoneController: phoneController,
+        notesController: notesController,
+        onSave: () async {
+          await cubit.addCustomer(
+            name: nameController.text,
+            phone: phoneController.text.isNotEmpty ? phoneController.text : null,
+            notes: notesController.text.isNotEmpty ? notesController.text : null,
+          );
+        },
+      ),
     );
   }
 
@@ -222,59 +141,24 @@ class _CustomersScreenState extends State<CustomersScreen> {
     final nameController = TextEditingController(text: customer.name);
     final phoneController = TextEditingController(text: customer.phone);
     final notesController = TextEditingController(text: customer.notes);
-    final formKey = GlobalKey<FormState>();
 
     showDialog(
       context: context,
-      builder: (ctx) {
-        return Directionality(
-          textDirection: TextDirection.rtl,
-          child: AlertDialog(
-            title: const Text('تعديل بيانات العميل', style: TextStyle(fontFamily: 'ElMessiri', color: AppColors.primary)),
-            content: Form(
-              key: formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  AppTextField(
-                    label: 'اسم العميل *',
-                    controller: nameController,
-                    validator: (val) => val == null || val.isEmpty ? 'الرجاء إدخال الاسم' : null,
-                  ),
-                  const SizedBox(height: 12),
-                  AppTextField(
-                    label: 'رقم الهاتف',
-                    controller: phoneController,
-                    keyboardType: TextInputType.phone,
-                  ),
-                  const SizedBox(height: 12),
-                  AppTextField(
-                    label: 'ملاحظات',
-                    controller: notesController,
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
-              PrimaryButton(
-                label: 'حفظ التعديلات',
-                onPressed: () {
-                  if (formKey.currentState?.validate() ?? false) {
-                    cubit.updateCustomer(
-                      id: customer.id,
-                      name: nameController.text,
-                      phone: phoneController.text.isNotEmpty ? phoneController.text : null,
-                      notes: notesController.text.isNotEmpty ? notesController.text : null,
-                    );
-                    Navigator.pop(ctx);
-                  }
-                },
-              ),
-            ],
-          ),
-        );
-      },
+      builder: (_) => EntityFormDialog(
+        title: 'تعديل بيانات العميل',
+        saveLabel: 'حفظ التعديلات',
+        nameController: nameController,
+        phoneController: phoneController,
+        notesController: notesController,
+        onSave: () async {
+          await cubit.updateCustomer(
+            id: customer.id,
+            name: nameController.text,
+            phone: phoneController.text.isNotEmpty ? phoneController.text : null,
+            notes: notesController.text.isNotEmpty ? notesController.text : null,
+          );
+        },
+      ),
     );
   }
 

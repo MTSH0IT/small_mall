@@ -1,5 +1,6 @@
 import 'package:artisan_gift_manager/core/di/injection.dart';
 import 'package:artisan_gift_manager/core/utils/theme.dart';
+import 'package:artisan_gift_manager/core/widgets/app_screen_scaffold.dart';
 import 'package:artisan_gift_manager/core/widgets/app_text_field.dart';
 import 'package:artisan_gift_manager/core/widgets/loading_indicator.dart';
 import 'package:artisan_gift_manager/core/widgets/primary_button.dart';
@@ -24,8 +25,6 @@ class _InventoryScreenState extends State<InventoryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return BlocProvider<InventoryCubit>(
       create: (context) => InventoryCubit(getIt<InventoryRepository>())..loadInventory(),
       child: BlocConsumer<InventoryCubit, InventoryState>(
@@ -39,25 +38,9 @@ class _InventoryScreenState extends State<InventoryScreen> {
         builder: (context, state) {
           final cubit = context.read<InventoryCubit>();
 
-          return Scaffold(
-            backgroundColor: AppColors.surface,
-            appBar: AppBar(
-              title: Text(
-                'إدارة المخزون',
-                style: theme.textTheme.displayMedium?.copyWith(
-                  fontFamily: 'ElMessiri',
-                  color: AppColors.primary,
-                ),
-              ),
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.refresh, color: AppColors.primary),
-                  onPressed: () => cubit.loadInventory(),
-                ),
-              ],
-            ),
+          return AppScreenScaffold(
+            title: 'إدارة المخزون',
+            onRefresh: () => cubit.loadInventory(),
             body: Padding(
               padding: const EdgeInsets.all(24.0),
               child: Column(

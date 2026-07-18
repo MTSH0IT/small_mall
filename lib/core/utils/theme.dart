@@ -7,12 +7,18 @@ class AppColors {
   static const Color surfaceElevated = Color(0xFFFFFFFF);
   static const Color primary = Color(0xFF2F6F5E);
   static const Color primaryDark = Color(0xFF1F4E42);
-  static const Color accent = Color(0xFFC9A227); // Gift Gold
+  static const Color accent = Color(0xFFC9A227);
   static const Color danger = Color(0xFFC1443C);
   static const Color success = Color(0xFF3F8F5F);
   static const Color textPrimary = Color(0xFF211F1C);
   static const Color textSecondary = Color(0xFF6B6560);
   static const Color border = Color(0xFFE7E2DB);
+
+  static final BoxDecoration cardDecoration = BoxDecoration(
+    color: AppColors.surfaceElevated,
+    borderRadius: BorderRadius.circular(10),
+    border: Border.all(color: AppColors.border),
+  );
 }
 
 class AppTheme {

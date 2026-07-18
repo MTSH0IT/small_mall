@@ -1,9 +1,11 @@
 import 'package:artisan_gift_manager/core/database/app_database.dart';
 import 'package:artisan_gift_manager/core/di/injection.dart';
 import 'package:artisan_gift_manager/core/utils/theme.dart';
-import 'package:artisan_gift_manager/core/widgets/app_text_field.dart';
+import 'package:artisan_gift_manager/core/widgets/app_screen_scaffold.dart';
+import 'package:artisan_gift_manager/core/widgets/entity_form_dialog.dart';
 import 'package:artisan_gift_manager/core/widgets/loading_indicator.dart';
-import 'package:artisan_gift_manager/core/widgets/primary_button.dart';
+import 'package:artisan_gift_manager/core/widgets/search_bar_with_action.dart';
+import 'package:artisan_gift_manager/core/widgets/split_pane_layout.dart';
 import 'package:artisan_gift_manager/features/inventory/data/inventory_repository.dart';
 import 'package:artisan_gift_manager/features/suppliers_purchasing/data/suppliers_purchasing_repository.dart';
 import 'package:artisan_gift_manager/features/suppliers_purchasing/presentation/cubit/suppliers_purchasing_cubit.dart';
@@ -44,8 +46,6 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return BlocProvider<SuppliersPurchasingCubit>(
       create: (context) => SuppliersPurchasingCubit(getIt<SuppliersPurchasingRepository>())..loadSuppliers(),
       child: BlocConsumer<SuppliersPurchasingCubit, SuppliersPurchasingState>(
@@ -55,82 +55,36 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
               SnackBar(content: Text(state.message), backgroundColor: AppColors.danger),
             );
           } else if (state is SuppliersPurchasingLoaded) {
-            _loadProducts(); // Sync products list in case cost changed
+            _loadProducts();
           }
         },
         builder: (context, state) {
           final cubit = context.read<SuppliersPurchasingCubit>();
 
-          return Scaffold(
-            backgroundColor: AppColors.surface,
-            appBar: AppBar(
-              title: Text(
-                'الموردون والمشتريات',
-                style: theme.textTheme.displayMedium?.copyWith(
-                  fontFamily: 'ElMessiri',
-                  color: AppColors.primary,
+          return AppScreenScaffold(
+            title: 'الموردون والمشتريات',
+            onRefresh: () => cubit.loadSuppliers(),
+            body: SplitPaneLayout(
+              leftChild: Container(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    SearchBarWithAction(
+                      searchLabel: 'بحث عن مورد',
+                      searchHint: 'ابحث بالاسم...',
+                      searchController: _searchController,
+                      onSearchChanged: (val) => _searchQuery = val,
+                      actionLabel: 'إضافة مورد',
+                      actionIcon: Icons.local_shipping,
+                      onActionPressed: () => _showAddSupplierDialog(context, cubit),
+                    ),
+                    const SizedBox(height: 16),
+                    Expanded(child: _buildSuppliersList(context, cubit, state)),
+                  ],
                 ),
               ),
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.refresh, color: AppColors.primary),
-                  onPressed: () => cubit.loadSuppliers(),
-                ),
-              ],
-            ),
-            body: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Right Pane: Suppliers List (40% width)
-                Expanded(
-                  flex: 2,
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: AppTextField(
-                                label: 'بحث عن مورد',
-                                hint: 'ابحث بالاسم...',
-                                controller: _searchController,
-                                onChanged: (val) {
-                                  setState(() => _searchQuery = val);
-                                },
-                                prefixIcon: const Icon(Icons.search, color: AppColors.textSecondary),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Padding(
-                              padding: const EdgeInsets.only(top: 22.0),
-                              child: PrimaryButton(
-                                label: 'إضافة مورد',
-                                icon: Icons.local_shipping,
-                                onPressed: () => _showAddSupplierDialog(context, cubit),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        Expanded(
-                          child: _buildSuppliersList(context, cubit, state),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                // Divider
-                const VerticalDivider(width: 1, thickness: 1, color: AppColors.border),
-                // Left Pane: Record Purchase (60% width)
-                Expanded(
-                  flex: 3,
-                  child: _buildRecordPurchasePanel(context, cubit, state),
-                ),
-              ],
+              rightChild: _buildRecordPurchasePanel(context, cubit, state),
             ),
           );
         },
@@ -216,59 +170,26 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
     final nameController = TextEditingController(text: supplier.name);
     final phoneController = TextEditingController(text: supplier.phone);
     final notesController = TextEditingController(text: supplier.notes);
-    final formKey = GlobalKey<FormState>();
 
     showDialog(
       context: context,
-      builder: (ctx) {
-        return Directionality(
-          textDirection: TextDirection.rtl,
-          child: AlertDialog(
-            title: const Text('تعديل بيانات المورد', style: TextStyle(fontFamily: 'ElMessiri', color: AppColors.primary)),
-            content: Form(
-              key: formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  AppTextField(
-                    label: 'اسم المورد *',
-                    controller: nameController,
-                    validator: (val) => val == null || val.isEmpty ? 'الرجاء إدخال الاسم' : null,
-                  ),
-                  const SizedBox(height: 12),
-                  AppTextField(
-                    label: 'رقم الهاتف',
-                    controller: phoneController,
-                    keyboardType: TextInputType.phone,
-                  ),
-                  const SizedBox(height: 12),
-                  AppTextField(
-                    label: 'ملاحظات / البضائع',
-                    controller: notesController,
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
-              PrimaryButton(
-                label: 'حفظ التعديلات',
-                onPressed: () {
-                  if (formKey.currentState?.validate() ?? false) {
-                    cubit.updateSupplier(
-                      id: supplier.id,
-                      name: nameController.text,
-                      phone: phoneController.text.isNotEmpty ? phoneController.text : null,
-                      notes: notesController.text.isNotEmpty ? notesController.text : null,
-                    );
-                    Navigator.pop(ctx);
-                  }
-                },
-              ),
-            ],
-          ),
-        );
-      },
+      builder: (_) => EntityFormDialog(
+        title: 'تعديل بيانات المورد',
+        saveLabel: 'حفظ التعديلات',
+        nameLabel: 'اسم المورد *',
+        notesLabel: 'ملاحظات / البضائع',
+        nameController: nameController,
+        phoneController: phoneController,
+        notesController: notesController,
+        onSave: () async {
+          await cubit.updateSupplier(
+            id: supplier.id,
+            name: nameController.text,
+            phone: phoneController.text.isNotEmpty ? phoneController.text : null,
+            notes: notesController.text.isNotEmpty ? notesController.text : null,
+          );
+        },
+      ),
     );
   }
 
@@ -276,58 +197,25 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
     final nameController = TextEditingController();
     final phoneController = TextEditingController();
     final notesController = TextEditingController();
-    final formKey = GlobalKey<FormState>();
 
     showDialog(
       context: context,
-      builder: (ctx) {
-        return Directionality(
-          textDirection: TextDirection.rtl,
-          child: AlertDialog(
-            title: const Text('إضافة مورد جديد', style: TextStyle(fontFamily: 'ElMessiri', color: AppColors.primary)),
-            content: Form(
-              key: formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  AppTextField(
-                    label: 'اسم المورد *',
-                    controller: nameController,
-                    validator: (val) => val == null || val.isEmpty ? 'الرجاء إدخال الاسم' : null,
-                  ),
-                  const SizedBox(height: 12),
-                  AppTextField(
-                    label: 'رقم الهاتف',
-                    controller: phoneController,
-                    keyboardType: TextInputType.phone,
-                  ),
-                  const SizedBox(height: 12),
-                  AppTextField(
-                    label: 'ملاحظات / البضائع',
-                    controller: notesController,
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
-              PrimaryButton(
-                label: 'حفظ المورد',
-                onPressed: () {
-                  if (formKey.currentState?.validate() ?? false) {
-                    cubit.addSupplier(
-                      name: nameController.text,
-                      phone: phoneController.text.isNotEmpty ? phoneController.text : null,
-                      notes: notesController.text.isNotEmpty ? notesController.text : null,
-                    );
-                    Navigator.pop(ctx);
-                  }
-                },
-              ),
-            ],
-          ),
-        );
-      },
+      builder: (_) => EntityFormDialog(
+        title: 'إضافة مورد جديد',
+        saveLabel: 'حفظ المورد',
+        nameLabel: 'اسم المورد *',
+        notesLabel: 'ملاحظات / البضائع',
+        nameController: nameController,
+        phoneController: phoneController,
+        notesController: notesController,
+        onSave: () async {
+          await cubit.addSupplier(
+            name: nameController.text,
+            phone: phoneController.text.isNotEmpty ? phoneController.text : null,
+            notes: notesController.text.isNotEmpty ? notesController.text : null,
+          );
+        },
+      ),
     );
   }
 }

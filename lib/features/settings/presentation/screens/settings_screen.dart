@@ -1,6 +1,7 @@
 import 'package:artisan_gift_manager/core/di/injection.dart';
 import 'package:artisan_gift_manager/core/sync/sync_service.dart';
 import 'package:artisan_gift_manager/core/utils/theme.dart';
+import 'package:artisan_gift_manager/core/widgets/app_screen_scaffold.dart';
 import 'package:artisan_gift_manager/core/widgets/primary_button.dart';
 import 'package:artisan_gift_manager/features/settings/presentation/widgets/settings_section.dart';
 import 'package:flutter/material.dart';
@@ -53,20 +54,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
-    return Scaffold(
-      backgroundColor: AppColors.surface,
-      appBar: AppBar(
-        title: Text(
-          'الإعدادات العامة',
-          style: theme.textTheme.displayMedium?.copyWith(
-            fontFamily: 'ElMessiri',
-            color: AppColors.primary,
-          ),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
+    return AppScreenScaffold(
+      title: 'الإعدادات العامة',
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Column(

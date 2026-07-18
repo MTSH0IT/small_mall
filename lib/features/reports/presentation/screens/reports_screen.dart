@@ -1,5 +1,6 @@
 import 'package:artisan_gift_manager/core/di/injection.dart';
 import 'package:artisan_gift_manager/core/utils/theme.dart';
+import 'package:artisan_gift_manager/core/widgets/app_screen_scaffold.dart';
 import 'package:artisan_gift_manager/core/widgets/card_container.dart';
 import 'package:artisan_gift_manager/core/widgets/loading_indicator.dart';
 import 'package:artisan_gift_manager/core/widgets/stat_card.dart';
@@ -24,8 +25,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return BlocProvider<ReportsCubit>(
       create: (context) => ReportsCubit(getIt<ReportsRepository>())..loadReports(start: _startDate, end: _endDate),
       child: BlocConsumer<ReportsCubit, ReportsState>(
@@ -39,25 +38,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
         builder: (context, state) {
           final cubit = context.read<ReportsCubit>();
 
-          return Scaffold(
-            backgroundColor: AppColors.surface,
-            appBar: AppBar(
-              title: Text(
-                'التقارير والإحصائيات',
-                style: theme.textTheme.displayMedium?.copyWith(
-                  fontFamily: 'ElMessiri',
-                  color: AppColors.primary,
-                ),
-              ),
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.refresh, color: AppColors.primary),
-                  onPressed: () => cubit.loadReports(start: _startDate, end: _endDate),
-                ),
-              ],
-            ),
+          return AppScreenScaffold(
+            title: 'التقارير والإحصائيات',
+            onRefresh: () => cubit.loadReports(start: _startDate, end: _endDate),
             body: Padding(
               padding: const EdgeInsets.all(24.0),
               child: Column(
