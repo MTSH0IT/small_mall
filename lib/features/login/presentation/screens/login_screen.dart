@@ -112,7 +112,6 @@ class _LoginScreenState extends State<LoginScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: AppColors.surface,
       body: Center(
         child: Container(
           width: 400,

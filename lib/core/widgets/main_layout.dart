@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 class MainLayout extends StatefulWidget {
-
   const MainLayout({super.key, required this.child});
   final Widget child;
 
@@ -64,14 +63,46 @@ class _MainLayoutState extends State<MainLayout> {
     final theme = Theme.of(context);
 
     final navItems = [
-      _NavItem(icon: Icons.dashboard_outlined, activeIcon: Icons.dashboard, label: 'الرئيسية'),
-      _NavItem(icon: Icons.point_of_sale_outlined, activeIcon: Icons.point_of_sale, label: 'نقطة البيع'),
-      _NavItem(icon: Icons.card_giftcard_outlined, activeIcon: Icons.card_giftcard, label: 'المنتجات'),
-      _NavItem(icon: Icons.inventory_2_outlined, activeIcon: Icons.inventory_2, label: 'المخزون'),
-      _NavItem(icon: Icons.people_outline, activeIcon: Icons.people, label: 'العملاء والديون'),
-      _NavItem(icon: Icons.local_shipping_outlined, activeIcon: Icons.local_shipping, label: 'الموردون والمشتريات'),
-      _NavItem(icon: Icons.bar_chart_outlined, activeIcon: Icons.bar_chart, label: 'التقارير'),
-      _NavItem(icon: Icons.settings_outlined, activeIcon: Icons.settings, label: 'الإعدادات'),
+      _NavItem(
+        icon: Icons.dashboard_outlined,
+        activeIcon: Icons.dashboard,
+        label: 'الرئيسية',
+      ),
+      _NavItem(
+        icon: Icons.point_of_sale_outlined,
+        activeIcon: Icons.point_of_sale,
+        label: 'نقطة البيع',
+      ),
+      _NavItem(
+        icon: Icons.card_giftcard_outlined,
+        activeIcon: Icons.card_giftcard,
+        label: 'المنتجات',
+      ),
+      _NavItem(
+        icon: Icons.inventory_2_outlined,
+        activeIcon: Icons.inventory_2,
+        label: 'المخزون',
+      ),
+      _NavItem(
+        icon: Icons.people_outline,
+        activeIcon: Icons.people,
+        label: 'العملاء والديون',
+      ),
+      _NavItem(
+        icon: Icons.local_shipping_outlined,
+        activeIcon: Icons.local_shipping,
+        label: 'الموردون والمشتريات',
+      ),
+      _NavItem(
+        icon: Icons.bar_chart_outlined,
+        activeIcon: Icons.bar_chart,
+        label: 'التقارير',
+      ),
+      _NavItem(
+        icon: Icons.settings_outlined,
+        activeIcon: Icons.settings,
+        label: 'الإعدادات',
+      ),
     ];
 
     return Scaffold(
@@ -79,16 +110,7 @@ class _MainLayoutState extends State<MainLayout> {
         textDirection: TextDirection.rtl,
         child: Row(
           children: [
-            // Left Side: Main Content
-            Expanded(
-              child: Container(
-                color: AppColors.surface,
-                child: widget.child,
-              ),
-            ),
-            // Divider
-            const VerticalDivider(width: 1, thickness: 1, color: AppColors.border),
-            // Right Side: Sidebar Navigation Rail
+            // Sidebar Navigation Rail
             Container(
               width: 220,
               color: AppColors.surfaceElevated,
@@ -126,13 +148,19 @@ class _MainLayoutState extends State<MainLayout> {
                         final item = navItems[index];
                         final isSelected = index == selectedIndex;
                         return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 4,
+                          ),
                           child: InkWell(
                             onTap: () => _onItemTapped(index, context),
                             borderRadius: BorderRadius.circular(10),
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 200),
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
                               decoration: BoxDecoration(
                                 color: isSelected
                                     ? AppColors.primary.withValues(alpha: 0.08)
@@ -143,15 +171,21 @@ class _MainLayoutState extends State<MainLayout> {
                                 children: [
                                   Icon(
                                     isSelected ? item.activeIcon : item.icon,
-                                    color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                                    color: isSelected
+                                        ? AppColors.primary
+                                        : AppColors.textSecondary,
                                     size: 22,
                                   ),
                                   const SizedBox(width: 12),
                                   Text(
                                     item.label,
                                     style: theme.textTheme.bodyMedium?.copyWith(
-                                      color: isSelected ? AppColors.primary : AppColors.textPrimary,
-                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                      color: isSelected
+                                          ? AppColors.primary
+                                          : AppColors.textPrimary,
+                                      fontWeight: isSelected
+                                          ? FontWeight.bold
+                                          : FontWeight.normal,
                                     ),
                                   ),
                                 ],
@@ -181,6 +215,14 @@ class _MainLayoutState extends State<MainLayout> {
                 ],
               ),
             ),
+            // Divider
+            const VerticalDivider(
+              width: 1,
+              thickness: 1,
+              color: AppColors.border,
+            ),
+            // Main Content
+            Expanded(child: widget.child),
           ],
         ),
       ),
@@ -271,7 +313,6 @@ class _MainLayoutState extends State<MainLayout> {
 }
 
 class _NavItem {
-
   _NavItem({required this.icon, required this.activeIcon, required this.label});
   final IconData icon;
   final IconData activeIcon;

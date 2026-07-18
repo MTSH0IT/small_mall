@@ -18,10 +18,9 @@ class AppScreenScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surface,
       appBar: AppBar(
         title: AppBarTitle(title),
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colors.white,
         elevation: 0,
         actions: [
           ...actions,
