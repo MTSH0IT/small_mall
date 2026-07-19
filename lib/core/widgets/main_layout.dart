@@ -24,7 +24,8 @@ class _MainLayoutState extends State<MainLayout> {
     if (location.startsWith('/customers')) return 4;
     if (location.startsWith('/suppliers')) return 5;
     if (location.startsWith('/reports')) return 6;
-    if (location.startsWith('/settings')) return 7;
+    if (location.startsWith('/invoices')) return 7;
+    if (location.startsWith('/settings')) return 8;
     return 0; // default to dashboard
   }
 
@@ -52,6 +53,9 @@ class _MainLayoutState extends State<MainLayout> {
         context.go('/reports');
         break;
       case 7:
+        context.go('/invoices');
+        break;
+      case 8:
         context.go('/settings');
         break;
     }
@@ -97,6 +101,11 @@ class _MainLayoutState extends State<MainLayout> {
         icon: Icons.bar_chart_outlined,
         activeIcon: Icons.bar_chart,
         label: 'التقارير',
+      ),
+      _NavItem(
+        icon: Icons.receipt_long_outlined,
+        activeIcon: Icons.receipt_long,
+        label: 'الفواتير',
       ),
       _NavItem(
         icon: Icons.settings_outlined,

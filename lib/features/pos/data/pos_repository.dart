@@ -3,6 +3,33 @@ import 'package:artisan_gift_manager/core/sync/sync_service.dart';
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
+class InvoiceItemWithProduct {
+
+  InvoiceItemWithProduct({
+    required this.invoiceItem,
+    required this.productName,
+  });
+  final InvoiceItem invoiceItem;
+  final String productName;
+}
+
+class InvoiceWithDetails {
+
+  InvoiceWithDetails({
+    required this.invoice,
+    required this.items,
+    this.customerName,
+  });
+  final Invoice invoice;
+  final List<InvoiceItemWithProduct> items;
+  final String? customerName;
+
+  double get itemsTotal => items.fold<double>(
+    0.0,
+    (sum, item) => sum + (item.invoiceItem.priceUsed * item.invoiceItem.quantity) - item.invoiceItem.discount,
+  );
+}
+
 class POSRepository {
 
   POSRepository(this._db, this._sync);
@@ -239,5 +266,44 @@ class POSRepository {
 
   Future<List<InvoiceItem>> getInvoiceItems(String invoiceId) async {
     return (_db.select(_db.invoiceItems)..where((t) => t.invoiceId.equals(invoiceId))).get();
+  }
+
+  Future<List<InvoiceWithDetails>> getAllInvoices() async {
+    final invoices = await (_db.select(_db.invoices)
+          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
+        .get();
+    final allItems = await _db.select(_db.invoiceItems).get();
+    final allCustomers = await _db.select(_db.customers).get();
+    final allProducts = await _db.select(_db.products).get();
+
+    final customerMap = {for (var c in allCustomers) c.id: c};
+    final productMap = {for (var p in allProducts) p.id: p};
+
+    return invoices.map((invoice) {
+      final items = allItems.where((i) => i.invoiceId == invoice.id).map((item) {
+        final product = productMap[item.productId];
+        return InvoiceItemWithProduct(
+          invoiceItem: item,
+          productName: product?.name ?? 'منتج محذوف',
+        );
+      }).toList();
+
+      final customer = invoice.customerId != null ? customerMap[invoice.customerId] : null;
+
+      return InvoiceWithDetails(
+        invoice: invoice,
+        items: items,
+        customerName: customer?.name,
+      );
+    }).toList();
+  }
+
+  Future<InvoiceWithDetails?> getInvoiceById(String invoiceId) async {
+    final allInvoices = await getAllInvoices();
+    try {
+      return allInvoices.firstWhere((i) => i.invoice.id == invoiceId);
+    } catch (_) {
+      return null;
+    }
   }
 }

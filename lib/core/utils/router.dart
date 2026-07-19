@@ -3,6 +3,7 @@ import 'package:artisan_gift_manager/features/customers_debts/presentation/scree
 import 'package:artisan_gift_manager/features/dashboard/presentation/screens/dashboard_screen.dart';
 import 'package:artisan_gift_manager/features/inventory/presentation/screens/inventory_screen.dart';
 import 'package:artisan_gift_manager/features/inventory/presentation/screens/products_screen.dart';
+import 'package:artisan_gift_manager/features/invoices/presentation/screens/invoices_screen.dart';
 import 'package:artisan_gift_manager/features/login/presentation/screens/login_screen.dart';
 import 'package:artisan_gift_manager/features/pos/presentation/screens/pos_screen.dart';
 import 'package:artisan_gift_manager/features/reports/presentation/screens/reports_screen.dart';
@@ -51,6 +52,10 @@ final GoRouter appRouter = GoRouter(
         GoRoute(
           path: '/reports',
           builder: (context, state) => const ReportsScreen(),
+        ),
+        GoRoute(
+          path: '/invoices',
+          builder: (context, state) => const InvoicesScreen(),
         ),
         GoRoute(
           path: '/settings',
