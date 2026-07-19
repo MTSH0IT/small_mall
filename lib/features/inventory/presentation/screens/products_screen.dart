@@ -132,7 +132,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
         return Directionality(
           textDirection: TextDirection.rtl,
           child: AlertDialog(
-            title: const Text('إضافة فئة جديدة', style: TextStyle(fontFamily: 'ElMessiri', color: AppColors.primary)),
+            title: const Text('إضافة فئة جديدة', style: TextStyle(color: AppColors.primary)),
             content: Form(
               key: formKey,
               child: AppTextField(
@@ -190,7 +190,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
           textDirection: TextDirection.rtl,
           child: AlertDialog(
             title: Text(existing == null ? 'إضافة منتج جديد' : 'تعديل منتج',
-                style: const TextStyle(fontFamily: 'ElMessiri', color: AppColors.primary)),
+                style: const TextStyle(color: AppColors.primary)),
             content: SizedBox(
               width: 500,
               child: SingleChildScrollView(

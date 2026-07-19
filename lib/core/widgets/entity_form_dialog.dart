@@ -39,7 +39,7 @@ class _EntityFormDialogState extends State<EntityFormDialog> {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: AlertDialog(
-        title: Text(widget.title, style: const TextStyle(fontFamily: 'ElMessiri', color: AppColors.primary)),
+        title: Text(widget.title, style: const TextStyle(color: AppColors.primary)),
         content: Form(
           key: _formKey,
           child: Column(

@@ -67,7 +67,6 @@ class _RecordPurchasePanelState extends State<RecordPurchasePanel> {
           Text(
             'تسجيل فاتورة مشتريات من المورد: ${widget.selectedSupplier.name}',
             style: theme.textTheme.titleMedium?.copyWith(
-              fontFamily: 'ElMessiri',
               fontWeight: FontWeight.bold,
               color: AppColors.primary,
             ),

@@ -119,7 +119,7 @@ class _ReturnDialogState extends State<ReturnDialog> {
             Expanded(
               child: Text(
                 _selectedInvoice == null ? 'اختيار فاتورة للإرجاع' : 'إرجاع منتجات',
-                style: const TextStyle(fontFamily: 'ElMessiri', color: AppColors.primary),
+                style: const TextStyle(color: AppColors.primary),
               ),
             ),
           ],

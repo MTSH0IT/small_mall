@@ -177,7 +177,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
         return Directionality(
           textDirection: TextDirection.rtl,
           child: AlertDialog(
-            title: const Text('تسجيل دفعة سداد دين', style: TextStyle(fontFamily: 'ElMessiri', color: AppColors.primary)),
+            title: const Text('تسجيل دفعة سداد دين', style: TextStyle(color: AppColors.primary)),
             content: Form(
               key: formKey,
               child: Column(

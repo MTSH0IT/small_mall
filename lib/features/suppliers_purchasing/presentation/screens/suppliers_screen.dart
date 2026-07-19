@@ -131,7 +131,6 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
               Text(
                 supplier.name,
                 style: theme.textTheme.titleLarge?.copyWith(
-                  fontFamily: 'ElMessiri',
                   color: AppColors.primary,
                   fontWeight: FontWeight.bold,
                 ),

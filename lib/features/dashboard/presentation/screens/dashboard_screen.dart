@@ -126,7 +126,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Text(
               'إجراءات سريعة',
               style: theme.textTheme.titleLarge?.copyWith(
-                fontFamily: 'ElMessiri',
                 fontWeight: FontWeight.bold,
               ),
             ),

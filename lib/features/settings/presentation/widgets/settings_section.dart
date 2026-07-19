@@ -28,7 +28,6 @@ class SettingsSection extends StatelessWidget {
           Text(
             title,
             style: theme.textTheme.titleMedium?.copyWith(
-              fontFamily: 'ElMessiri',
               fontWeight: FontWeight.bold,
               color: AppColors.primary,
             ),

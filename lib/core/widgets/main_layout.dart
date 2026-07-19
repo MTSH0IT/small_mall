@@ -137,7 +137,6 @@ class _MainLayoutState extends State<MainLayout> {
                           'Small Mall',
                           style: theme.textTheme.displaySmall?.copyWith(
                             color: AppColors.primary,
-                            fontFamily: 'ElMessiri',
                           ),
                         ),
                         const SizedBox(height: 4),

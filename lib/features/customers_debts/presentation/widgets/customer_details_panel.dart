@@ -48,7 +48,6 @@ class CustomerDetailsPanel extends StatelessWidget {
                         Text(
                           customerData.customer.name,
                           style: theme.textTheme.displaySmall?.copyWith(
-                            fontFamily: 'ElMessiri',
                             color: AppColors.primary,
                           ),
                         ),
@@ -97,7 +96,6 @@ class CustomerDetailsPanel extends StatelessWidget {
           Text(
             'سجل الفواتير الآجلة والمدفوعات',
             style: theme.textTheme.titleMedium?.copyWith(
-              fontFamily: 'ElMessiri',
               fontWeight: FontWeight.bold,
               color: AppColors.primary,
             ),

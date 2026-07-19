@@ -11,7 +11,6 @@ class AppBarTitle extends StatelessWidget {
     return Text(
       label,
       style: Theme.of(context).textTheme.displayMedium?.copyWith(
-        fontFamily: 'ElMessiri',
         color: AppColors.primary,
       ),
     );

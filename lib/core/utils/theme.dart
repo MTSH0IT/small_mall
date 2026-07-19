@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class AppColors {
   static const Color surface = Color(0xFFFAF8F5);
@@ -22,9 +21,12 @@ class AppColors {
 }
 
 class AppTheme {
+  static const String _fontFamily = 'Cairo';
+
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
+      fontFamily: _fontFamily,
       colorScheme: ColorScheme.light(
         primary: AppColors.primary,
         secondary: AppColors.accent,
@@ -33,48 +35,48 @@ class AppTheme {
       ),
       scaffoldBackgroundColor: AppColors.surface,
       dividerColor: AppColors.border,
-      textTheme: TextTheme(
-        displayLarge: GoogleFonts.elMessiri(
+      textTheme: const TextTheme(
+        displayLarge: TextStyle(
           fontSize: 32,
           fontWeight: FontWeight.bold,
           color: AppColors.textPrimary,
         ),
-        displayMedium: GoogleFonts.elMessiri(
+        displayMedium: TextStyle(
           fontSize: 28,
           fontWeight: FontWeight.bold,
           color: AppColors.textPrimary,
         ),
-        displaySmall: GoogleFonts.elMessiri(
+        displaySmall: TextStyle(
           fontSize: 24,
           fontWeight: FontWeight.bold,
           color: AppColors.textPrimary,
         ),
-        headlineMedium: GoogleFonts.elMessiri(
+        headlineMedium: TextStyle(
           fontSize: 20,
           fontWeight: FontWeight.w600,
           color: AppColors.textPrimary,
         ),
-        titleLarge: GoogleFonts.elMessiri(
+        titleLarge: TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.w500,
           color: AppColors.textPrimary,
         ),
-        bodyLarge: GoogleFonts.tajawal(
+        bodyLarge: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.normal,
           color: AppColors.textPrimary,
         ),
-        bodyMedium: GoogleFonts.tajawal(
+        bodyMedium: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.normal,
           color: AppColors.textPrimary,
         ),
-        labelLarge: GoogleFonts.tajawal(
+        labelLarge: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w500,
           color: AppColors.textPrimary,
         ),
-        labelSmall: GoogleFonts.tajawal(
+        labelSmall: TextStyle(
           fontSize: 12,
           color: AppColors.textSecondary,
         ),
@@ -82,13 +84,12 @@ class AppTheme {
     );
   }
 
-  // Numeric text styles for alignment in financial/tabular lists
   static TextStyle numericStyle({
     double fontSize = 14,
     FontWeight fontWeight = FontWeight.w500,
     Color color = AppColors.textPrimary,
   }) {
-    return GoogleFonts.ibmPlexSansArabic(
+    return TextStyle(
       fontSize: fontSize,
       fontWeight: fontWeight,
       color: color,

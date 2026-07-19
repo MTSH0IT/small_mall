@@ -154,7 +154,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 'Small Mall',
                 style: theme.textTheme.displayMedium?.copyWith(
                   color: AppColors.primary,
-                  fontFamily: 'ElMessiri',
                 ),
                 textAlign: TextAlign.center,
               ),

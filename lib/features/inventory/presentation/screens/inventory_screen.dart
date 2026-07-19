@@ -129,7 +129,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
             builder: (dialogCtx, setStateDialog) {
               return AlertDialog(
                 title: Text('تعديل مخزون: ${item.product.name}',
-                    style: const TextStyle(fontFamily: 'ElMessiri', color: AppColors.primary)),
+                    style: const TextStyle(color: AppColors.primary)),
                 content: Form(
                   key: formKey,
                   child: Column(
