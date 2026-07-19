@@ -2,9 +2,11 @@ import 'package:artisan_gift_manager/core/di/injection.dart';
 import 'package:artisan_gift_manager/core/sync/sync_service.dart';
 import 'package:artisan_gift_manager/core/utils/theme.dart';
 import 'package:artisan_gift_manager/core/widgets/app_screen_scaffold.dart';
+import 'package:artisan_gift_manager/core/widgets/loading_indicator.dart';
 import 'package:artisan_gift_manager/core/widgets/primary_button.dart';
 import 'package:artisan_gift_manager/features/settings/presentation/widgets/settings_section.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
@@ -18,6 +20,7 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   String _dbPath = 'جاري التحميل...';
   int _pendingCount = 0;
+  bool _isRestoring = false;
   final _syncService = getIt<SyncService>();
 
   @override
@@ -97,6 +100,57 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ],
                   ),
                 ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            // Restore from server
+            SettingsSection(
+              title: 'استعادة البيانات من السحاب',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'في حال تم حذف قاعدة البيانات المحلية، يمكنك استعادة جميع البيانات من خادم Supabase.',
+                    style: TextStyle(color: AppColors.accent, fontWeight: FontWeight.w500),
+                  ),
+                  const SizedBox(height: 16),
+                  _isRestoring
+                      ? const LoadingIndicator(message: 'جاري استعادة البيانات من السحاب...')
+                      : PrimaryButton(
+                          label: 'استعادة البيانات من السحاب',
+                          icon: Icons.cloud_download,
+                          onPressed: () async {
+                            setState(() => _isRestoring = true);
+                            await _syncService.fetchAllFromServer();
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    _syncService.status.value == SyncStatus.success
+                                        ? 'تم استعادة البيانات بنجاح'
+                                        : 'فشل استعادة البيانات',
+                                  ),
+                                  backgroundColor: _syncService.status.value == SyncStatus.success
+                                      ? AppColors.success
+                                      : AppColors.danger,
+                                ),
+                              );
+                            }
+                            setState(() => _isRestoring = false);
+                          },
+                        ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            // Logout
+            SettingsSection(
+              title: 'تسجيل الخروج',
+              child: PrimaryButton(
+                label: 'تسجيل الخروج',
+                icon: Icons.logout,
+                backgroundColor: AppColors.danger,
+                onPressed: () => context.go('/login'),
               ),
             ),
             const SizedBox(height: 24),
