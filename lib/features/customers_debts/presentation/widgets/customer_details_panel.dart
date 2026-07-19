@@ -1,8 +1,8 @@
-import 'package:artisan_gift_manager/core/utils/theme.dart';
-import 'package:artisan_gift_manager/core/widgets/loading_indicator.dart';
-import 'package:artisan_gift_manager/core/widgets/price_tag_chip.dart';
-import 'package:artisan_gift_manager/core/widgets/primary_button.dart';
-import 'package:artisan_gift_manager/features/customers_debts/data/customers_debts_repository.dart';
+import 'package:small_mall/core/utils/theme.dart';
+import 'package:small_mall/core/widgets/loading_indicator.dart';
+import 'package:small_mall/core/widgets/price_tag_chip.dart';
+import 'package:small_mall/core/widgets/primary_button.dart';
+import 'package:small_mall/features/customers_debts/data/customers_debts_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 

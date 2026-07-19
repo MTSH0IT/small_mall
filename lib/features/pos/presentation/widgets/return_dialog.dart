@@ -1,8 +1,8 @@
-import 'package:artisan_gift_manager/core/database/app_database.dart';
-import 'package:artisan_gift_manager/core/utils/theme.dart';
-import 'package:artisan_gift_manager/core/widgets/primary_button.dart';
-import 'package:artisan_gift_manager/features/pos/presentation/cubit/pos_cubit.dart';
-import 'package:artisan_gift_manager/features/pos/presentation/cubit/pos_state.dart';
+import 'package:small_mall/core/database/app_database.dart';
+import 'package:small_mall/core/utils/theme.dart';
+import 'package:small_mall/core/widgets/primary_button.dart';
+import 'package:small_mall/features/pos/presentation/cubit/pos_cubit.dart';
+import 'package:small_mall/features/pos/presentation/cubit/pos_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 

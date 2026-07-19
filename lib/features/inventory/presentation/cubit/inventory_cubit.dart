@@ -1,5 +1,5 @@
-import 'package:artisan_gift_manager/features/inventory/data/inventory_repository.dart';
-import 'package:artisan_gift_manager/features/inventory/presentation/cubit/inventory_state.dart';
+import 'package:small_mall/features/inventory/data/inventory_repository.dart';
+import 'package:small_mall/features/inventory/presentation/cubit/inventory_state.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class InventoryCubit extends Cubit<InventoryState> {

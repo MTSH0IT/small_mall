@@ -1,6 +1,6 @@
-import 'package:artisan_gift_manager/core/di/injection.dart';
-import 'package:artisan_gift_manager/core/sync/sync_service.dart';
-import 'package:artisan_gift_manager/core/utils/theme.dart';
+import 'package:small_mall/core/di/injection.dart';
+import 'package:small_mall/core/sync/sync_service.dart';
+import 'package:small_mall/core/utils/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -134,7 +134,7 @@ class _MainLayoutState extends State<MainLayout> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'مدير الهدايا',
+                          'Small Mall',
                           style: theme.textTheme.displaySmall?.copyWith(
                             color: AppColors.primary,
                             fontFamily: 'ElMessiri',
@@ -142,7 +142,7 @@ class _MainLayoutState extends State<MainLayout> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'محل الهدايا المميز',
+                          'Gift Shop Manager',
                           style: theme.textTheme.labelSmall,
                         ),
                       ],

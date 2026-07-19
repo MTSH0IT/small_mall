@@ -1,8 +1,8 @@
-import 'package:artisan_gift_manager/core/database/app_database.dart';
-import 'package:artisan_gift_manager/features/customers_debts/data/customers_debts_repository.dart';
-import 'package:artisan_gift_manager/features/inventory/data/inventory_repository.dart';
-import 'package:artisan_gift_manager/features/pos/data/pos_repository.dart';
-import 'package:artisan_gift_manager/features/pos/presentation/cubit/pos_state.dart';
+import 'package:small_mall/core/database/app_database.dart';
+import 'package:small_mall/features/customers_debts/data/customers_debts_repository.dart';
+import 'package:small_mall/features/inventory/data/inventory_repository.dart';
+import 'package:small_mall/features/pos/data/pos_repository.dart';
+import 'package:small_mall/features/pos/presentation/cubit/pos_state.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class POSCubit extends Cubit<POSState> {

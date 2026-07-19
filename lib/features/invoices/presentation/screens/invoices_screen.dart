@@ -1,13 +1,13 @@
-import 'package:artisan_gift_manager/core/di/injection.dart';
-import 'package:artisan_gift_manager/core/utils/theme.dart';
-import 'package:artisan_gift_manager/core/widgets/app_screen_scaffold.dart';
-import 'package:artisan_gift_manager/core/widgets/loading_indicator.dart';
-import 'package:artisan_gift_manager/core/widgets/split_pane_layout.dart';
-import 'package:artisan_gift_manager/features/invoices/presentation/cubit/invoices_cubit.dart';
-import 'package:artisan_gift_manager/features/invoices/presentation/cubit/invoices_state.dart';
-import 'package:artisan_gift_manager/features/invoices/presentation/widgets/invoice_detail_panel.dart';
-import 'package:artisan_gift_manager/features/invoices/presentation/widgets/invoice_list.dart';
-import 'package:artisan_gift_manager/features/pos/data/pos_repository.dart';
+import 'package:small_mall/core/di/injection.dart';
+import 'package:small_mall/core/utils/theme.dart';
+import 'package:small_mall/core/widgets/app_screen_scaffold.dart';
+import 'package:small_mall/core/widgets/loading_indicator.dart';
+import 'package:small_mall/core/widgets/split_pane_layout.dart';
+import 'package:small_mall/features/invoices/presentation/cubit/invoices_cubit.dart';
+import 'package:small_mall/features/invoices/presentation/cubit/invoices_state.dart';
+import 'package:small_mall/features/invoices/presentation/widgets/invoice_detail_panel.dart';
+import 'package:small_mall/features/invoices/presentation/widgets/invoice_list.dart';
+import 'package:small_mall/features/pos/data/pos_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 

@@ -1,5 +1,5 @@
-import 'package:artisan_gift_manager/core/utils/theme.dart';
-import 'package:artisan_gift_manager/features/pos/data/pos_repository.dart';
+import 'package:small_mall/core/utils/theme.dart';
+import 'package:small_mall/features/pos/data/pos_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 

@@ -1,5 +1,5 @@
-import 'package:artisan_gift_manager/features/invoices/presentation/cubit/invoices_state.dart';
-import 'package:artisan_gift_manager/features/pos/data/pos_repository.dart';
+import 'package:small_mall/features/invoices/presentation/cubit/invoices_state.dart';
+import 'package:small_mall/features/pos/data/pos_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class InvoicesCubit extends Cubit<InvoicesState> {

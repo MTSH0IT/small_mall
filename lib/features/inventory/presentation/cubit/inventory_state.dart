@@ -1,5 +1,5 @@
-import 'package:artisan_gift_manager/core/database/app_database.dart';
-import 'package:artisan_gift_manager/features/inventory/data/inventory_repository.dart';
+import 'package:small_mall/core/database/app_database.dart';
+import 'package:small_mall/features/inventory/data/inventory_repository.dart';
 
 abstract class InventoryState {}
 

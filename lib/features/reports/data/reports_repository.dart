@@ -1,4 +1,4 @@
-import 'package:artisan_gift_manager/core/database/app_database.dart';
+import 'package:small_mall/core/database/app_database.dart';
 import 'package:drift/drift.dart';
 
 class ProfitReportData {

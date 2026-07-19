@@ -1,6 +1,6 @@
-import 'package:artisan_gift_manager/core/utils/theme.dart';
-import 'package:artisan_gift_manager/core/widgets/price_tag_chip.dart';
-import 'package:artisan_gift_manager/features/customers_debts/data/customers_debts_repository.dart';
+import 'package:small_mall/core/utils/theme.dart';
+import 'package:small_mall/core/widgets/price_tag_chip.dart';
+import 'package:small_mall/features/customers_debts/data/customers_debts_repository.dart';
 import 'package:flutter/material.dart';
 
 class CustomersList extends StatelessWidget {

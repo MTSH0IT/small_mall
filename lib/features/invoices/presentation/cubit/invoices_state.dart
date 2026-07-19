@@ -1,4 +1,4 @@
-import 'package:artisan_gift_manager/features/pos/data/pos_repository.dart';
+import 'package:small_mall/features/pos/data/pos_repository.dart';
 
 abstract class InvoicesState {}
 

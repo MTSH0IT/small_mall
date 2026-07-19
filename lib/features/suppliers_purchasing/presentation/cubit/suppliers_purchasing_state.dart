@@ -1,4 +1,4 @@
-import 'package:artisan_gift_manager/features/suppliers_purchasing/data/suppliers_purchasing_repository.dart';
+import 'package:small_mall/features/suppliers_purchasing/data/suppliers_purchasing_repository.dart';
 
 abstract class SuppliersPurchasingState {}
 

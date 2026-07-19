@@ -1,5 +1,5 @@
-import 'package:artisan_gift_manager/features/suppliers_purchasing/data/suppliers_purchasing_repository.dart';
-import 'package:artisan_gift_manager/features/suppliers_purchasing/presentation/cubit/suppliers_purchasing_state.dart';
+import 'package:small_mall/features/suppliers_purchasing/data/suppliers_purchasing_repository.dart';
+import 'package:small_mall/features/suppliers_purchasing/presentation/cubit/suppliers_purchasing_state.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class SuppliersPurchasingCubit extends Cubit<SuppliersPurchasingState> {

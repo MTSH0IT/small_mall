@@ -1,5 +1,5 @@
-import 'package:artisan_gift_manager/core/utils/theme.dart';
-import 'package:artisan_gift_manager/features/login/presentation/widgets/pin_pad.dart';
+import 'package:small_mall/core/utils/theme.dart';
+import 'package:small_mall/features/login/presentation/widgets/pin_pad.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -151,7 +151,7 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 24),
               // Header
               Text(
-                'مدير الهدايا',
+                'Small Mall',
                 style: theme.textTheme.displayMedium?.copyWith(
                   color: AppColors.primary,
                   fontFamily: 'ElMessiri',

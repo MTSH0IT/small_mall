@@ -1,4 +1,4 @@
-import 'package:artisan_gift_manager/features/customers_debts/data/customers_debts_repository.dart';
+import 'package:small_mall/features/customers_debts/data/customers_debts_repository.dart';
 
 abstract class CustomersDebtsState {}
 

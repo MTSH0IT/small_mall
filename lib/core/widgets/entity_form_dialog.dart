@@ -1,6 +1,6 @@
-import 'package:artisan_gift_manager/core/utils/theme.dart';
-import 'package:artisan_gift_manager/core/widgets/app_text_field.dart';
-import 'package:artisan_gift_manager/core/widgets/primary_button.dart';
+import 'package:small_mall/core/utils/theme.dart';
+import 'package:small_mall/core/widgets/app_text_field.dart';
+import 'package:small_mall/core/widgets/primary_button.dart';
 import 'package:flutter/material.dart';
 
 class EntityFormDialog extends StatefulWidget {

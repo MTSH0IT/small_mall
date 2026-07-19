@@ -1,14 +1,14 @@
-import 'package:artisan_gift_manager/core/di/injection.dart';
-import 'package:artisan_gift_manager/core/utils/theme.dart';
-import 'package:artisan_gift_manager/core/widgets/app_screen_scaffold.dart';
-import 'package:artisan_gift_manager/core/widgets/card_container.dart';
-import 'package:artisan_gift_manager/core/widgets/loading_indicator.dart';
-import 'package:artisan_gift_manager/core/widgets/stat_card.dart';
-import 'package:artisan_gift_manager/features/reports/data/reports_repository.dart';
-import 'package:artisan_gift_manager/features/reports/presentation/cubit/reports_cubit.dart';
-import 'package:artisan_gift_manager/features/reports/presentation/cubit/reports_state.dart';
-import 'package:artisan_gift_manager/features/reports/presentation/widgets/period_filter_row.dart';
-import 'package:artisan_gift_manager/features/reports/presentation/widgets/sales_purchases_comparison_chart.dart';
+import 'package:small_mall/core/di/injection.dart';
+import 'package:small_mall/core/utils/theme.dart';
+import 'package:small_mall/core/widgets/app_screen_scaffold.dart';
+import 'package:small_mall/core/widgets/card_container.dart';
+import 'package:small_mall/core/widgets/loading_indicator.dart';
+import 'package:small_mall/core/widgets/stat_card.dart';
+import 'package:small_mall/features/reports/data/reports_repository.dart';
+import 'package:small_mall/features/reports/presentation/cubit/reports_cubit.dart';
+import 'package:small_mall/features/reports/presentation/cubit/reports_state.dart';
+import 'package:small_mall/features/reports/presentation/widgets/period_filter_row.dart';
+import 'package:small_mall/features/reports/presentation/widgets/sales_purchases_comparison_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 

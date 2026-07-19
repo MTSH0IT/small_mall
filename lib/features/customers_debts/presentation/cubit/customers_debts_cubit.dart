@@ -1,5 +1,5 @@
-import 'package:artisan_gift_manager/features/customers_debts/data/customers_debts_repository.dart';
-import 'package:artisan_gift_manager/features/customers_debts/presentation/cubit/customers_debts_state.dart';
+import 'package:small_mall/features/customers_debts/data/customers_debts_repository.dart';
+import 'package:small_mall/features/customers_debts/presentation/cubit/customers_debts_state.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class CustomersDebtsCubit extends Cubit<CustomersDebtsState> {

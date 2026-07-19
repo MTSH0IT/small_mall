@@ -1,4 +1,4 @@
-import 'package:artisan_gift_manager/features/reports/data/reports_repository.dart';
+import 'package:small_mall/features/reports/data/reports_repository.dart';
 
 abstract class ReportsState {}
 

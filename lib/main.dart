@@ -1,7 +1,7 @@
-import 'package:artisan_gift_manager/core/bloc/app_bloc_observer.dart';
-import 'package:artisan_gift_manager/core/di/injection.dart';
-import 'package:artisan_gift_manager/core/utils/router.dart';
-import 'package:artisan_gift_manager/core/utils/theme.dart';
+import 'package:small_mall/core/bloc/app_bloc_observer.dart';
+import 'package:small_mall/core/di/injection.dart';
+import 'package:small_mall/core/utils/router.dart';
+import 'package:small_mall/core/utils/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -22,7 +22,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title: 'مدير الهدايا',
+      title: 'Small Mall',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       routerConfig: appRouter,

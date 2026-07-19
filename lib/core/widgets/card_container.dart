@@ -1,4 +1,4 @@
-import 'package:artisan_gift_manager/core/utils/theme.dart';
+import 'package:small_mall/core/utils/theme.dart';
 import 'package:flutter/material.dart';
 
 class CardContainer extends StatelessWidget {

@@ -1,10 +1,10 @@
-import 'package:artisan_gift_manager/core/database/app_database.dart';
-import 'package:artisan_gift_manager/core/sync/sync_service.dart';
-import 'package:artisan_gift_manager/features/customers_debts/data/customers_debts_repository.dart';
-import 'package:artisan_gift_manager/features/inventory/data/inventory_repository.dart';
-import 'package:artisan_gift_manager/features/pos/data/pos_repository.dart';
-import 'package:artisan_gift_manager/features/reports/data/reports_repository.dart';
-import 'package:artisan_gift_manager/features/suppliers_purchasing/data/suppliers_purchasing_repository.dart';
+import 'package:small_mall/core/database/app_database.dart';
+import 'package:small_mall/core/sync/sync_service.dart';
+import 'package:small_mall/features/customers_debts/data/customers_debts_repository.dart';
+import 'package:small_mall/features/inventory/data/inventory_repository.dart';
+import 'package:small_mall/features/pos/data/pos_repository.dart';
+import 'package:small_mall/features/reports/data/reports_repository.dart';
+import 'package:small_mall/features/suppliers_purchasing/data/suppliers_purchasing_repository.dart';
 import 'package:get_it/get_it.dart';
 
 final getIt = GetIt.instance;
