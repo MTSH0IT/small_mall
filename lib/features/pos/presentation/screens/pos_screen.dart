@@ -102,13 +102,7 @@ class _POSScreenState extends State<POSScreen> {
           return AppScreenScaffold(
             title: 'نقطة البيع',
             onRefresh: () => cubit.loadPOSData(),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.replay, color: AppColors.accent),
-                tooltip: 'إرجاع منتجات',
-                onPressed: () => showDialog(context: context, builder: (_) => BlocProvider.value(value: cubit, child: const ReturnDialog())),
-              ),
-            ],
+            actions: [],
             body: SplitPaneLayout(
               leftFlex: 3,
               rightFlex: 2,
@@ -216,10 +210,19 @@ class _POSScreenState extends State<POSScreen> {
                               color: AppColors.primary,
                             ),
                           ),
-                          TextButton.icon(
-                            onPressed: cubit.clearCart,
-                            icon: const Icon(Icons.delete_sweep, color: AppColors.danger),
-                            label: const Text('تفريغ السلة', style: TextStyle(color: AppColors.danger)),
+                          Row(
+                            children: [
+                              TextButton.icon(
+                                onPressed: () => showDialog(context: context, builder: (_) => BlocProvider.value(value: cubit, child: const ReturnDialog())),
+                                icon: const Icon(Icons.replay, color: AppColors.accent),
+                                label: const Text('إرجاع', style: TextStyle(color: AppColors.accent)),
+                              ),
+                              TextButton.icon(
+                                onPressed: cubit.clearCart,
+                                icon: const Icon(Icons.delete_sweep, color: AppColors.danger),
+                                label: const Text('تفريغ السلة', style: TextStyle(color: AppColors.danger)),
+                              ),
+                            ],
                           ),
                         ],
                       ),

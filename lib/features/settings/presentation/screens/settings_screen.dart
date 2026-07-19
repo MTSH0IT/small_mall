@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -52,6 +53,114 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void dispose() {
     _syncService.pendingCount.removeListener(_onPendingCountChanged);
     super.dispose();
+  }
+
+  void _showChangePinDialog(BuildContext context) {
+    final oldController = TextEditingController();
+    final newController = TextEditingController();
+    final confirmController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surfaceElevated,
+        title: const Text('تغيير رمز PIN', textAlign: TextAlign.center),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: oldController,
+              obscureText: true,
+              keyboardType: TextInputType.number,
+              textAlign: TextAlign.center,
+              maxLength: 4,
+              decoration: const InputDecoration(
+                labelText: 'الرمز الحالي',
+                counterText: '',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: newController,
+              obscureText: true,
+              keyboardType: TextInputType.number,
+              textAlign: TextAlign.center,
+              maxLength: 4,
+              decoration: const InputDecoration(
+                labelText: 'الرمز الجديد',
+                counterText: '',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: confirmController,
+              obscureText: true,
+              keyboardType: TextInputType.number,
+              textAlign: TextAlign.center,
+              maxLength: 4,
+              decoration: const InputDecoration(
+                labelText: 'تأكيد الرمز الجديد',
+                counterText: '',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('إلغاء'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final oldPin = oldController.text;
+              final newPin = newController.text;
+              final confirmPin = confirmController.text;
+
+              if (oldPin.length < 4 || newPin.length < 4) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('يجب أن يتكون الرمز من 4 أرقام')),
+                );
+                return;
+              }
+
+              final prefs = await SharedPreferences.getInstance();
+              if (!mounted) return;
+              final savedPin = prefs.getString('user_pin') ?? '';
+
+              if (!ctx.mounted) return;
+              if (oldPin != savedPin) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('الرمز الحالي غير صحيح')),
+                );
+                return;
+              }
+
+              if (newPin != confirmPin) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('الرمزان الجديدان غير متطابقين')),
+                );
+                return;
+              }
+
+              await prefs.setString('user_pin', newPin);
+              if (ctx.mounted) {
+                Navigator.of(ctx).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('تم تغيير رمز PIN بنجاح'),
+                    backgroundColor: AppColors.success,
+                  ),
+                );
+              }
+            },
+            child: const Text('حفظ'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -140,6 +249,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           },
                         ),
                 ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            // Change PIN
+            SettingsSection(
+              title: 'تغيير رمز PIN',
+              child: PrimaryButton(
+                label: 'تغيير رمز PIN',
+                icon: Icons.lock_reset,
+                onPressed: () => _showChangePinDialog(context),
               ),
             ),
             const SizedBox(height: 24),
