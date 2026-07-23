@@ -18,44 +18,40 @@ class _MainLayoutState extends State<MainLayout> {
   // Determine current active index based on route path
   int _getSelectedIndex(BuildContext context) {
     final String location = GoRouterState.of(context).uri.toString();
-    if (location.startsWith('/pos')) return 1;
-    if (location.startsWith('/products')) return 2;
-    if (location.startsWith('/inventory')) return 3;
-    if (location.startsWith('/customers')) return 4;
-    if (location.startsWith('/suppliers')) return 5;
-    if (location.startsWith('/reports')) return 6;
-    if (location.startsWith('/invoices')) return 7;
-    if (location.startsWith('/settings')) return 8;
-    return 0; // default to dashboard
+    if (location.startsWith('/products')) return 1;
+    if (location.startsWith('/inventory')) return 2;
+    if (location.startsWith('/customers')) return 3;
+    if (location.startsWith('/suppliers')) return 4;
+    if (location.startsWith('/reports')) return 5;
+    if (location.startsWith('/invoices')) return 6;
+    if (location.startsWith('/settings')) return 7;
+    return 0; // default to pos
   }
 
   void _onItemTapped(int index, BuildContext context) {
     switch (index) {
       case 0:
-        context.go('/dashboard');
-        break;
-      case 1:
         context.go('/pos');
         break;
-      case 2:
+      case 1:
         context.go('/products');
         break;
-      case 3:
+      case 2:
         context.go('/inventory');
         break;
-      case 4:
+      case 3:
         context.go('/customers');
         break;
-      case 5:
+      case 4:
         context.go('/suppliers');
         break;
-      case 6:
+      case 5:
         context.go('/reports');
         break;
-      case 7:
+      case 6:
         context.go('/invoices');
         break;
-      case 8:
+      case 7:
         context.go('/settings');
         break;
     }
@@ -67,11 +63,6 @@ class _MainLayoutState extends State<MainLayout> {
     final theme = Theme.of(context);
 
     final navItems = [
-      _NavItem(
-        icon: Icons.dashboard_outlined,
-        activeIcon: Icons.dashboard,
-        label: 'الرئيسية',
-      ),
       _NavItem(
         icon: Icons.point_of_sale_outlined,
         activeIcon: Icons.point_of_sale,

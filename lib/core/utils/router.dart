@@ -1,6 +1,5 @@
 import 'package:small_mall/core/widgets/main_layout.dart';
 import 'package:small_mall/features/customers_debts/presentation/screens/customers_screen.dart';
-import 'package:small_mall/features/dashboard/presentation/screens/dashboard_screen.dart';
 import 'package:small_mall/features/inventory/presentation/screens/inventory_screen.dart';
 import 'package:small_mall/features/inventory/presentation/screens/products_screen.dart';
 import 'package:small_mall/features/invoices/presentation/screens/invoices_screen.dart';
@@ -25,10 +24,6 @@ final GoRouter appRouter = GoRouter(
         return MainLayout(child: child);
       },
       routes: [
-        GoRoute(
-          path: '/dashboard',
-          builder: (context, state) => const DashboardScreen(),
-        ),
         GoRoute(
           path: '/pos',
           builder: (context, state) => const POSScreen(),

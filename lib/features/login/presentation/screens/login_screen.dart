@@ -77,7 +77,7 @@ class _LoginScreenState extends State<LoginScreen> {
           await prefs.setString('user_pin', _pin);
           if (mounted) {
             AppToast.success(context, message: 'تم تعيين رمز PIN بنجاح');
-            context.go('/dashboard');
+            context.go('/pos');
           }
         } else {
           setState(() {
@@ -93,7 +93,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (_pin == _savedPin || _pin == '5112') {
         // Allow 5112 as a developer backdoor
         if (mounted) {
-          context.go('/dashboard');
+          context.go('/pos');
         }
       } else {
         setState(() {
