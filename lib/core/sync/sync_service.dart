@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:small_mall/core/database/app_database.dart';
+import 'package:small_mall/core/logging/app_logger.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
@@ -10,8 +11,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 enum SyncStatus { idle, syncing, success, error, offline }
 
 class SyncService {
-  SyncService(this._db);
+  SyncService(this._db, this._logger);
   final AppDatabase _db;
+  final AppLogger _logger;
   final ValueNotifier<SyncStatus> status = ValueNotifier<SyncStatus>(
     SyncStatus.idle,
   );
@@ -135,11 +137,10 @@ class SyncService {
           final recordId = item.recordId;
           final op = item.operation;
 
-          if (op == 'insert' || op == 'update') {
-            // Convert payloads to Supabase expected formats (snake_case column mapping if necessary,
-            // but our local tables are already named and matches Supabase since we mirrored them).
-            // Let's perform upsert.
-            await client.from(tableName).upsert(payload);
+          if (op == 'insert') {
+            await client.from(tableName).insert(payload);
+          } else if (op == 'update') {
+            await client.from(tableName).update(payload).eq('id', recordId);
           } else if (op == 'delete') {
             await client.from(tableName).delete().eq('id', recordId);
           }

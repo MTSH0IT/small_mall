@@ -51,6 +51,7 @@ dependencies:
   collection: ^1.19.1
   shared_preferences: ^2.5.5
   top_snackbar_flutter: ^3.3.0
+  logger: ^2.5.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

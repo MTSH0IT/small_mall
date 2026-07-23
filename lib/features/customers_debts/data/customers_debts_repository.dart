@@ -1,4 +1,5 @@
 import 'package:small_mall/core/database/app_database.dart';
+import 'package:small_mall/core/logging/app_logger.dart';
 import 'package:small_mall/core/sync/sync_service.dart';
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
@@ -29,9 +30,10 @@ class DebtWithPayments {
 
 class CustomersDebtsRepository {
 
-  CustomersDebtsRepository(this._db, this._sync);
+  CustomersDebtsRepository(this._db, this._sync, this._logger);
   final AppDatabase _db;
   final SyncService _sync;
+  final AppLogger _logger;
   final _uuid = const Uuid();
 
   // --- Customers ---

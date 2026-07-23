@@ -1,4 +1,5 @@
 import 'package:small_mall/core/database/app_database.dart';
+import 'package:small_mall/core/logging/app_logger.dart';
 import 'package:drift/drift.dart';
 
 class ProfitReportData {
@@ -49,8 +50,9 @@ class PurchasesSalesSummary {
 
 class ReportsRepository {
 
-  ReportsRepository(this._db);
+  ReportsRepository(this._db, this._logger);
   final AppDatabase _db;
+  final AppLogger _logger;
 
   // --- Profit Report ---
 
