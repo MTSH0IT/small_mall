@@ -1,3 +1,4 @@
+import 'package:small_mall/core/widgets/app_toast.dart';
 import 'package:small_mall/core/di/injection.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/core/widgets/app_screen_scaffold.dart';
@@ -30,9 +31,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
       child: BlocConsumer<ReportsCubit, ReportsState>(
         listener: (context, state) {
           if (state is ReportsError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message), backgroundColor: AppColors.danger),
-            );
+            AppToast.error(context, message: state.message);
           }
         },
         builder: (context, state) {

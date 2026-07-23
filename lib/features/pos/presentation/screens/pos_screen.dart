@@ -1,3 +1,4 @@
+import 'package:small_mall/core/widgets/app_toast.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/di/injection.dart';
 import 'package:small_mall/core/utils/theme.dart';
@@ -44,13 +45,9 @@ class _POSScreenState extends State<POSScreen> {
       child: BlocConsumer<POSCubit, POSState>(
         listener: (context, state) {
           if (state is POSCheckoutSuccess) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('تمت عملية البيع بنجاح'), backgroundColor: AppColors.success),
-            );
+            AppToast.success(context, message: 'تمت عملية البيع بنجاح');
           } else if (state is POSError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message), backgroundColor: AppColors.danger),
-            );
+            AppToast.error(context, message: state.message);
           }
         },
         builder: (context, state) {

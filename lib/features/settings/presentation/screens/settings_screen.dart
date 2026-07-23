@@ -1,3 +1,4 @@
+import 'package:small_mall/core/widgets/app_toast.dart';
 import 'package:small_mall/core/di/injection.dart';
 import 'package:small_mall/core/sync/sync_service.dart';
 import 'package:small_mall/core/utils/theme.dart';
@@ -120,9 +121,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               final confirmPin = confirmController.text;
 
               if (oldPin.length < 4 || newPin.length < 4) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('يجب أن يتكون الرمز من 4 أرقام')),
-                );
+                AppToast.warning(context, message: 'يجب أن يتكون الرمز من 4 أرقام');
                 return;
               }
 
@@ -132,28 +131,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
               if (!ctx.mounted) return;
               if (oldPin != savedPin) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('الرمز الحالي غير صحيح')),
-                );
+                AppToast.error(context, message: 'الرمز الحالي غير صحيح');
                 return;
               }
 
               if (newPin != confirmPin) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('الرمزان الجديدان غير متطابقين')),
-                );
+                AppToast.warning(context, message: 'الرمزان الجديدان غير متطابقين');
                 return;
               }
 
               await prefs.setString('user_pin', newPin);
               if (ctx.mounted) {
                 Navigator.of(ctx).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('تم تغيير رمز PIN بنجاح'),
-                    backgroundColor: AppColors.success,
-                  ),
-                );
+                AppToast.success(context, message: 'تم تغيير رمز PIN بنجاح');
               }
             },
             child: const Text('حفظ'),
@@ -200,9 +190,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         onPressed: () async {
                           await _syncService.sync();
                           if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('تم إرسال طلب المزامنة للرفع')),
-                            );
+                            AppToast.success(context, message: 'تم إرسال طلب المزامنة للرفع');
                           }
                         },
                       ),
@@ -232,18 +220,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             setState(() => _isRestoring = true);
                             await _syncService.fetchAllFromServer();
                             if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    _syncService.status.value == SyncStatus.success
-                                        ? 'تم استعادة البيانات بنجاح'
-                                        : 'فشل استعادة البيانات',
-                                  ),
-                                  backgroundColor: _syncService.status.value == SyncStatus.success
-                                      ? AppColors.success
-                                      : AppColors.danger,
-                                ),
-                              );
+                              if (_syncService.status.value == SyncStatus.success) {
+                                AppToast.success(context, message: 'تم استعادة البيانات بنجاح');
+                              } else {
+                                AppToast.error(context, message: 'فشل استعادة البيانات');
+                              }
                             }
                             setState(() => _isRestoring = false);
                           },

@@ -1,3 +1,4 @@
+import 'package:small_mall/core/widgets/app_toast.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/di/injection.dart';
 import 'package:small_mall/core/utils/theme.dart';
@@ -34,9 +35,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
       child: BlocConsumer<CustomersDebtsCubit, CustomersDebtsState>(
         listener: (context, state) {
           if (state is CustomersDebtsError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message), backgroundColor: AppColors.danger),
-            );
+            AppToast.error(context, message: state.message);
           }
         },
         builder: (context, state) {

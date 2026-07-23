@@ -76,10 +76,7 @@ class AppTheme {
           fontWeight: FontWeight.w500,
           color: AppColors.textPrimary,
         ),
-        labelSmall: TextStyle(
-          fontSize: 12,
-          color: AppColors.textSecondary,
-        ),
+        labelSmall: TextStyle(fontSize: 12, color: AppColors.textSecondary),
       ),
     );
   }
@@ -89,10 +86,6 @@ class AppTheme {
     FontWeight fontWeight = FontWeight.w500,
     Color color = AppColors.textPrimary,
   }) {
-    return TextStyle(
-      fontSize: fontSize,
-      fontWeight: fontWeight,
-      color: color,
-    );
+    return TextStyle(fontSize: fontSize, fontWeight: fontWeight, color: color);
   }
 }

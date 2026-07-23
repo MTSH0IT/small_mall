@@ -1,3 +1,4 @@
+import 'package:small_mall/core/widgets/app_toast.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/features/login/presentation/widgets/pin_pad.dart';
 import 'package:flutter/material.dart';
@@ -55,9 +56,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _onConfirmPressed() async {
     if (_pin.length < 4) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('يجب أن يتكون الرمز من 4 أرقام')),
-      );
+      AppToast.warning(context, message: 'يجب أن يتكون الرمز من 4 أرقام');
       return;
     }
 
@@ -77,9 +76,7 @@ class _LoginScreenState extends State<LoginScreen> {
         if (_pin == _firstEnteredPin) {
           await prefs.setString('user_pin', _pin);
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('تم تعيين رمز PIN بنجاح')),
-            );
+            AppToast.success(context, message: 'تم تعيين رمز PIN بنجاح');
             context.go('/dashboard');
           }
         } else {

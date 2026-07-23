@@ -1,3 +1,4 @@
+import 'package:small_mall/core/widgets/app_toast.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/di/injection.dart';
 import 'package:small_mall/core/utils/theme.dart';
@@ -51,9 +52,7 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
       child: BlocConsumer<SuppliersPurchasingCubit, SuppliersPurchasingState>(
         listener: (context, state) {
           if (state is SuppliersPurchasingError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message), backgroundColor: AppColors.danger),
-            );
+            AppToast.error(context, message: state.message);
           } else if (state is SuppliersPurchasingLoaded) {
             _loadProducts();
           }
@@ -154,9 +153,7 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                 items: items,
               );
               if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('تم تسجيل فاتورة المشتريات وتحديث مخزون المنتجات بنجاح')),
-                );
+                AppToast.success(context, message: 'تم تسجيل فاتورة المشتريات وتحديث مخزون المنتجات بنجاح');
               }
             },
           ),
