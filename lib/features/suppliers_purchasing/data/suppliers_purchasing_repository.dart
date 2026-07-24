@@ -1,11 +1,11 @@
+import 'package:drift/drift.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/logging/app_logger.dart';
+import 'package:small_mall/core/logging/log_context.dart';
 import 'package:small_mall/core/sync/sync_service.dart';
-import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
 class SupplierWithPurchases {
-
   SupplierWithPurchases({
     required this.supplier,
     required this.totalPurchasesAmount,
@@ -17,7 +17,6 @@ class SupplierWithPurchases {
 }
 
 class SuppliersPurchasingRepository {
-
   SuppliersPurchasingRepository(this._db, this._sync, this._logger);
   final AppDatabase _db;
   final SyncService _sync;
@@ -27,12 +26,18 @@ class SuppliersPurchasingRepository {
   // --- Suppliers ---
 
   Future<List<SupplierWithPurchases>> getSuppliers() async {
+    _logger.debug('Fetching suppliers', context: LogContext.inventory);
     final suppliers = await _db.select(_db.suppliers).get();
     final purchaseInvoices = await _db.select(_db.purchaseInvoices).get();
 
     return suppliers.map((sup) {
-      final supplierInvoices = purchaseInvoices.where((p) => p.supplierId == sup.id).toList();
-      final totalAmount = supplierInvoices.fold<double>(0.0, (sum, p) => sum + p.totalAmount);
+      final supplierInvoices = purchaseInvoices
+          .where((p) => p.supplierId == sup.id)
+          .toList();
+      final totalAmount = supplierInvoices.fold<double>(
+        0.0,
+        (sum, p) => sum + p.totalAmount,
+      );
 
       return SupplierWithPurchases(
         supplier: sup,
@@ -47,13 +52,12 @@ class SuppliersPurchasingRepository {
     required String? phone,
     required String? notes,
   }) async {
-    final id = _uuid.v4();
-    final supplier = Supplier(
-      id: id,
-      name: name,
-      phone: phone,
-      notes: notes,
+    _logger.info(
+      'Adding supplier: $name, phone=$phone',
+      context: LogContext.inventory,
     );
+    final id = _uuid.v4();
+    final supplier = Supplier(id: id, name: name, phone: phone, notes: notes);
 
     await _db.into(_db.suppliers).insert(supplier);
 
@@ -73,13 +77,19 @@ class SuppliersPurchasingRepository {
     required String? phone,
     required String? notes,
   }) async {
+    _logger.info(
+      'Updating supplier: $id, name=$name',
+      context: LogContext.inventory,
+    );
     final companion = SuppliersCompanion(
       name: Value(name),
       phone: Value(phone),
       notes: Value(notes),
     );
 
-    await (_db.update(_db.suppliers)..where((t) => t.id.equals(id))).write(companion);
+    await (_db.update(
+      _db.suppliers,
+    )..where((t) => t.id.equals(id))).write(companion);
 
     await _sync.enqueue('suppliers', id, 'update', {
       'id': id,
@@ -94,8 +104,12 @@ class SuppliersPurchasingRepository {
   Future<void> recordPurchase({
     required String supplierId,
     required double totalAmount,
-    required List<Map<String, dynamic>> items, // productId, quantity, unitCost
+    required List<Map<String, dynamic>> items,
   }) async {
+    _logger.info(
+      'Recording purchase: supplier=$supplierId, amount=$totalAmount, items=${items.length}',
+      context: LogContext.inventory,
+    );
     final purchaseId = _uuid.v4();
     final now = DateTime.now();
 
@@ -161,10 +175,9 @@ class SuppliersPurchasingRepository {
       });
 
       // Update product's cost price
-      await (_db.update(_db.products)..where((t) => t.id.equals(prodId))).write(ProductsCompanion(
-        costPrice: Value(cost),
-        updatedAt: Value(now),
-      ));
+      await (_db.update(_db.products)..where((t) => t.id.equals(prodId))).write(
+        ProductsCompanion(costPrice: Value(cost), updatedAt: Value(now)),
+      );
 
       await _sync.enqueue('products', prodId, 'update', {
         'id': prodId,

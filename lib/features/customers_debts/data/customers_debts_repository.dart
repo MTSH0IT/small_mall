@@ -1,7 +1,8 @@
+import 'package:drift/drift.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/logging/app_logger.dart';
+import 'package:small_mall/core/logging/log_context.dart';
 import 'package:small_mall/core/sync/sync_service.dart';
-import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
 class CustomerWithDebts {
@@ -39,6 +40,7 @@ class CustomersDebtsRepository {
   // --- Customers ---
 
   Future<List<CustomerWithDebts>> getCustomers() async {
+    _logger.debug('Fetching customers', context: LogContext.debts);
     final customers = await _db.select(_db.customers).get();
     final debts = await _db.select(_db.debts).get();
 
@@ -60,6 +62,7 @@ class CustomersDebtsRepository {
     required String? phone,
     required String? notes,
   }) async {
+    _logger.info('Adding customer: $name, phone=$phone', context: LogContext.debts);
     final id = _uuid.v4();
     final now = DateTime.now();
 
@@ -90,6 +93,7 @@ class CustomersDebtsRepository {
     required String? phone,
     required String? notes,
   }) async {
+    _logger.info('Updating customer: $id, name=$name', context: LogContext.debts);
     final companion = CustomersCompanion(
       name: Value(name),
       phone: Value(phone),
@@ -109,6 +113,7 @@ class CustomersDebtsRepository {
   // --- Debts & Payments ---
 
   Future<List<DebtWithPayments>> getCustomerDebts(String customerId) async {
+    _logger.debug('Fetching debts for customer: $customerId', context: LogContext.debts);
     final debts = await (_db.select(_db.debts)..where((t) => t.customerId.equals(customerId))).get();
     final payments = await _db.select(_db.debtPayments).get();
     final invoices = await _db.select(_db.invoices).get();
@@ -131,12 +136,15 @@ class CustomersDebtsRepository {
     required String debtId,
     required double amountPaid,
   }) async {
+    _logger.info('Recording payment: debt=$debtId, amount=$amountPaid', context: LogContext.debts);
     final now = DateTime.now();
     final paymentId = _uuid.v4();
 
-    // Fetch existing debt
     final debtList = await (_db.select(_db.debts)..where((t) => t.id.equals(debtId))).get();
-    if (debtList.isEmpty) return;
+    if (debtList.isEmpty) {
+      _logger.warning('Payment cancelled - debt not found: $debtId', context: LogContext.debts);
+      return;
+    }
     final debt = debtList.first;
 
     final newRemaining = (debt.remainingAmount - amountPaid).clamp(0.0, double.infinity);

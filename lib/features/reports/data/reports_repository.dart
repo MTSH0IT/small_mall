@@ -1,6 +1,7 @@
+import 'package:drift/drift.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/logging/app_logger.dart';
-import 'package:drift/drift.dart';
+import 'package:small_mall/core/logging/log_context.dart';
 
 class ProfitReportData {
 
@@ -57,6 +58,7 @@ class ReportsRepository {
   // --- Profit Report ---
 
   Future<ProfitReportData> getProfitReport(DateTime start, DateTime end) async {
+    _logger.debug('Fetching profit report: $start - $end', context: LogContext.inventory);
     // Get all sale invoices in period
     final invoices = await (_db.select(_db.invoices)
           ..where((t) => t.createdAt.isBiggerOrEqualValue(start) & t.createdAt.isSmallerOrEqualValue(end)))
@@ -107,6 +109,7 @@ class ReportsRepository {
   // --- Best Selling Products ---
 
   Future<List<ProductSalesSummary>> getBestSellers(DateTime start, DateTime end, {int limit = 5}) async {
+    _logger.debug('Fetching best sellers: $start - $end, limit=$limit', context: LogContext.inventory);
     final invoices = await (_db.select(_db.invoices)
           ..where((t) => t.type.equals('sale') & t.createdAt.isBiggerOrEqualValue(start) & t.createdAt.isSmallerOrEqualValue(end)))
         .get();
@@ -163,6 +166,7 @@ class ReportsRepository {
   // --- Current Inventory Report ---
 
   Future<List<InventoryReportItem>> getInventoryReport() async {
+    _logger.debug('Fetching inventory report', context: LogContext.inventory);
     final products = await (_db.select(_db.products)..where((t) => t.isActive.equals(true))).get();
     final allMovements = await _db.select(_db.stockMovements).get();
 
@@ -182,6 +186,7 @@ class ReportsRepository {
   // --- Outstanding Debts ---
 
   Future<double> getTotalOutstandingDebts() async {
+    _logger.debug('Fetching total outstanding debts', context: LogContext.debts);
     final debts = await _db.select(_db.debts).get();
     return debts.fold<double>(0.0, (sum, d) => sum + d.remainingAmount);
   }
@@ -189,6 +194,7 @@ class ReportsRepository {
   // --- Purchases vs Sales ---
 
   Future<PurchasesSalesSummary> getPurchasesSalesSummary(DateTime start, DateTime end) async {
+    _logger.debug('Fetching purchases vs sales summary: $start - $end', context: LogContext.inventory);
     // Sales
     final sales = await (_db.select(_db.invoices)
           ..where((t) => t.createdAt.isBiggerOrEqualValue(start) & t.createdAt.isSmallerOrEqualValue(end)))

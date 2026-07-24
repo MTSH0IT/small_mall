@@ -1,7 +1,8 @@
+import 'package:drift/drift.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/logging/app_logger.dart';
+import 'package:small_mall/core/logging/log_context.dart';
 import 'package:small_mall/core/sync/sync_service.dart';
-import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
 class InvoiceItemWithProduct {
@@ -43,9 +44,11 @@ class POSRepository {
     required String? customerId,
     required double totalAmount,
     required double discount,
-    required String paymentType, // 'cash' or 'debt'
-    required List<Map<String, dynamic>> items, // productId, priceUsed, quantity, discount
+    required String paymentType,
+    required List<Map<String, dynamic>> items,
   }) async {
+    _logger.info('Creating sale: amount=$totalAmount, payment=$paymentType, items=${items.length}',
+        context: LogContext.pos);
     final invoiceId = _uuid.v4();
     final now = DateTime.now();
 
@@ -120,7 +123,8 @@ class POSRepository {
       });
     }
 
-    // Insert Debt if payment type is credit/debt
+    _logger.debug('Sale created: invoiceId=$invoiceId', context: LogContext.pos);
+
     if (paymentType == 'debt' && customerId != null) {
       final debtId = _uuid.v4();
       final debt = Debt(
@@ -149,14 +153,18 @@ class POSRepository {
   // Record return of products
   Future<void> createReturn({
     required String originalInvoiceId,
-    required List<Map<String, dynamic>> itemsToReturn, // productId, quantity, priceUsed
+    required List<Map<String, dynamic>> itemsToReturn,
   }) async {
+    _logger.info('Creating return for invoice $originalInvoiceId, items=${itemsToReturn.length}',
+        context: LogContext.pos);
     final now = DateTime.now();
     final returnInvoiceId = _uuid.v4();
 
-    // Fetch original invoice
     final originalInvoice = await (_db.select(_db.invoices)..where((t) => t.id.equals(originalInvoiceId))).getSingleOrNull();
-    if (originalInvoice == null) return;
+    if (originalInvoice == null) {
+      _logger.warning('Return cancelled - original invoice not found: $originalInvoiceId', context: LogContext.pos);
+      return;
+    }
 
     double totalReturnVal = 0.0;
     for (final item in itemsToReturn) {
@@ -260,6 +268,7 @@ class POSRepository {
   }
 
   Future<List<Invoice>> getRecentSales() async {
+    _logger.debug('Fetching recent sales', context: LogContext.pos);
     return (_db.select(_db.invoices)
           ..where((t) => t.type.equals('sale'))
           ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
@@ -267,10 +276,12 @@ class POSRepository {
   }
 
   Future<List<InvoiceItem>> getInvoiceItems(String invoiceId) async {
+    _logger.debug('Fetching items for invoice $invoiceId', context: LogContext.pos);
     return (_db.select(_db.invoiceItems)..where((t) => t.invoiceId.equals(invoiceId))).get();
   }
 
   Future<List<InvoiceWithDetails>> getAllInvoices() async {
+    _logger.debug('Fetching all invoices', context: LogContext.pos);
     final invoices = await (_db.select(_db.invoices)
           ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
         .get();
@@ -301,10 +312,12 @@ class POSRepository {
   }
 
   Future<InvoiceWithDetails?> getInvoiceById(String invoiceId) async {
+    _logger.debug('Fetching invoice by id: $invoiceId', context: LogContext.pos);
     final allInvoices = await getAllInvoices();
     try {
       return allInvoices.firstWhere((i) => i.invoice.id == invoiceId);
     } catch (_) {
+      _logger.warning('Invoice not found: $invoiceId', context: LogContext.pos);
       return null;
     }
   }

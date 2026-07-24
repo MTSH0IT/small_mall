@@ -1,7 +1,8 @@
+import 'package:drift/drift.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/logging/app_logger.dart';
+import 'package:small_mall/core/logging/log_context.dart';
 import 'package:small_mall/core/sync/sync_service.dart';
-import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
 class ProductWithDetails {
@@ -39,10 +40,12 @@ class InventoryRepository {
   // --- Categories ---
 
   Future<List<Category>> getCategories() async {
+    _logger.debug('Fetching categories', context: LogContext.inventory);
     return _db.select(_db.categories).get();
   }
 
   Future<Category> addCategory(String name) async {
+    _logger.info('Adding category: $name', context: LogContext.inventory);
     final id = _uuid.v4();
     final category = Category(id: id, name: name);
     await _db.into(_db.categories).insert(category);
@@ -59,6 +62,7 @@ class InventoryRepository {
   // --- Products ---
 
   Future<List<ProductWithDetails>> getProducts() async {
+    _logger.debug('Fetching products', context: LogContext.inventory);
     final products = await _db.select(_db.products).get();
     final categories = await getCategories();
     final allPrices = await _db.select(_db.productPrices).get();
@@ -89,9 +93,11 @@ class InventoryRepository {
     required String? categoryId,
     required double costPrice,
     required double minStockAlert,
-    required List<Map<String, dynamic>> prices, // price_label, price_value
+    required List<Map<String, dynamic>> prices,
     required double initialStock,
   }) async {
+    _logger.info('Adding product: $name, cost=$costPrice, stock=$initialStock',
+        context: LogContext.inventory);
     final productId = _uuid.v4();
     final now = DateTime.now();
 
@@ -179,6 +185,8 @@ class InventoryRepository {
     required double minStockAlert,
     required List<Map<String, dynamic>> prices,
   }) async {
+    _logger.info('Updating product: $id, name=$name, cost=$costPrice',
+        context: LogContext.inventory);
     final now = DateTime.now();
 
     final productUpdate = ProductsCompanion(
@@ -233,7 +241,7 @@ class InventoryRepository {
   }
 
   Future<void> deleteProduct(String id) async {
-    // Soft delete product (set isActive = false)
+    _logger.info('Soft-deleting product: $id', context: LogContext.inventory);
     final now = DateTime.now();
     await (_db.update(_db.products)..where((t) => t.id.equals(id)))
         .write(ProductsCompanion(isActive: const Value(false), updatedAt: Value(now)));
@@ -246,6 +254,8 @@ class InventoryRepository {
   }
 
   Future<void> adjustStock(String productId, double quantity, String reason) async {
+    _logger.info('Adjusting stock: product=$productId, qty=$quantity, reason=$reason',
+        context: LogContext.inventory);
     final id = _uuid.v4();
     final now = DateTime.now();
 
