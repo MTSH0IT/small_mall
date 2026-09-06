@@ -7,12 +7,12 @@ class EmptyStateView extends StatelessWidget {
     super.key,
     required this.icon,
     required this.title,
-    required this.description,
+    this.description,
     this.action,
   });
   final IconData icon;
   final String title;
-  final String description;
+  final String? description;
   final Widget? action;
 
   @override
@@ -39,14 +39,16 @@ class EmptyStateView extends StatelessWidget {
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 8),
-            Text(
-              description,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: AppColors.textSecondary,
+            if (description != null && description!.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                description!,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
-            ),
+            ],
             if (action != null) ...[
               const SizedBox(height: 24),
               action!,

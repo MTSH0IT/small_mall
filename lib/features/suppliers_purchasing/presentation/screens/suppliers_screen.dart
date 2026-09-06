@@ -6,6 +6,7 @@ import 'package:small_mall/core/di/injection.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/core/widgets/app_screen_scaffold.dart';
 import 'package:small_mall/core/widgets/app_toast.dart';
+import 'package:small_mall/core/widgets/empty_state_view.dart';
 import 'package:small_mall/core/widgets/entity_form_dialog.dart';
 import 'package:small_mall/core/widgets/loading_indicator.dart';
 import 'package:small_mall/core/widgets/search_bar_with_action.dart';
@@ -128,7 +129,13 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
 
   Widget _buildRecordPurchasePanel(BuildContext context, SuppliersPurchasingCubit cubit, SuppliersPurchasingState state) {
     if (_selectedSupplier == null) {
-      return Center(child: Text('suppliers.select_supplier_to_view'.tr()));
+      return Center(
+        child: EmptyStateView(
+          icon: Icons.local_shipping_outlined,
+          title: 'suppliers.purchase_invoices'.tr(),
+          description: 'suppliers.select_supplier_to_view'.tr(),
+        ),
+      );
     }
 
     final supplier = _selectedSupplier!;

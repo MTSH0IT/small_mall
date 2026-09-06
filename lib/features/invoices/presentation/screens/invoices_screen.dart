@@ -5,6 +5,7 @@ import 'package:small_mall/core/di/injection.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/core/widgets/app_screen_scaffold.dart';
 import 'package:small_mall/core/widgets/app_toast.dart';
+import 'package:small_mall/core/widgets/empty_state_view.dart';
 import 'package:small_mall/core/widgets/loading_indicator.dart';
 import 'package:small_mall/core/widgets/split_pane_layout.dart';
 import 'package:small_mall/features/invoices/presentation/cubit/invoices_cubit.dart';
@@ -175,7 +176,11 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
         return InvoiceDetailPanel(invoiceData: selected);
       }
       return Center(
-        child: Text('invoices.select_invoice_to_view'.tr()),
+        child: EmptyStateView(
+          icon: Icons.receipt_long_outlined,
+          title: 'invoices.details'.tr(),
+          description: 'invoices.select_invoice_to_view'.tr(),
+        ),
       );
     }
 

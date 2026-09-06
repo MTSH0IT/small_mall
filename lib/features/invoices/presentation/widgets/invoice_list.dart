@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:small_mall/core/utils/theme.dart';
+import 'package:small_mall/core/widgets/empty_state_view.dart';
 import 'package:small_mall/features/pos/data/pos_repository.dart';
 
 class InvoiceList extends StatelessWidget {
@@ -19,7 +20,15 @@ class InvoiceList extends StatelessWidget {
     final labelSmall = Theme.of(context).textTheme.labelSmall;
 
     if (invoices.isEmpty) {
-      return Center(child: Text('invoices.empty_invoices'.tr()));
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: EmptyStateView(
+            icon: Icons.receipt_long_outlined,
+            title: 'invoices.empty_invoices'.tr(),
+          ),
+        ),
+      );
     }
 
     return ListView.separated(

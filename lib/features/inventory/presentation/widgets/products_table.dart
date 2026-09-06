@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/utils/price_helper.dart';
 import 'package:small_mall/core/utils/theme.dart';
+import 'package:small_mall/core/widgets/empty_state_view.dart';
 import 'package:small_mall/core/widgets/price_tag_chip.dart';
 import 'package:small_mall/features/inventory/data/inventory_repository.dart';
 
@@ -27,7 +28,13 @@ class ProductsTable extends StatelessWidget {
     }).toList();
 
     if (filtered.isEmpty) {
-      return Center(child: Text('inventory.empty_products'.tr()));
+      return Center(
+        child: EmptyStateView(
+          icon: Icons.inventory_2_outlined,
+          title: 'inventory.products_title'.tr(),
+          description: 'inventory.empty_products'.tr(),
+        ),
+      );
     }
 
     return Container(

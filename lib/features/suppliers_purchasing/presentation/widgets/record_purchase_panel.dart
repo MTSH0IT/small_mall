@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/core/widgets/app_text_field.dart';
+import 'package:small_mall/core/widgets/empty_state_view.dart';
 import 'package:small_mall/core/widgets/primary_button.dart';
 import 'package:small_mall/features/inventory/data/inventory_repository.dart';
 
@@ -100,7 +101,16 @@ class _RecordPurchasePanelState extends State<RecordPurchasePanel> {
           // Purchase Items Table/List
           Expanded(
             child: _purchaseItems.isEmpty
-                ? Center(child: Text('suppliers.no_products_added'.tr()))
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: EmptyStateView(
+                        icon: Icons.add_shopping_cart_outlined,
+                        title: 'suppliers.no_products_added'.tr(),
+                        description: 'suppliers.select_product_to_add'.tr(),
+                      ),
+                    ),
+                  )
                 : Container(
                     decoration: BoxDecoration(
                       color: AppColors.surfaceElevated,

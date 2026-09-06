@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:small_mall/core/utils/theme.dart';
+import 'package:small_mall/core/widgets/empty_state_view.dart';
 import 'package:small_mall/core/widgets/loading_indicator.dart';
 import 'package:small_mall/core/widgets/price_tag_chip.dart';
 import 'package:small_mall/core/widgets/primary_button.dart';
@@ -104,7 +105,14 @@ class CustomerDetailsPanel extends StatelessWidget {
           if (debts == null)
             LoadingIndicator(message: 'common.loading'.tr())
           else if (debts!.isEmpty)
-            Center(child: Padding(padding: const EdgeInsets.all(24), child: Text('customers.empty_customers'.tr())))
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: EmptyStateView(
+                icon: Icons.check_circle_outline,
+                title: 'customers.no_debts'.tr(),
+                description: 'customers.debt_free'.tr(),
+              ),
+            )
           else
             ListView.separated(
               shrinkWrap: true,

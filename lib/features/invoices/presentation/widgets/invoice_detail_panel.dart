@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:small_mall/core/utils/theme.dart';
+import 'package:small_mall/core/widgets/empty_state_view.dart';
 import 'package:small_mall/features/pos/data/pos_repository.dart';
 
 class InvoiceDetailPanel extends StatelessWidget {
@@ -61,7 +62,13 @@ class InvoiceDetailPanel extends StatelessWidget {
             Text('inventory.products_title'.tr(), style: theme.textTheme.titleLarge),
             const SizedBox(height: 12),
             if (invoiceData.items.isEmpty)
-              Center(child: Text('invoices.empty_invoices'.tr()))
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24.0),
+                child: EmptyStateView(
+                  icon: Icons.inventory_2_outlined,
+                  title: 'invoices.empty_invoices'.tr(),
+                ),
+              )
             else
               ...invoiceData.items.map((item) => _buildItemCard(theme, item)),
             const Divider(height: 24),

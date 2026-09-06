@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/utils/theme.dart';
+import 'package:small_mall/core/widgets/empty_state_view.dart';
 import 'package:small_mall/core/widgets/price_tag_chip.dart';
 import 'package:small_mall/features/suppliers_purchasing/data/suppliers_purchasing_repository.dart';
 
@@ -26,7 +27,15 @@ class SuppliersList extends StatelessWidget {
     }).toList();
 
     if (filtered.isEmpty) {
-      return Center(child: Text('suppliers.no_matching_suppliers'.tr()));
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: EmptyStateView(
+            icon: Icons.local_shipping_outlined,
+            title: 'suppliers.no_matching_suppliers'.tr(),
+          ),
+        ),
+      );
     }
 
     return Container(

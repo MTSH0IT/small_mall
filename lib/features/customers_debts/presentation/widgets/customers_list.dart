@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:small_mall/core/utils/theme.dart';
+import 'package:small_mall/core/widgets/empty_state_view.dart';
 import 'package:small_mall/core/widgets/price_tag_chip.dart';
 import 'package:small_mall/features/customers_debts/data/customers_debts_repository.dart';
 
@@ -27,7 +28,15 @@ class CustomersList extends StatelessWidget {
     }).toList();
 
     if (filtered.isEmpty) {
-      return Center(child: Text('customers.empty_customers'.tr()));
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: EmptyStateView(
+            icon: Icons.people_outline,
+            title: 'customers.empty_customers'.tr(),
+          ),
+        ),
+      );
     }
 
     return Container(

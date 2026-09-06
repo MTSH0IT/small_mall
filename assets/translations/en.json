@@ -232,7 +232,9 @@
     "record_payment_title": "Record Debt Payment",
     "confirm_payment": "Save Payment",
     "partial": "Partial Payment",
-    "payment_exceeds_debt": "Amount exceeds remaining debt!"
+    "payment_exceeds_debt": "Amount exceeds remaining debt!",
+    "no_debts": "No debt transactions found for this customer",
+    "debt_free": "Customer has a clear balance with no outstanding debts"
   },
   "suppliers": {
     "title": "Suppliers & Purchasing",
@@ -276,6 +278,7 @@
     "sales": "Sales",
     "purchases": "Purchases",
     "top_selling": "Top Selling Products",
+    "no_sales_data": "No sales recorded in the selected period",
     "low_stock_report": "Low Stock Report",
     "comparison_chart_title": "Financial Turnover (Sales vs Purchases):",
     "total_sales_plus": "Total Sales (+)",

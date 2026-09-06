@@ -7,6 +7,7 @@ import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/core/widgets/app_screen_scaffold.dart';
 import 'package:small_mall/core/widgets/app_text_field.dart';
 import 'package:small_mall/core/widgets/app_toast.dart';
+import 'package:small_mall/core/widgets/empty_state_view.dart';
 import 'package:small_mall/core/widgets/entity_form_dialog.dart';
 import 'package:small_mall/core/widgets/loading_indicator.dart';
 import 'package:small_mall/core/widgets/primary_button.dart';
@@ -105,16 +106,17 @@ class _CustomersScreenState extends State<CustomersScreen> {
   Widget _buildCustomerDetails(BuildContext context, CustomersDebtsCubit cubit, CustomersDebtsState state) {
     if (state is CustomersDebtsLoaded) {
       final custId = state.selectedCustomerId;
-      if (custId == null) {
-        return Center(
-          child: Text('customers.select_customer_to_view'.tr()),
-        );
-      }
+      final customerData = custId != null
+          ? state.customers.where((c) => c.customer.id == custId).firstOrNull
+          : null;
 
-      final customerData = state.customers.where((c) => c.customer.id == custId).firstOrNull;
       if (customerData == null) {
         return Center(
-          child: Text('customers.select_customer_to_view'.tr()),
+          child: EmptyStateView(
+            icon: Icons.person_search_outlined,
+            title: 'customers.debt_history'.tr(),
+            description: 'customers.select_customer_to_view'.tr(),
+          ),
         );
       }
       final debts = state.selectedCustomerDebts;

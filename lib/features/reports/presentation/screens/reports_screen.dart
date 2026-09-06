@@ -6,6 +6,7 @@ import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/core/widgets/app_screen_scaffold.dart';
 import 'package:small_mall/core/widgets/app_toast.dart';
 import 'package:small_mall/core/widgets/card_container.dart';
+import 'package:small_mall/core/widgets/empty_state_view.dart';
 import 'package:small_mall/core/widgets/loading_indicator.dart';
 import 'package:small_mall/core/widgets/stat_card.dart';
 import 'package:small_mall/features/reports/data/reports_repository.dart';
@@ -168,9 +169,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     title: 'reports.top_selling'.tr(),
                     child: state.bestSellers.isEmpty
                         ? Padding(
-                            padding: const EdgeInsets.all(32.0),
-                            child: Center(
-                              child: Text('invoices.empty_invoices'.tr()),
+                            padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 16.0),
+                            child: EmptyStateView(
+                              icon: Icons.leaderboard_outlined,
+                              title: 'reports.top_selling'.tr(),
+                              description: 'reports.no_sales_data'.tr(),
                             ),
                           )
                         : ListView.separated(

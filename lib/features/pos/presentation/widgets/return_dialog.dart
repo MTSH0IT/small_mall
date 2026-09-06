@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/core/widgets/app_toast.dart';
+import 'package:small_mall/core/widgets/empty_state_view.dart';
 import 'package:small_mall/core/widgets/primary_button.dart';
 import 'package:small_mall/features/pos/presentation/cubit/pos_cubit.dart';
 import 'package:small_mall/features/pos/presentation/cubit/pos_state.dart';
@@ -181,7 +182,15 @@ class _ReturnDialogState extends State<ReturnDialog> {
 
   Widget _buildInvoiceList(ThemeData theme) {
     if (_invoices == null || _invoices!.isEmpty) {
-      return Center(child: Text('pos.no_invoices'.tr()));
+      return SizedBox(
+        height: 300,
+        child: Center(
+          child: EmptyStateView(
+            icon: Icons.receipt_long_outlined,
+            title: 'pos.no_invoices'.tr(),
+          ),
+        ),
+      );
     }
 
     return SizedBox(
@@ -210,7 +219,15 @@ class _ReturnDialogState extends State<ReturnDialog> {
 
   Widget _buildReturnForm(ThemeData theme) {
     if (_selectedInvoiceItems == null || _selectedInvoiceItems!.isEmpty) {
-      return Center(child: Text('invoices.empty_invoices'.tr()));
+      return SizedBox(
+        height: 300,
+        child: Center(
+          child: EmptyStateView(
+            icon: Icons.inventory_2_outlined,
+            title: 'invoices.empty_invoices'.tr(),
+          ),
+        ),
+      );
     }
 
     return SizedBox(
