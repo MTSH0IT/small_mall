@@ -1,16 +1,18 @@
+import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/material.dart';
 import 'package:small_mall/core/database/app_database.dart';
+import 'package:small_mall/core/utils/price_helper.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/core/widgets/price_tag_chip.dart';
 import 'package:small_mall/features/inventory/data/inventory_repository.dart';
-import 'package:flutter/material.dart';
 
 class POSProductCard extends StatelessWidget {
-
   const POSProductCard({
     super.key,
     required this.item,
     required this.onPriceSelected,
   });
+
   final ProductWithDetails item;
   final Function(ProductPrice) onPriceSelected;
 
@@ -47,11 +49,13 @@ class POSProductCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  item.category?.name ?? 'بدون فئة',
+                  item.category?.name ?? '-',
                   style: theme.textTheme.labelSmall,
                 ),
                 PriceTagChip(
-                  label: inStock ? 'متوفر: ${item.currentStock.toStringAsFixed(0)}' : 'نفذ',
+                  label: inStock
+                      ? 'pos.stock_available'.tr(namedArgs: {'count': item.currentStock.toStringAsFixed(0)})
+                      : 'pos.out_of_stock'.tr(),
                   backgroundColor: inStock
                       ? (item.isLowStock ? AppColors.danger : AppColors.success)
                       : Colors.grey,
@@ -63,7 +67,7 @@ class POSProductCard extends StatelessWidget {
             const Divider(color: AppColors.border, height: 16),
             // Available Prices List (Cashier clicks to add)
             Text(
-              'اختر السعر للإضافة:',
+              'inventory.selling_prices'.tr(),
               style: theme.textTheme.labelSmall?.copyWith(fontSize: 10),
             ),
             const SizedBox(height: 6),
@@ -71,12 +75,8 @@ class POSProductCard extends StatelessWidget {
               spacing: 6,
               runSpacing: 6,
               children: item.prices.map((price) {
-                final label = price.priceLabel == 'retail'
-                    ? 'مفرق'
-                    : (price.priceLabel == 'wholesale' ? 'جملة' : 'عرض');
-                final color = price.priceLabel == 'retail'
-                    ? AppColors.primary
-                    : (price.priceLabel == 'wholesale' ? AppColors.accent : AppColors.success);
+                final label = price.priceLabel.priceLabelDisplay;
+                final color = price.priceLabel.priceLabelColor;
 
                 return InkWell(
                   onTap: inStock ? () => onPriceSelected(price) : null,

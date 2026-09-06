@@ -1,8 +1,8 @@
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/material.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/core/widgets/price_tag_chip.dart';
 import 'package:small_mall/features/inventory/data/inventory_repository.dart';
-import 'package:flutter/material.dart';
 
 class InventoryTable extends StatelessWidget {
   const InventoryTable({

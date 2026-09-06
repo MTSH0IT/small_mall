@@ -1,6 +1,6 @@
+import 'package:flutter/material.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/core/widgets/app_bar_title.dart';
-import 'package:flutter/material.dart';
 
 class AppScreenScaffold extends StatelessWidget {
   const AppScreenScaffold({

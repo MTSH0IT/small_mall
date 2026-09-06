@@ -1,10 +1,11 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:small_mall/core/widgets/app_toast.dart';
-import 'package:small_mall/core/utils/theme.dart';
-import 'package:small_mall/features/login/presentation/widgets/pin_pad.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:small_mall/core/utils/theme.dart';
+import 'package:small_mall/core/widgets/app_toast.dart';
+import 'package:small_mall/features/login/presentation/widgets/pin_pad.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -16,22 +17,35 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   String _pin = '';
   bool _isNewUser = false;
+  bool _isLoading = true;
   String _savedPin = '';
   String? _messageKey;
   bool _confirmingNewPin = false;
   String _firstEnteredPin = '';
+  final FocusNode _focusNode = FocusNode();
 
   @override
   void initState() {
     super.initState();
     _checkPinStatus();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _focusNode.requestFocus();
+    });
+  }
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
   }
 
   Future<void> _checkPinStatus() async {
     final prefs = await SharedPreferences.getInstance();
     final savedPin = prefs.getString('user_pin') ?? '';
+    if (!mounted) return;
     setState(() {
       _savedPin = savedPin;
+      _isLoading = false;
       if (savedPin.isEmpty) {
         _isNewUser = true;
         _messageKey = 'login.set_new_pin';
@@ -54,6 +68,36 @@ class _LoginScreenState extends State<LoginScreen> {
       setState(() {
         _pin = _pin.substring(0, _pin.length - 1);
       });
+    }
+  }
+
+  void _handleKeyEvent(KeyEvent event) {
+    if (event is! KeyDownEvent) return;
+    final key = event.logicalKey;
+    if (key == LogicalKeyboardKey.digit0 || key == LogicalKeyboardKey.numpad0) {
+      _onNumberPressed(0);
+    } else if (key == LogicalKeyboardKey.digit1 || key == LogicalKeyboardKey.numpad1) {
+      _onNumberPressed(1);
+    } else if (key == LogicalKeyboardKey.digit2 || key == LogicalKeyboardKey.numpad2) {
+      _onNumberPressed(2);
+    } else if (key == LogicalKeyboardKey.digit3 || key == LogicalKeyboardKey.numpad3) {
+      _onNumberPressed(3);
+    } else if (key == LogicalKeyboardKey.digit4 || key == LogicalKeyboardKey.numpad4) {
+      _onNumberPressed(4);
+    } else if (key == LogicalKeyboardKey.digit5 || key == LogicalKeyboardKey.numpad5) {
+      _onNumberPressed(5);
+    } else if (key == LogicalKeyboardKey.digit6 || key == LogicalKeyboardKey.numpad6) {
+      _onNumberPressed(6);
+    } else if (key == LogicalKeyboardKey.digit7 || key == LogicalKeyboardKey.numpad7) {
+      _onNumberPressed(7);
+    } else if (key == LogicalKeyboardKey.digit8 || key == LogicalKeyboardKey.numpad8) {
+      _onNumberPressed(8);
+    } else if (key == LogicalKeyboardKey.digit9 || key == LogicalKeyboardKey.numpad9) {
+      _onNumberPressed(9);
+    } else if (key == LogicalKeyboardKey.backspace) {
+      _onDeletePressed();
+    } else if (key == LogicalKeyboardKey.enter || key == LogicalKeyboardKey.numpadEnter) {
+      _onConfirmPressed();
     }
   }
 
@@ -112,29 +156,39 @@ class _LoginScreenState extends State<LoginScreen> {
     final theme = Theme.of(context);
     final isArabic = context.locale.languageCode == 'ar';
 
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     final messageText = (_messageKey ?? (_isNewUser ? 'login.set_new_pin' : 'login.enter_pin')).tr();
 
     return Scaffold(
-      body: Stack(
-        children: [
-          // Language toggle button in corner
-          Positioned(
-            top: 24,
-            left: isArabic ? 24 : null,
-            right: isArabic ? null : 24,
-            child: OutlinedButton.icon(
-              onPressed: () async {
-                final newLocale = isArabic ? const Locale('en') : const Locale('ar');
-                await context.setLocale(newLocale);
-              },
-              icon: const Icon(Icons.language, size: 18),
-              label: Text(isArabic ? 'English' : 'العربية'),
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: AppColors.border),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      body: KeyboardListener(
+        focusNode: _focusNode,
+        autofocus: true,
+        onKeyEvent: _handleKeyEvent,
+        child: Stack(
+          children: [
+            // Language toggle button in corner
+            Positioned(
+              top: 24,
+              left: isArabic ? 24 : null,
+              right: isArabic ? null : 24,
+              child: OutlinedButton.icon(
+                onPressed: () async {
+                  final newLocale = isArabic ? const Locale('en') : const Locale('ar');
+                  await context.setLocale(newLocale);
+                },
+                icon: const Icon(Icons.language, size: 18),
+                label: Text(isArabic ? 'English' : 'العربية'),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: AppColors.border),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
               ),
             ),
-          ),
           Center(
             child: Container(
               width: 400,
@@ -219,6 +273,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 }

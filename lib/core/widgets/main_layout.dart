@@ -1,9 +1,9 @@
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:small_mall/core/di/injection.dart';
 import 'package:small_mall/core/sync/sync_service.dart';
 import 'package:small_mall/core/utils/theme.dart';
-import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 class MainLayout extends StatefulWidget {
   const MainLayout({super.key, required this.child});

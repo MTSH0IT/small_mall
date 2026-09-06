@@ -1,5 +1,5 @@
-import 'package:small_mall/core/utils/theme.dart';
 import 'package:flutter/material.dart';
+import 'package:small_mall/core/utils/theme.dart';
 
 class PinPad extends StatelessWidget {
 
@@ -52,27 +52,27 @@ class PinPad extends StatelessWidget {
   }
 
   Widget _buildNumButton(int number) {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: AspectRatio(
-        aspectRatio: 1.5,
-        child: OutlinedButton(
-          onPressed: () => onNumberPressed(number),
-          style: OutlinedButton.styleFrom(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            side: const BorderSide(color: AppColors.border),
-            backgroundColor: AppColors.surface,
-          ),
-          child: Text(
-            number.toString(),
-            style: AppTheme.numericStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-        ),
+    return _buildPadButton(
+      onPressed: () => onNumberPressed(number),
+      child: Text(
+        number.toString(),
+        style: AppTheme.numericStyle(fontSize: 20, fontWeight: FontWeight.bold),
       ),
     );
   }
 
   Widget _buildIconButton(IconData icon, VoidCallback onPressed, {Color? color}) {
+    return _buildPadButton(
+      onPressed: onPressed,
+      child: Icon(
+        icon,
+        color: color ?? AppColors.textPrimary,
+        size: 20,
+      ),
+    );
+  }
+
+  Widget _buildPadButton({required VoidCallback onPressed, required Widget child}) {
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: AspectRatio(
@@ -84,11 +84,7 @@ class PinPad extends StatelessWidget {
             side: const BorderSide(color: AppColors.border),
             backgroundColor: AppColors.surface,
           ),
-          child: Icon(
-            icon,
-            color: color ?? AppColors.textPrimary,
-            size: 20,
-          ),
+          child: child,
         ),
       ),
     );

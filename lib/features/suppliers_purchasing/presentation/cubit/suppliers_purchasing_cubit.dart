@@ -1,6 +1,6 @@
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:small_mall/features/suppliers_purchasing/data/suppliers_purchasing_repository.dart';
 import 'package:small_mall/features/suppliers_purchasing/presentation/cubit/suppliers_purchasing_state.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
 class SuppliersPurchasingCubit extends Cubit<SuppliersPurchasingState> {
 
@@ -26,7 +26,11 @@ class SuppliersPurchasingCubit extends Cubit<SuppliersPurchasingState> {
       await _repository.addSupplier(name: name, phone: phone, notes: notes);
       await loadSuppliers();
     } catch (e) {
-      emit(SuppliersPurchasingError(e.toString()));
+      if (state is SuppliersPurchasingLoaded) {
+        emit((state as SuppliersPurchasingLoaded).copyWith(errorMessage: e.toString()));
+      } else {
+        emit(SuppliersPurchasingError(e.toString()));
+      }
     }
   }
 
@@ -40,7 +44,11 @@ class SuppliersPurchasingCubit extends Cubit<SuppliersPurchasingState> {
       await _repository.updateSupplier(id: id, name: name, phone: phone, notes: notes);
       await loadSuppliers();
     } catch (e) {
-      emit(SuppliersPurchasingError(e.toString()));
+      if (state is SuppliersPurchasingLoaded) {
+        emit((state as SuppliersPurchasingLoaded).copyWith(errorMessage: e.toString()));
+      } else {
+        emit(SuppliersPurchasingError(e.toString()));
+      }
     }
   }
 
@@ -57,7 +65,11 @@ class SuppliersPurchasingCubit extends Cubit<SuppliersPurchasingState> {
       );
       await loadSuppliers();
     } catch (e) {
-      emit(SuppliersPurchasingError(e.toString()));
+      if (state is SuppliersPurchasingLoaded) {
+        emit((state as SuppliersPurchasingLoaded).copyWith(errorMessage: e.toString()));
+      } else {
+        emit(SuppliersPurchasingError(e.toString()));
+      }
     }
   }
 }

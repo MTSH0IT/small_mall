@@ -1,8 +1,8 @@
+import 'package:flutter/material.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/core/widgets/price_tag_chip.dart';
 import 'package:small_mall/features/suppliers_purchasing/data/suppliers_purchasing_repository.dart';
-import 'package:flutter/material.dart';
 
 class SuppliersList extends StatelessWidget {
 

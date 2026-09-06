@@ -1,8 +1,10 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:small_mall/core/widgets/app_toast.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:small_mall/core/di/injection.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/core/widgets/app_screen_scaffold.dart';
+import 'package:small_mall/core/widgets/app_toast.dart';
 import 'package:small_mall/core/widgets/card_container.dart';
 import 'package:small_mall/core/widgets/loading_indicator.dart';
 import 'package:small_mall/core/widgets/stat_card.dart';
@@ -11,8 +13,6 @@ import 'package:small_mall/features/reports/presentation/cubit/reports_cubit.dar
 import 'package:small_mall/features/reports/presentation/cubit/reports_state.dart';
 import 'package:small_mall/features/reports/presentation/widgets/period_filter_row.dart';
 import 'package:small_mall/features/reports/presentation/widgets/sales_purchases_comparison_chart.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
@@ -28,7 +28,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
   @override
   Widget build(BuildContext context) {
     return BlocProvider<ReportsCubit>(
-      create: (context) => ReportsCubit(getIt<ReportsRepository>())..loadReports(start: _startDate, end: _endDate),
+      create: (context) =>
+          ReportsCubit(getIt<ReportsRepository>())
+            ..loadReports(start: _startDate, end: _endDate),
       child: BlocConsumer<ReportsCubit, ReportsState>(
         listener: (context, state) {
           if (state is ReportsError) {
@@ -40,7 +42,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
           return AppScreenScaffold(
             title: 'reports.title'.tr(),
-            onRefresh: () => cubit.loadReports(start: _startDate, end: _endDate),
+            onRefresh: () =>
+                cubit.loadReports(start: _startDate, end: _endDate),
             body: Padding(
               padding: const EdgeInsets.all(24.0),
               child: Column(
@@ -54,9 +57,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   ),
                   const SizedBox(height: 24),
                   // Report Panels
-                  Expanded(
-                    child: _buildReportContent(context, state),
-                  ),
+                  Expanded(child: _buildReportContent(context, state)),
                 ],
               ),
             ),
@@ -66,7 +67,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
   }
 
-  Future<void> _selectDateRange(BuildContext context, ReportsCubit cubit) async {
+  Future<void> _selectDateRange(
+    BuildContext context,
+    ReportsCubit cubit,
+  ) async {
     final picked = await showDateRangePicker(
       context: context,
       initialDateRange: DateTimeRange(start: _startDate, end: _endDate),
@@ -95,7 +99,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
       final double cost = state.profitData.totalCost;
 
       // Calculate total current inventory valuation cost
-      final double totalInventoryValuation = state.inventoryReport.fold(0.0, (sum, item) => sum + item.totalCostValue);
+      final double totalInventoryValuation = state.inventoryReport.fold(
+        0.0,
+        (sum, item) => sum + item.totalCostValue,
+      );
 
       return SingleChildScrollView(
         child: Column(
@@ -107,8 +114,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   child: StatCard(
                     title: 'reports.net_profit'.tr(),
                     value: totalProfit.toStringAsFixed(2),
-                    color: totalProfit >= 0 ? AppColors.success : AppColors.danger,
-                    subtitle: '${'reports.sales'.tr()}: ${revenue.toStringAsFixed(1)} | ${'reports.purchases'.tr()}: ${cost.toStringAsFixed(1)}',
+                    color: totalProfit >= 0
+                        ? AppColors.success
+                        : AppColors.danger,
+                    subtitle:
+                        '${'reports.sales'.tr()}: ${revenue.toStringAsFixed(1)} | ${'reports.purchases'.tr()}: ${cost.toStringAsFixed(1)}',
                     icon: Icons.payments_outlined,
                   ),
                 ),
@@ -118,7 +128,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     title: 'inventory.current_stock'.tr(),
                     value: totalInventoryValuation.toStringAsFixed(2),
                     color: AppColors.primary,
-                    subtitle: '${'inventory.products_title'.tr()}: ${state.inventoryReport.length}',
+                    subtitle:
+                        '${'inventory.products_title'.tr()}: ${state.inventoryReport.length}',
                     icon: Icons.inventory_2_outlined,
                   ),
                 ),
@@ -144,7 +155,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   flex: 3,
                   child: CardContainer(
                     title: 'reports.comparison_chart'.tr(),
-                    child: SalesPurchasesComparisonChart(summary: state.purchasesSalesSummary),
+                    child: SalesPurchasesComparisonChart(
+                      summary: state.purchasesSalesSummary,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 24),
@@ -156,13 +169,16 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     child: state.bestSellers.isEmpty
                         ? Padding(
                             padding: const EdgeInsets.all(32.0),
-                            child: Center(child: Text('invoices.empty_invoices'.tr())),
+                            child: Center(
+                              child: Text('invoices.empty_invoices'.tr()),
+                            ),
                           )
                         : ListView.separated(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
                             itemCount: state.bestSellers.length,
-                            separatorBuilder: (_, _) => const Divider(color: AppColors.border),
+                            separatorBuilder: (_, _) =>
+                                const Divider(color: AppColors.border),
                             itemBuilder: (context, index) {
                               final item = state.bestSellers[index];
                               return ListTile(
@@ -176,14 +192,22 @@ class _ReportsScreenState extends State<ReportsScreen> {
                                   alignment: Alignment.center,
                                   child: Text(
                                     '${index + 1}',
-                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ),
                                 title: Text(item.product.name),
-                                subtitle: Text('${'common.quantity'.tr()}: ${item.totalQuantity.toStringAsFixed(0)}'),
+                                subtitle: Text(
+                                  '${'common.quantity'.tr()}: ${item.totalQuantity.toStringAsFixed(0)}',
+                                ),
                                 trailing: Text(
                                   item.totalRevenue.toStringAsFixed(2),
-                                  style: AppTheme.numericStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
+                                  style: AppTheme.numericStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.primary,
+                                  ),
                                 ),
                               );
                             },

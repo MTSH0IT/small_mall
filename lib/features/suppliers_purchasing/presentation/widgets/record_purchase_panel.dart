@@ -1,18 +1,19 @@
+import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/material.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/core/widgets/app_text_field.dart';
 import 'package:small_mall/core/widgets/primary_button.dart';
 import 'package:small_mall/features/inventory/data/inventory_repository.dart';
-import 'package:flutter/material.dart';
 
 class RecordPurchasePanel extends StatefulWidget {
-
   const RecordPurchasePanel({
     super.key,
     required this.selectedSupplier,
     required this.availableProducts,
     required this.onConfirmPurchase,
   });
+
   final Supplier selectedSupplier;
   final List<ProductWithDetails> availableProducts;
   final Future<void> Function(List<Map<String, dynamic>> items, double totalAmount) onConfirmPurchase;
@@ -26,8 +27,8 @@ class _RecordPurchasePanelState extends State<RecordPurchasePanel> {
 
   double get _totalPurchaseAmount {
     return _purchaseItems.fold<double>(0.0, (sum, item) {
-      final qty = item['quantity'] as double;
-      final cost = item['unitCost'] as double;
+      final qty = (item['quantity'] as num).toDouble();
+      final cost = (item['unitCost'] as num).toDouble();
       return sum + (qty * cost);
     });
   }
@@ -65,7 +66,7 @@ class _RecordPurchasePanelState extends State<RecordPurchasePanel> {
         children: [
           // Header Info
           Text(
-            'تسجيل فاتورة مشتريات من المورد: ${widget.selectedSupplier.name}',
+            'suppliers.record_purchase_from'.tr(args: [widget.selectedSupplier.name]),
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
               color: AppColors.primary,
@@ -77,8 +78,8 @@ class _RecordPurchasePanelState extends State<RecordPurchasePanel> {
             children: [
               Expanded(
                 child: DropdownButtonFormField<ProductWithDetails>(
-                  key: ValueKey('${widget.selectedSupplier.id}_${_purchaseItems.length}'), // Reset dropdown when supplier changes or item is added
-                  hint: const Text('اختر منتجاً لإضافته للفاتورة'),
+                  key: ValueKey('${widget.selectedSupplier.id}_${_purchaseItems.length}'),
+                  hint: Text('suppliers.select_product_to_add'.tr()),
                   decoration: InputDecoration(
                     contentPadding: const EdgeInsets.symmetric(horizontal: 10),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
@@ -99,7 +100,7 @@ class _RecordPurchasePanelState extends State<RecordPurchasePanel> {
           // Purchase Items Table/List
           Expanded(
             child: _purchaseItems.isEmpty
-                ? const Center(child: Text('لم يتم إضافة أي منتجات للفاتورة بعد'))
+                ? Center(child: Text('suppliers.no_products_added'.tr()))
                 : Container(
                     decoration: BoxDecoration(
                       color: AppColors.surfaceElevated,
@@ -112,71 +113,15 @@ class _RecordPurchasePanelState extends State<RecordPurchasePanel> {
                       separatorBuilder: (_, _) => const Divider(color: AppColors.border),
                       itemBuilder: (context, index) {
                         final item = _purchaseItems[index];
-                        final subtotal = (item['quantity'] as double) * (item['unitCost'] as double);
-
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(item['productName'], style: const TextStyle(fontWeight: FontWeight.bold)),
-                                  IconButton(
-                                    icon: const Icon(Icons.remove_circle_outline, color: AppColors.danger, size: 20),
-                                    onPressed: () {
-                                      setState(() {
-                                        _purchaseItems.removeAt(index);
-                                      });
-                                    },
-                                  ),
-                                ],
-                              ),
-                              Row(
-                                children: [
-                                  // Quantity Field
-                                  Expanded(
-                                    child: AppTextField(
-                                      label: 'الكمية المشتراة',
-                                      hint: 'الكمية',
-                                      keyboardType: TextInputType.number,
-                                      onChanged: (val) {
-                                        setState(() {
-                                          _purchaseItems[index]['quantity'] = double.tryParse(val) ?? 1.0;
-                                        });
-                                      },
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  // Unit Cost Field
-                                  Expanded(
-                                    child: AppTextField(
-                                      label: 'سعر التكلفة الجديد',
-                                      hint: 'التكلفة بالقطعة',
-                                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                      onChanged: (val) {
-                                        setState(() {
-                                          _purchaseItems[index]['unitCost'] = double.tryParse(val) ?? 0.0;
-                                        });
-                                      },
-                                    ),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    children: [
-                                      Text('المجموع:', style: theme.textTheme.labelSmall),
-                                      Text(
-                                        subtotal.toStringAsFixed(2),
-                                        style: AppTheme.numericStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
+                        return _PurchaseItemRow(
+                          key: ValueKey(item['productId']),
+                          item: item,
+                          onChanged: () => setState(() {}),
+                          onRemove: () {
+                            setState(() {
+                              _purchaseItems.removeAt(index);
+                            });
+                          },
                         );
                       },
                     ),
@@ -189,7 +134,7 @@ class _RecordPurchasePanelState extends State<RecordPurchasePanel> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'إجمالي قيمة المشتريات:',
+                'suppliers.total_purchase_value'.tr(),
                 style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: AppColors.primary),
               ),
               Text(
@@ -204,7 +149,7 @@ class _RecordPurchasePanelState extends State<RecordPurchasePanel> {
           ),
           const SizedBox(height: 16),
           PrimaryButton(
-            label: 'تأكيد وحفظ فاتورة المشتريات',
+            label: 'suppliers.confirm_save_purchase'.tr(),
             icon: Icons.check,
             onPressed: _purchaseItems.isEmpty
                 ? null
@@ -214,6 +159,114 @@ class _RecordPurchasePanelState extends State<RecordPurchasePanel> {
                       _purchaseItems.clear();
                     });
                   },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PurchaseItemRow extends StatefulWidget {
+  const _PurchaseItemRow({
+    super.key,
+    required this.item,
+    required this.onChanged,
+    required this.onRemove,
+  });
+
+  final Map<String, dynamic> item;
+  final VoidCallback onChanged;
+  final VoidCallback onRemove;
+
+  @override
+  State<_PurchaseItemRow> createState() => _PurchaseItemRowState();
+}
+
+class _PurchaseItemRowState extends State<_PurchaseItemRow> {
+  late final TextEditingController _qtyController;
+  late final TextEditingController _costController;
+
+  @override
+  void initState() {
+    super.initState();
+    final qty = (widget.item['quantity'] as num).toDouble();
+    final cost = (widget.item['unitCost'] as num).toDouble();
+    _qtyController = TextEditingController(text: qty == qty.roundToDouble() ? qty.toInt().toString() : qty.toString());
+    _costController = TextEditingController(text: cost.toString());
+  }
+
+  @override
+  void dispose() {
+    _qtyController.dispose();
+    _costController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final qty = (widget.item['quantity'] as num).toDouble();
+    final cost = (widget.item['unitCost'] as num).toDouble();
+    final subtotal = qty * cost;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(widget.item['productName'] as String, style: const TextStyle(fontWeight: FontWeight.bold)),
+              IconButton(
+                icon: const Icon(Icons.remove_circle_outline, color: AppColors.danger, size: 20),
+                onPressed: widget.onRemove,
+              ),
+            ],
+          ),
+          Row(
+            children: [
+              // Quantity Field
+              Expanded(
+                child: AppTextField(
+                  label: 'suppliers.purchased_quantity'.tr(),
+                  hint: 'common.quantity'.tr(),
+                  controller: _qtyController,
+                  keyboardType: TextInputType.number,
+                  onChanged: (val) {
+                    final parsed = double.tryParse(val) ?? 1.0;
+                    widget.item['quantity'] = parsed;
+                    widget.onChanged();
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Unit Cost Field
+              Expanded(
+                child: AppTextField(
+                  label: 'suppliers.new_cost_price'.tr(),
+                  hint: 'suppliers.cost_per_unit'.tr(),
+                  controller: _costController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  onChanged: (val) {
+                    final parsed = double.tryParse(val) ?? 0.0;
+                    widget.item['unitCost'] = parsed;
+                    widget.onChanged();
+                  },
+                ),
+              ),
+              const SizedBox(width: 16),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text('${'common.total'.tr()}:', style: theme.textTheme.labelSmall),
+                  Text(
+                    subtotal.toStringAsFixed(2),
+                    style: AppTheme.numericStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
+                  ),
+                ],
+              ),
+            ],
           ),
         ],
       ),

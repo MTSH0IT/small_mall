@@ -1,10 +1,12 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:small_mall/core/widgets/app_toast.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/di/injection.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/core/widgets/app_screen_scaffold.dart';
 import 'package:small_mall/core/widgets/app_text_field.dart';
+import 'package:small_mall/core/widgets/app_toast.dart';
 import 'package:small_mall/core/widgets/entity_form_dialog.dart';
 import 'package:small_mall/core/widgets/split_pane_layout.dart';
 import 'package:small_mall/features/customers_debts/data/customers_debts_repository.dart';
@@ -14,8 +16,6 @@ import 'package:small_mall/features/pos/presentation/widgets/cart_item_row.dart'
 import 'package:small_mall/features/pos/presentation/widgets/checkout_panel.dart';
 import 'package:small_mall/features/pos/presentation/widgets/pos_product_card.dart';
 import 'package:small_mall/features/pos/presentation/widgets/return_dialog.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
 class POSScreen extends StatefulWidget {
   const POSScreen({super.key});
@@ -247,7 +247,7 @@ class _POSScreenState extends State<POSScreen> {
                     const Divider(height: 1, color: AppColors.border),
                     CheckoutPanel(
                       state: state,
-                      isLoading: cubit.state is POSLoading,
+                      isLoading: state.isCheckingOut,
                       onInvoiceDiscountChanged: (disc) => cubit.setInvoiceDiscount(disc),
                       onPaymentTypeChanged: (type) => cubit.setPaymentType(type),
                       onCustomerChanged: (cust) => cubit.selectCustomer(cust),

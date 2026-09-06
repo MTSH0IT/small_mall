@@ -1,3 +1,4 @@
+import 'package:get_it/get_it.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/logging/app_logger.dart';
 import 'package:small_mall/core/sync/sync_service.dart';
@@ -6,7 +7,6 @@ import 'package:small_mall/features/inventory/data/inventory_repository.dart';
 import 'package:small_mall/features/pos/data/pos_repository.dart';
 import 'package:small_mall/features/reports/data/reports_repository.dart';
 import 'package:small_mall/features/suppliers_purchasing/data/suppliers_purchasing_repository.dart';
-import 'package:get_it/get_it.dart';
 
 final getIt = GetIt.instance;
 

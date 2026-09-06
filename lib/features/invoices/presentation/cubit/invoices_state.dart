@@ -23,11 +23,19 @@ class InvoicesLoaded extends InvoicesState {
 
   InvoiceWithDetails? get selectedInvoice {
     if (selectedInvoiceId == null) return null;
-    try {
-      return invoices.firstWhere((i) => i.invoice.id == selectedInvoiceId);
-    } catch (_) {
-      return null;
-    }
+    return invoices.where((i) => i.invoice.id == selectedInvoiceId).firstOrNull;
+  }
+
+  InvoicesLoaded copyWith({
+    List<InvoiceWithDetails>? invoices,
+    String? selectedInvoiceId,
+    String? typeFilter,
+  }) {
+    return InvoicesLoaded(
+      invoices: invoices ?? this.invoices,
+      selectedInvoiceId: selectedInvoiceId ?? this.selectedInvoiceId,
+      typeFilter: typeFilter ?? this.typeFilter,
+    );
   }
 
   double get totalSalesAmount => invoices

@@ -1,10 +1,10 @@
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/material.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/core/widgets/loading_indicator.dart';
 import 'package:small_mall/core/widgets/price_tag_chip.dart';
 import 'package:small_mall/core/widgets/primary_button.dart';
 import 'package:small_mall/features/customers_debts/data/customers_debts_repository.dart';
-import 'package:flutter/material.dart';
 
 class CustomerDetailsPanel extends StatelessWidget {
   const CustomerDetailsPanel({
@@ -117,7 +117,7 @@ class CustomerDetailsPanel extends StatelessWidget {
 
                 final statusStr = debtData.debt.status == 'paid'
                     ? 'customers.settled'.tr()
-                    : (debtData.debt.status == 'partial' ? 'partial' : 'customers.has_debt'.tr());
+                    : (debtData.debt.status == 'partial' ? 'customers.partial'.tr() : 'customers.has_debt'.tr());
                 final statusColor = debtData.debt.status == 'paid'
                     ? AppColors.success
                     : (debtData.debt.status == 'partial' ? AppColors.primary : AppColors.danger);

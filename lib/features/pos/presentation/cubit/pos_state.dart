@@ -3,7 +3,7 @@ import 'package:small_mall/features/customers_debts/data/customers_debts_reposit
 import 'package:small_mall/features/inventory/data/inventory_repository.dart';
 
 class CartItem {
-  CartItem({
+  const CartItem({
     required this.productDetails,
     required this.selectedPrice,
     this.quantity = 1.0,
@@ -11,10 +11,24 @@ class CartItem {
   });
   final ProductWithDetails productDetails;
   final ProductPrice selectedPrice;
-  double quantity;
-  double discount;
+  final double quantity;
+  final double discount;
 
   double get subtotal => (selectedPrice.priceValue * quantity) - discount;
+
+  CartItem copyWith({
+    ProductWithDetails? productDetails,
+    ProductPrice? selectedPrice,
+    double? quantity,
+    double? discount,
+  }) {
+    return CartItem(
+      productDetails: productDetails ?? this.productDetails,
+      selectedPrice: selectedPrice ?? this.selectedPrice,
+      quantity: quantity ?? this.quantity,
+      discount: discount ?? this.discount,
+    );
+  }
 }
 
 abstract class POSState {}
@@ -31,6 +45,7 @@ class POSLoaded extends POSState {
     this.selectedCustomer,
     required this.invoiceDiscount,
     required this.paymentType,
+    this.isCheckingOut = false,
   });
   final List<ProductWithDetails> products;
   final List<CustomerWithDebts> customers;
@@ -38,9 +53,31 @@ class POSLoaded extends POSState {
   final Customer? selectedCustomer;
   final double invoiceDiscount;
   final String paymentType;
+  final bool isCheckingOut;
 
   double get cartSubtotal => cart.fold<double>(0.0, (sum, item) => sum + item.subtotal);
   double get totalAmount => (cartSubtotal - invoiceDiscount).clamp(0.0, double.infinity);
+
+  POSLoaded copyWith({
+    List<ProductWithDetails>? products,
+    List<CustomerWithDebts>? customers,
+    List<CartItem>? cart,
+    Customer? selectedCustomer,
+    bool clearCustomer = false,
+    double? invoiceDiscount,
+    String? paymentType,
+    bool? isCheckingOut,
+  }) {
+    return POSLoaded(
+      products: products ?? this.products,
+      customers: customers ?? this.customers,
+      cart: cart ?? this.cart,
+      selectedCustomer: clearCustomer ? null : (selectedCustomer ?? this.selectedCustomer),
+      invoiceDiscount: invoiceDiscount ?? this.invoiceDiscount,
+      paymentType: paymentType ?? this.paymentType,
+      isCheckingOut: isCheckingOut ?? this.isCheckingOut,
+    );
+  }
 }
 
 class POSCheckoutSuccess extends POSState {}

@@ -59,42 +59,44 @@ class ReportsRepository {
 
   Future<ProfitReportData> getProfitReport(DateTime start, DateTime end) async {
     _logger.debug('Fetching profit report: $start - $end', context: LogContext.inventory);
-    // Get all sale invoices in period
+    // Get all sale and return invoices in period
     final invoices = await (_db.select(_db.invoices)
           ..where((t) => t.createdAt.isBiggerOrEqualValue(start) & t.createdAt.isSmallerOrEqualValue(end)))
         .get();
 
-    final allInvoiceItems = await _db.select(_db.invoiceItems).get();
-    final allProducts = await _db.select(_db.products).get();
-    final productMap = {for (var p in allProducts) p.id: p};
+    if (invoices.isEmpty) {
+      return ProfitReportData(totalRevenue: 0.0, totalCost: 0.0, totalProfit: 0.0);
+    }
+
+    final invoiceIds = invoices.map((i) => i.id).toSet();
+    final periodItems = await (_db.select(_db.invoiceItems)
+          ..where((t) => t.invoiceId.isIn(invoiceIds)))
+        .get();
+
+    final productIds = periodItems.map((i) => i.productId).toSet();
+    final products = productIds.isEmpty
+        ? <Product>[]
+        : await (_db.select(_db.products)..where((t) => t.id.isIn(productIds))).get();
+    final productMap = {for (var p in products) p.id: p};
 
     double totalRevenue = 0.0;
     double totalCost = 0.0;
 
     for (final inv in invoices) {
-      final items = allInvoiceItems.where((i) => i.invoiceId == inv.id).toList();
+      final items = periodItems.where((i) => i.invoiceId == inv.id).toList();
 
-      double invoiceRev = 0.0;
       double invoiceCost = 0.0;
-
       for (final item in items) {
         final prod = productMap[item.productId];
         if (prod == null) continue;
-
-        final itemRev = (item.priceUsed * item.quantity) - item.discount;
-        final itemCost = prod.costPrice * item.quantity;
-
-        invoiceRev += itemRev;
-        invoiceCost += itemCost;
+        invoiceCost += prod.costPrice * item.quantity;
       }
 
-      // Apply invoice-level discount if it was a sale, or adjust for return
       if (inv.type == 'sale') {
-        totalRevenue += (invoiceRev - inv.discount);
+        totalRevenue += inv.totalAmount;
         totalCost += invoiceCost;
       } else if (inv.type == 'return') {
-        // Returns reduce revenue and reduce cost of goods sold (returns product to stock)
-        totalRevenue -= invoiceRev;
+        totalRevenue -= inv.totalAmount;
         totalCost -= invoiceCost;
       }
     }
@@ -114,14 +116,20 @@ class ReportsRepository {
           ..where((t) => t.type.equals('sale') & t.createdAt.isBiggerOrEqualValue(start) & t.createdAt.isSmallerOrEqualValue(end)))
         .get();
 
-    final invoiceIds = invoices.map((i) => i.id).toList();
+    final invoiceIds = invoices.map((i) => i.id).toSet();
     if (invoiceIds.isEmpty) return [];
 
-    final allInvoiceItems = await _db.select(_db.invoiceItems).get();
-    final periodItems = allInvoiceItems.where((i) => invoiceIds.contains(i.invoiceId)).toList();
+    final periodItems = await (_db.select(_db.invoiceItems)
+          ..where((t) => t.invoiceId.isIn(invoiceIds)))
+        .get();
 
-    final allProducts = await _db.select(_db.products).get();
-    final productMap = {for (var p in allProducts) p.id: p};
+    if (periodItems.isEmpty) return [];
+
+    final productIds = periodItems.map((i) => i.productId).toSet();
+    final products = await (_db.select(_db.products)
+          ..where((t) => t.id.isIn(productIds)))
+        .get();
+    final productMap = {for (var p in products) p.id: p};
 
     final Map<String, double> productQtyMap = {};
     final Map<String, double> productRevMap = {};
@@ -168,13 +176,10 @@ class ReportsRepository {
   Future<List<InventoryReportItem>> getInventoryReport() async {
     _logger.debug('Fetching inventory report', context: LogContext.inventory);
     final products = await (_db.select(_db.products)..where((t) => t.isActive.equals(true))).get();
-    final allMovements = await _db.select(_db.stockMovements).get();
+    final stockMap = await _db.getAllStockBalances();
 
     return products.map((prod) {
-      final currentStock = allMovements
-          .where((m) => m.productId == prod.id)
-          .fold<double>(0.0, (sum, m) => sum + m.quantity);
-
+      final currentStock = stockMap[prod.id] ?? 0.0;
       return InventoryReportItem(
         product: prod,
         currentStock: currentStock,
@@ -187,8 +192,7 @@ class ReportsRepository {
 
   Future<double> getTotalOutstandingDebts() async {
     _logger.debug('Fetching total outstanding debts', context: LogContext.debts);
-    final debts = await _db.select(_db.debts).get();
-    return debts.fold<double>(0.0, (sum, d) => sum + d.remainingAmount);
+    return _db.getTotalRemainingDebts();
   }
 
   // --- Purchases vs Sales ---

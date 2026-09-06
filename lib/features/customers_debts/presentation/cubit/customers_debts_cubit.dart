@@ -1,6 +1,6 @@
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:small_mall/features/customers_debts/data/customers_debts_repository.dart';
 import 'package:small_mall/features/customers_debts/presentation/cubit/customers_debts_state.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
 class CustomersDebtsCubit extends Cubit<CustomersDebtsState> {
 
@@ -22,13 +22,13 @@ class CustomersDebtsCubit extends Cubit<CustomersDebtsState> {
     if (currentState is CustomersDebtsLoaded) {
       try {
         final debts = await _repository.getCustomerDebts(customerId);
-        emit(CustomersDebtsLoaded(
-          customers: currentState.customers,
+        emit(currentState.copyWith(
           selectedCustomerId: customerId,
           selectedCustomerDebts: debts,
+          errorMessage: null,
         ));
       } catch (e) {
-        emit(CustomersDebtsError(e.toString()));
+        emit(currentState.copyWith(errorMessage: e.toString()));
       }
     }
   }
@@ -42,7 +42,11 @@ class CustomersDebtsCubit extends Cubit<CustomersDebtsState> {
       await _repository.addCustomer(name: name, phone: phone, notes: notes);
       await loadCustomers();
     } catch (e) {
-      emit(CustomersDebtsError(e.toString()));
+      if (state is CustomersDebtsLoaded) {
+        emit((state as CustomersDebtsLoaded).copyWith(errorMessage: e.toString()));
+      } else {
+        emit(CustomersDebtsError(e.toString()));
+      }
     }
   }
 
@@ -56,7 +60,11 @@ class CustomersDebtsCubit extends Cubit<CustomersDebtsState> {
       await _repository.updateCustomer(id: id, name: name, phone: phone, notes: notes);
       await loadCustomers();
     } catch (e) {
-      emit(CustomersDebtsError(e.toString()));
+      if (state is CustomersDebtsLoaded) {
+        emit((state as CustomersDebtsLoaded).copyWith(errorMessage: e.toString()));
+      } else {
+        emit(CustomersDebtsError(e.toString()));
+      }
     }
   }
 
@@ -76,7 +84,11 @@ class CustomersDebtsCubit extends Cubit<CustomersDebtsState> {
         selectedCustomerDebts: debts,
       ));
     } catch (e) {
-      emit(CustomersDebtsError(e.toString()));
+      if (state is CustomersDebtsLoaded) {
+        emit((state as CustomersDebtsLoaded).copyWith(errorMessage: e.toString()));
+      } else {
+        emit(CustomersDebtsError(e.toString()));
+      }
     }
   }
 }

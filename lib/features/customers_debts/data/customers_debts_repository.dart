@@ -42,17 +42,14 @@ class CustomersDebtsRepository {
   Future<List<CustomerWithDebts>> getCustomers() async {
     _logger.debug('Fetching customers', context: LogContext.debts);
     final customers = await _db.select(_db.customers).get();
-    final debts = await _db.select(_db.debts).get();
+    final debtTotals = await _db.getCustomerDebtTotals();
+    final openCounts = await _db.getCustomerOpenDebtsCount();
 
     return customers.map((cust) {
-      final customerDebts = debts.where((d) => d.customerId == cust.id).toList();
-      final totalDebt = customerDebts.fold<double>(0.0, (sum, d) => sum + d.remainingAmount);
-      final openDebtsCount = customerDebts.where((d) => d.status != 'paid').length;
-
       return CustomerWithDebts(
         customer: cust,
-        totalDebt: totalDebt,
-        openDebtsCount: openDebtsCount,
+        totalDebt: debtTotals[cust.id] ?? 0.0,
+        openDebtsCount: openCounts[cust.id] ?? 0,
       );
     }).toList();
   }
@@ -114,9 +111,20 @@ class CustomersDebtsRepository {
 
   Future<List<DebtWithPayments>> getCustomerDebts(String customerId) async {
     _logger.debug('Fetching debts for customer: $customerId', context: LogContext.debts);
-    final debts = await (_db.select(_db.debts)..where((t) => t.customerId.equals(customerId))).get();
-    final payments = await _db.select(_db.debtPayments).get();
-    final invoices = await _db.select(_db.invoices).get();
+    final debts = await (_db.select(_db.debts)
+      ..where((t) => t.customerId.equals(customerId))
+      ..orderBy([(t) => OrderingTerm.desc(t.createdAt)])).get();
+
+    if (debts.isEmpty) return [];
+
+    final debtIds = debts.map((d) => d.id).toSet();
+    final payments = await (_db.select(_db.debtPayments)
+      ..where((t) => t.debtId.isIn(debtIds))).get();
+
+    final invoiceIds = debts.map((d) => d.invoiceId).whereType<String>().toSet();
+    final invoices = invoiceIds.isEmpty
+        ? <Invoice>[]
+        : await (_db.select(_db.invoices)..where((t) => t.id.isIn(invoiceIds))).get();
 
     final invoiceMap = {for (var inv in invoices) inv.id: inv};
 
@@ -136,47 +144,50 @@ class CustomersDebtsRepository {
     required String debtId,
     required double amountPaid,
   }) async {
+    if (amountPaid <= 0) return;
     _logger.info('Recording payment: debt=$debtId, amount=$amountPaid', context: LogContext.debts);
     final now = DateTime.now();
     final paymentId = _uuid.v4();
 
-    final debtList = await (_db.select(_db.debts)..where((t) => t.id.equals(debtId))).get();
-    if (debtList.isEmpty) {
-      _logger.warning('Payment cancelled - debt not found: $debtId', context: LogContext.debts);
-      return;
-    }
-    final debt = debtList.first;
+    await _db.transaction(() async {
+      final debtList = await (_db.select(_db.debts)..where((t) => t.id.equals(debtId))).get();
+      if (debtList.isEmpty) {
+        _logger.warning('Payment cancelled - debt not found: $debtId', context: LogContext.debts);
+        return;
+      }
+      final debt = debtList.first;
 
-    final newRemaining = (debt.remainingAmount - amountPaid).clamp(0.0, double.infinity);
-    final newStatus = newRemaining <= 0 ? 'paid' : 'partial';
+      final newRemaining = (debt.remainingAmount - amountPaid).clamp(0.0, double.infinity);
+      final newStatus = newRemaining <= 0 ? 'paid' : 'partial';
 
-    // Update debt
-    await (_db.update(_db.debts)..where((t) => t.id.equals(debtId))).write(DebtsCompanion(
-      remainingAmount: Value(newRemaining),
-      status: Value(newStatus),
-    ));
+      // Update debt
+      await (_db.update(_db.debts)..where((t) => t.id.equals(debtId))).write(DebtsCompanion(
+        remainingAmount: Value(newRemaining),
+        status: Value(newStatus),
+      ));
 
-    await _sync.enqueue('debts', debtId, 'update', {
-      'id': debtId,
-      'remaining_amount': newRemaining,
-      'status': newStatus,
-    });
+      await _sync.enqueue('debts', debtId, 'update', {
+        'id': debtId,
+        'remaining_amount': newRemaining,
+        'status': newStatus,
+      });
 
-    // Insert debt payment record
-    final payment = DebtPayment(
-      id: paymentId,
-      debtId: debtId,
-      amountPaid: amountPaid,
-      paidAt: now,
-    );
+      // Insert debt payment record
+      final payment = DebtPayment(
+        id: paymentId,
+        debtId: debtId,
+        amountPaid: amountPaid,
+        paidAt: now,
+      );
 
-    await _db.into(_db.debtPayments).insert(payment);
+      await _db.into(_db.debtPayments).insert(payment);
 
-    await _sync.enqueue('debt_payments', paymentId, 'insert', {
-      'id': paymentId,
-      'debt_id': debtId,
-      'amount_paid': amountPaid,
-      'paid_at': now.toIso8601String(),
+      await _sync.enqueue('debt_payments', paymentId, 'insert', {
+        'id': paymentId,
+        'debt_id': debtId,
+        'amount_paid': amountPaid,
+        'paid_at': now.toIso8601String(),
+      });
     });
   }
 }

@@ -1,6 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:small_mall/core/utils/theme.dart';
 import 'package:flutter/material.dart';
+import 'package:small_mall/core/utils/theme.dart';
 
 class PeriodFilterRow extends StatelessWidget {
   const PeriodFilterRow({

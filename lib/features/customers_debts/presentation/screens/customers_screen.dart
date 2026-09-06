@@ -1,10 +1,12 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:small_mall/core/widgets/app_toast.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/di/injection.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/core/widgets/app_screen_scaffold.dart';
 import 'package:small_mall/core/widgets/app_text_field.dart';
+import 'package:small_mall/core/widgets/app_toast.dart';
 import 'package:small_mall/core/widgets/entity_form_dialog.dart';
 import 'package:small_mall/core/widgets/loading_indicator.dart';
 import 'package:small_mall/core/widgets/primary_button.dart';
@@ -15,8 +17,6 @@ import 'package:small_mall/features/customers_debts/presentation/cubit/customers
 import 'package:small_mall/features/customers_debts/presentation/cubit/customers_debts_state.dart';
 import 'package:small_mall/features/customers_debts/presentation/widgets/customer_details_panel.dart';
 import 'package:small_mall/features/customers_debts/presentation/widgets/customers_list.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
 class CustomersScreen extends StatefulWidget {
   const CustomersScreen({super.key});
@@ -30,6 +30,12 @@ class _CustomersScreenState extends State<CustomersScreen> {
   String _searchQuery = '';
 
   @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return BlocProvider<CustomersDebtsCubit>(
       create: (context) => CustomersDebtsCubit(getIt<CustomersDebtsRepository>())..loadCustomers(),
@@ -37,6 +43,8 @@ class _CustomersScreenState extends State<CustomersScreen> {
         listener: (context, state) {
           if (state is CustomersDebtsError) {
             AppToast.error(context, message: state.message);
+          } else if (state is CustomersDebtsLoaded && state.errorMessage != null) {
+            AppToast.error(context, message: state.errorMessage!);
           }
         },
         builder: (context, state) {
@@ -55,7 +63,11 @@ class _CustomersScreenState extends State<CustomersScreen> {
                       searchLabel: 'customers.customer_name'.tr(),
                       searchHint: 'common.search'.tr(),
                       searchController: _searchController,
-                      onSearchChanged: (val) => _searchQuery = val,
+                      onSearchChanged: (val) {
+                        setState(() {
+                          _searchQuery = val;
+                        });
+                      },
                       actionLabel: 'customers.add_customer'.tr(),
                       actionIcon: Icons.person_add,
                       onActionPressed: () => _showAddCustomerDialog(context, cubit),
@@ -99,7 +111,12 @@ class _CustomersScreenState extends State<CustomersScreen> {
         );
       }
 
-      final customerData = state.customers.firstWhere((c) => c.customer.id == custId);
+      final customerData = state.customers.where((c) => c.customer.id == custId).firstOrNull;
+      if (customerData == null) {
+        return Center(
+          child: Text('customers.select_customer_to_view'.tr()),
+        );
+      }
       final debts = state.selectedCustomerDebts;
 
       return CustomerDetailsPanel(
@@ -191,7 +208,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
                     if (val == null || val.isEmpty) return 'common.required_field'.tr();
                     final parsed = double.tryParse(val);
                     if (parsed == null || parsed <= 0) return 'common.required_field'.tr();
-                    if (parsed > debtData.debt.remainingAmount) return 'المبلغ يتعدى قيمة الدين المتبقي!';
+                    if (parsed > debtData.debt.remainingAmount) return 'customers.payment_exceeds_debt'.tr();
                     return null;
                   },
                 ),
@@ -204,11 +221,14 @@ class _CustomersScreenState extends State<CustomersScreen> {
               label: 'customers.confirm_payment'.tr(),
               onPressed: () {
                 if (formKey.currentState?.validate() ?? false) {
-                  cubit.recordPayment(
-                    customerId: customerId,
-                    debtId: debtData.debt.id,
-                    amountPaid: double.parse(amountController.text),
-                  );
+                  final amount = double.tryParse(amountController.text);
+                  if (amount != null && amount > 0) {
+                    cubit.recordPayment(
+                      customerId: customerId,
+                      debtId: debtData.debt.id,
+                      amountPaid: amount,
+                    );
+                  }
                   Navigator.pop(ctx);
                 }
               },

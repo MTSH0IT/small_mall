@@ -1,9 +1,10 @@
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/material.dart';
 import 'package:small_mall/core/database/app_database.dart';
+import 'package:small_mall/core/utils/price_helper.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/core/widgets/price_tag_chip.dart';
 import 'package:small_mall/features/inventory/data/inventory_repository.dart';
-import 'package:flutter/material.dart';
 
 class ProductsTable extends StatelessWidget {
   const ProductsTable({
@@ -61,13 +62,13 @@ class ProductsTable extends StatelessWidget {
                     spacing: 8,
                     children: [
                       PriceTagChip(
-                        label: '${'inventory.retail_price'.tr()}: ${retail.priceValue.toStringAsFixed(1)}',
-                        backgroundColor: AppColors.primary,
+                        label: '${'retail'.priceLabelText}: ${retail.priceValue.toStringAsFixed(1)}',
+                        backgroundColor: 'retail'.priceLabelColor,
                         cutSize: 6,
                       ),
                       PriceTagChip(
-                        label: '${'inventory.wholesale_price'.tr()}: ${wholesale.priceValue.toStringAsFixed(1)}',
-                        backgroundColor: AppColors.accent,
+                        label: '${'wholesale'.priceLabelText}: ${wholesale.priceValue.toStringAsFixed(1)}',
+                        backgroundColor: 'wholesale'.priceLabelColor,
                         cutSize: 6,
                       ),
                     ],

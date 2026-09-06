@@ -186,7 +186,9 @@
     "payment_recorded": "Payment recorded and balance updated successfully",
     "max_payment": "Max payable amount:",
     "record_payment_title": "Record Debt Payment",
-    "confirm_payment": "Save Payment"
+    "confirm_payment": "Save Payment",
+    "partial": "Partial Payment",
+    "payment_exceeds_debt": "Amount exceeds remaining debt!"
   },
   "suppliers": {
     "title": "Suppliers & Purchasing",
@@ -203,7 +205,15 @@
     "empty_suppliers": "No suppliers found.",
     "select_supplier_to_view": "Select a supplier to view purchases and statement.",
     "supplier_saved": "Supplier saved successfully",
-    "purchase_recorded": "Purchase invoice recorded successfully"
+    "purchase_recorded": "Purchase invoice recorded successfully",
+    "record_purchase_from": "Record purchase invoice from: {}",
+    "select_product_to_add": "Select a product to add to invoice",
+    "no_products_added": "No products added to invoice yet",
+    "purchased_quantity": "Purchased Quantity",
+    "new_cost_price": "New Cost Price",
+    "cost_per_unit": "Cost Per Unit",
+    "total_purchase_value": "Total Purchase Value:",
+    "confirm_save_purchase": "Confirm and Save Purchase Invoice"
   },
   "reports": {
     "title": "Financial & Sales Reports",

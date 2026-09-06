@@ -1,5 +1,5 @@
-import 'package:small_mall/core/utils/theme.dart';
 import 'package:flutter/material.dart';
+import 'package:small_mall/core/utils/theme.dart';
 
 class PriceTagChip extends StatelessWidget {
 

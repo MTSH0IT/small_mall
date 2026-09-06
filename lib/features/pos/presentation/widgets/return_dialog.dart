@@ -1,11 +1,12 @@
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/utils/theme.dart';
+import 'package:small_mall/core/widgets/app_toast.dart';
 import 'package:small_mall/core/widgets/primary_button.dart';
 import 'package:small_mall/features/pos/presentation/cubit/pos_cubit.dart';
 import 'package:small_mall/features/pos/presentation/cubit/pos_state.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
 class ReturnDialog extends StatefulWidget {
   const ReturnDialog({super.key});
@@ -49,6 +50,9 @@ class _ReturnDialogState extends State<ReturnDialog> {
     setState(() {
       _selectedInvoice = invoice;
       _selectedInvoiceItems = items;
+      for (final c in _quantityControllers.values) {
+        c.dispose();
+      }
       _quantityControllers.clear();
       _originalQuantities.clear();
       for (final item in items) {
@@ -77,6 +81,17 @@ class _ReturnDialogState extends State<ReturnDialog> {
       final controller = _quantityControllers[item.id];
       if (controller != null) {
         final qty = double.tryParse(controller.text) ?? 0;
+        final originalQty = _originalQuantities[item.id] ?? 0.0;
+
+        if (qty > originalQty) {
+          AppToast.warning(
+            context,
+            message: 'الكمية المراد إرجاعها تتجاوز الكمية المباعة (${originalQty.toStringAsFixed(0)})',
+          );
+          setState(() => _isSubmitting = false);
+          return;
+        }
+
         if (qty > 0) {
           returnItems.add({
             'productId': item.productId,
@@ -88,9 +103,7 @@ class _ReturnDialogState extends State<ReturnDialog> {
     }
 
     if (returnItems.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('pos.return_reason'.tr())),
-      );
+      AppToast.warning(context, message: 'pos.return_reason'.tr());
       setState(() => _isSubmitting = false);
       return;
     }
@@ -103,15 +116,11 @@ class _ReturnDialogState extends State<ReturnDialog> {
       );
       if (mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('pos.return_success'.tr())),
-        );
+        AppToast.success(context, message: 'pos.return_success'.tr());
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${'common.error'.tr()}: $e')),
-        );
+        AppToast.error(context, message: '${'common.error'.tr()}: $e');
       }
     } finally {
       if (mounted) setState(() => _isSubmitting = false);

@@ -1,6 +1,6 @@
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:small_mall/features/invoices/presentation/cubit/invoices_state.dart';
 import 'package:small_mall/features/pos/data/pos_repository.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
 class InvoicesCubit extends Cubit<InvoicesState> {
   InvoicesCubit(this._posRepository) : super(InvoicesInitial());
@@ -19,20 +19,12 @@ class InvoicesCubit extends Cubit<InvoicesState> {
   void selectInvoice(String? invoiceId) {
     if (state is! InvoicesLoaded) return;
     final loaded = state as InvoicesLoaded;
-    emit(InvoicesLoaded(
-      invoices: loaded.invoices,
-      selectedInvoiceId: invoiceId,
-      typeFilter: loaded.typeFilter,
-    ));
+    emit(loaded.copyWith(selectedInvoiceId: invoiceId));
   }
 
   void setTypeFilter(String filter) {
     if (state is! InvoicesLoaded) return;
     final loaded = state as InvoicesLoaded;
-    emit(InvoicesLoaded(
-      invoices: loaded.invoices,
-      selectedInvoiceId: loaded.selectedInvoiceId,
-      typeFilter: filter,
-    ));
+    emit(loaded.copyWith(typeFilter: filter));
   }
 }

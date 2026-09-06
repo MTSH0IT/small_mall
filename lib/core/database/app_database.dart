@@ -176,6 +176,64 @@ class AppDatabase extends _$AppDatabase {
 
   @override
   int get schemaVersion => 1;
+
+  /// Fast SQL aggregation for all product stock balances
+  Future<Map<String, double>> getAllStockBalances() async {
+    final qtySum = stockMovements.quantity.sum();
+    final query = selectOnly(stockMovements)
+      ..addColumns([stockMovements.productId, qtySum])
+      ..groupBy([stockMovements.productId]);
+    final rows = await query.get();
+    return {
+      for (final row in rows)
+        row.read(stockMovements.productId)!: row.read(qtySum) ?? 0.0,
+    };
+  }
+
+  /// Fast SQL aggregation for a single product's stock balance
+  Future<double> getProductStock(String prodId) async {
+    final qtySum = stockMovements.quantity.sum();
+    final query = selectOnly(stockMovements)
+      ..addColumns([qtySum])
+      ..where(stockMovements.productId.equals(prodId));
+    final row = await query.getSingleOrNull();
+    return row?.read(qtySum) ?? 0.0;
+  }
+
+  /// Fast SQL sum of all outstanding debt amounts
+  Future<double> getTotalRemainingDebts() async {
+    final remainingSum = debts.remainingAmount.sum();
+    final query = selectOnly(debts)..addColumns([remainingSum]);
+    final row = await query.getSingleOrNull();
+    return row?.read(remainingSum) ?? 0.0;
+  }
+
+  /// Fast SQL sum of remaining debts per customer
+  Future<Map<String, double>> getCustomerDebtTotals() async {
+    final remainingSum = debts.remainingAmount.sum();
+    final query = selectOnly(debts)
+      ..addColumns([debts.customerId, remainingSum])
+      ..groupBy([debts.customerId]);
+    final rows = await query.get();
+    return {
+      for (final row in rows)
+        row.read(debts.customerId)!: row.read(remainingSum) ?? 0.0,
+    };
+  }
+
+  /// Fast SQL count of open debts per customer
+  Future<Map<String, int>> getCustomerOpenDebtsCount() async {
+    final countExp = debts.id.count();
+    final query = selectOnly(debts)
+      ..addColumns([debts.customerId, countExp])
+      ..where(debts.status.equals('paid').not())
+      ..groupBy([debts.customerId]);
+    final rows = await query.get();
+    return {
+      for (final row in rows)
+        row.read(debts.customerId)!: row.read(countExp) ?? 0,
+    };
+  }
 }
 
 LazyDatabase _openConnection() {

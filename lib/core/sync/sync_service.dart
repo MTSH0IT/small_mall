@@ -8,6 +8,7 @@ import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/logging/app_logger.dart';
 import 'package:small_mall/core/logging/log_context.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uuid/uuid.dart';
 
 enum SyncStatus { idle, syncing, success, error, offline }
 
@@ -15,6 +16,7 @@ class SyncService {
   SyncService(this._db, this._logger);
   final AppDatabase _db;
   final AppLogger _logger;
+  final _uuid = const Uuid();
   final ValueNotifier<SyncStatus> status = ValueNotifier<SyncStatus>(
     SyncStatus.idle,
   );
@@ -82,10 +84,12 @@ class SyncService {
   }
 
   Future<void> updatePendingCount() async {
-    final list = await _db.select(_db.syncQueue).get();
-    pendingCount.value = list
-        .where((item) => item.status == 'pending' || item.status == 'failed')
-        .length;
+    final countExp = _db.syncQueue.id.count();
+    final query = _db.selectOnly(_db.syncQueue)
+      ..addColumns([countExp])
+      ..where(_db.syncQueue.status.equals('pending') | _db.syncQueue.status.equals('failed'));
+    final result = await query.map((row) => row.read(countExp)).getSingleOrNull();
+    pendingCount.value = result ?? 0;
   }
 
   // Queue a database operation
@@ -100,7 +104,7 @@ class SyncService {
       context: LogContext.syncQueue,
     );
     final queueItem = SyncQueueCompanion.insert(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      id: _uuid.v4(),
       targetTable: tableName,
       recordId: recordId,
       operation: operation,

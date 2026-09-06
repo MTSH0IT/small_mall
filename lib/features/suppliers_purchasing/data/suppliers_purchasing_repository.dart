@@ -113,77 +113,79 @@ class SuppliersPurchasingRepository {
     final purchaseId = _uuid.v4();
     final now = DateTime.now();
 
-    final invoice = PurchaseInvoice(
-      id: purchaseId,
-      supplierId: supplierId,
-      totalAmount: totalAmount,
-      createdAt: now,
-    );
-
-    // Insert purchase invoice
-    await _db.into(_db.purchaseInvoices).insert(invoice);
-    await _sync.enqueue('purchase_invoices', purchaseId, 'insert', {
-      'id': purchaseId,
-      'supplier_id': supplierId,
-      'total_amount': totalAmount,
-      'created_at': now.toIso8601String(),
-    });
-
-    for (final item in items) {
-      final itemId = _uuid.v4();
-      final prodId = item['productId'] as String;
-      final qty = (item['quantity'] as num).toDouble();
-      final cost = (item['unitCost'] as num).toDouble();
-
-      final purchaseItem = PurchaseItem(
-        id: itemId,
-        purchaseInvoiceId: purchaseId,
-        productId: prodId,
-        quantity: qty,
-        unitCost: cost,
-      );
-
-      // Insert purchase item record
-      await _db.into(_db.purchaseItems).insert(purchaseItem);
-      await _sync.enqueue('purchase_items', itemId, 'insert', {
-        'id': itemId,
-        'purchase_invoice_id': purchaseId,
-        'product_id': prodId,
-        'quantity': qty,
-        'unit_cost': cost,
-      });
-
-      // Increase stock via Stock Movement (positive quantity)
-      final movementId = _uuid.v4();
-      final movement = StockMovement(
-        id: movementId,
-        productId: prodId,
-        type: 'purchase',
-        quantity: qty,
+    await _db.transaction(() async {
+      final invoice = PurchaseInvoice(
+        id: purchaseId,
+        supplierId: supplierId,
+        totalAmount: totalAmount,
         createdAt: now,
-        referenceId: purchaseId,
       );
 
-      await _db.into(_db.stockMovements).insert(movement);
-      await _sync.enqueue('stock_movements', movementId, 'insert', {
-        'id': movementId,
-        'product_id': prodId,
-        'type': 'purchase',
-        'quantity': qty,
+      // Insert purchase invoice
+      await _db.into(_db.purchaseInvoices).insert(invoice);
+      await _sync.enqueue('purchase_invoices', purchaseId, 'insert', {
+        'id': purchaseId,
+        'supplier_id': supplierId,
+        'total_amount': totalAmount,
         'created_at': now.toIso8601String(),
-        'reference_id': purchaseId,
       });
 
-      // Update product's cost price
-      await (_db.update(_db.products)..where((t) => t.id.equals(prodId))).write(
-        ProductsCompanion(costPrice: Value(cost), updatedAt: Value(now)),
-      );
+      for (final item in items) {
+        final itemId = _uuid.v4();
+        final prodId = item['productId'] as String;
+        final qty = (item['quantity'] as num).toDouble();
+        final cost = (item['unitCost'] as num).toDouble();
 
-      await _sync.enqueue('products', prodId, 'update', {
-        'id': prodId,
-        'cost_price': cost,
-        'updated_at': now.toIso8601String(),
-      });
-    }
+        final purchaseItem = PurchaseItem(
+          id: itemId,
+          purchaseInvoiceId: purchaseId,
+          productId: prodId,
+          quantity: qty,
+          unitCost: cost,
+        );
+
+        // Insert purchase item record
+        await _db.into(_db.purchaseItems).insert(purchaseItem);
+        await _sync.enqueue('purchase_items', itemId, 'insert', {
+          'id': itemId,
+          'purchase_invoice_id': purchaseId,
+          'product_id': prodId,
+          'quantity': qty,
+          'unit_cost': cost,
+        });
+
+        // Increase stock via Stock Movement (positive quantity)
+        final movementId = _uuid.v4();
+        final movement = StockMovement(
+          id: movementId,
+          productId: prodId,
+          type: 'purchase',
+          quantity: qty,
+          createdAt: now,
+          referenceId: purchaseId,
+        );
+
+        await _db.into(_db.stockMovements).insert(movement);
+        await _sync.enqueue('stock_movements', movementId, 'insert', {
+          'id': movementId,
+          'product_id': prodId,
+          'type': 'purchase',
+          'quantity': qty,
+          'created_at': now.toIso8601String(),
+          'reference_id': purchaseId,
+        });
+
+        // Update product's cost price
+        await (_db.update(_db.products)..where((t) => t.id.equals(prodId))).write(
+          ProductsCompanion(costPrice: Value(cost), updatedAt: Value(now)),
+        );
+
+        await _sync.enqueue('products', prodId, 'update', {
+          'id': prodId,
+          'cost_price': cost,
+          'updated_at': now.toIso8601String(),
+        });
+      }
+    });
   }
 }

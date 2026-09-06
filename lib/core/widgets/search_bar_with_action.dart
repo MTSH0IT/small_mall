@@ -1,7 +1,7 @@
+import 'package:flutter/material.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/core/widgets/app_text_field.dart';
 import 'package:small_mall/core/widgets/primary_button.dart';
-import 'package:flutter/material.dart';
 
 class SearchBarWithAction extends StatelessWidget {
 

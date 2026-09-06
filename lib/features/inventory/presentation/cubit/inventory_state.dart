@@ -8,9 +8,27 @@ class InventoryInitial extends InventoryState {}
 class InventoryLoading extends InventoryState {}
 
 class InventoryLoaded extends InventoryState {
-  InventoryLoaded({required this.products, required this.categories});
+  InventoryLoaded({
+    required this.products,
+    required this.categories,
+    this.errorMessage,
+  });
   final List<ProductWithDetails> products;
   final List<Category> categories;
+  final String? errorMessage;
+
+  InventoryLoaded copyWith({
+    List<ProductWithDetails>? products,
+    List<Category>? categories,
+    String? errorMessage,
+    bool clearError = false,
+  }) {
+    return InventoryLoaded(
+      products: products ?? this.products,
+      categories: categories ?? this.categories,
+      errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+    );
+  }
 }
 
 class InventoryError extends InventoryState {

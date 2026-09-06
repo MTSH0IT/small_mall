@@ -1,9 +1,11 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:small_mall/core/widgets/app_toast.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/di/injection.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/core/widgets/app_screen_scaffold.dart';
+import 'package:small_mall/core/widgets/app_toast.dart';
 import 'package:small_mall/core/widgets/entity_form_dialog.dart';
 import 'package:small_mall/core/widgets/loading_indicator.dart';
 import 'package:small_mall/core/widgets/search_bar_with_action.dart';
@@ -14,8 +16,6 @@ import 'package:small_mall/features/suppliers_purchasing/presentation/cubit/supp
 import 'package:small_mall/features/suppliers_purchasing/presentation/cubit/suppliers_purchasing_state.dart';
 import 'package:small_mall/features/suppliers_purchasing/presentation/widgets/record_purchase_panel.dart';
 import 'package:small_mall/features/suppliers_purchasing/presentation/widgets/suppliers_list.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
 class SuppliersScreen extends StatefulWidget {
   const SuppliersScreen({super.key});
@@ -39,6 +39,12 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
     _loadProducts();
   }
 
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadProducts() async {
     final list = await _inventoryRepo.getProducts();
     setState(() {
@@ -55,6 +61,9 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
           if (state is SuppliersPurchasingError) {
             AppToast.error(context, message: state.message);
           } else if (state is SuppliersPurchasingLoaded) {
+            if (state.errorMessage != null) {
+              AppToast.error(context, message: state.errorMessage!);
+            }
             _loadProducts();
           }
         },
@@ -74,7 +83,11 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                       searchLabel: 'suppliers.supplier_name'.tr(),
                       searchHint: 'common.search'.tr(),
                       searchController: _searchController,
-                      onSearchChanged: (val) => _searchQuery = val,
+                      onSearchChanged: (val) {
+                        setState(() {
+                          _searchQuery = val;
+                        });
+                      },
                       actionLabel: 'suppliers.add_supplier'.tr(),
                       actionIcon: Icons.local_shipping,
                       onActionPressed: () => _showAddSupplierDialog(context, cubit),

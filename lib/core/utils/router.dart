@@ -1,3 +1,4 @@
+import 'package:go_router/go_router.dart';
 import 'package:small_mall/core/widgets/main_layout.dart';
 import 'package:small_mall/features/customers_debts/presentation/screens/customers_screen.dart';
 import 'package:small_mall/features/inventory/presentation/screens/inventory_screen.dart';
@@ -8,7 +9,6 @@ import 'package:small_mall/features/pos/presentation/screens/pos_screen.dart';
 import 'package:small_mall/features/reports/presentation/screens/reports_screen.dart';
 import 'package:small_mall/features/settings/presentation/screens/settings_screen.dart';
 import 'package:small_mall/features/suppliers_purchasing/presentation/screens/suppliers_screen.dart';
-import 'package:go_router/go_router.dart';
 
 final GoRouter appRouter = GoRouter(
   initialLocation: '/login',

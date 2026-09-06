@@ -1,11 +1,11 @@
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/material.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/core/widgets/primary_button.dart';
 import 'package:small_mall/features/pos/presentation/cubit/pos_state.dart';
-import 'package:flutter/material.dart';
 
-class CheckoutPanel extends StatelessWidget {
+class CheckoutPanel extends StatefulWidget {
   const CheckoutPanel({
     super.key,
     required this.state,
@@ -26,8 +26,42 @@ class CheckoutPanel extends StatelessWidget {
   final VoidCallback? onCheckoutPressed;
 
   @override
+  State<CheckoutPanel> createState() => _CheckoutPanelState();
+}
+
+class _CheckoutPanelState extends State<CheckoutPanel> {
+  late TextEditingController _discountController;
+
+  @override
+  void initState() {
+    super.initState();
+    _discountController = TextEditingController(
+      text: widget.state.invoiceDiscount > 0 ? widget.state.invoiceDiscount.toStringAsFixed(2) : '',
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant CheckoutPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.state.invoiceDiscount != widget.state.invoiceDiscount) {
+      final current = double.tryParse(_discountController.text) ?? 0.0;
+      if (current != widget.state.invoiceDiscount) {
+        _discountController.text =
+            widget.state.invoiceDiscount > 0 ? widget.state.invoiceDiscount.toStringAsFixed(2) : '';
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _discountController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final state = widget.state;
 
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -55,6 +89,7 @@ class CheckoutPanel extends StatelessWidget {
                 child: SizedBox(
                   height: 38,
                   child: TextField(
+                    controller: _discountController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     style: AppTheme.numericStyle(fontSize: 14),
                     decoration: InputDecoration(
@@ -64,7 +99,7 @@ class CheckoutPanel extends StatelessWidget {
                     ),
                     onChanged: (val) {
                       final discount = double.tryParse(val) ?? 0.0;
-                      onInvoiceDiscountChanged(discount);
+                      widget.onInvoiceDiscountChanged(discount);
                     },
                   ),
                 ),
@@ -93,7 +128,7 @@ class CheckoutPanel extends StatelessWidget {
                   ],
                   selected: {state.paymentType},
                   onSelectionChanged: (selection) {
-                    onPaymentTypeChanged(selection.first);
+                    widget.onPaymentTypeChanged(selection.first);
                   },
                   style: SegmentedButton.styleFrom(
                     selectedBackgroundColor: AppColors.primary,
@@ -123,12 +158,12 @@ class CheckoutPanel extends StatelessWidget {
                       child: Text('${c.customer.name} (${'customers.balance'.tr()}: ${c.totalDebt.toStringAsFixed(1)})'),
                     );
                   }).toList(),
-                  onChanged: onCustomerChanged,
+                  onChanged: widget.onCustomerChanged,
                 ),
               ),
               IconButton(
                 icon: const Icon(Icons.person_add_alt_1_outlined, color: AppColors.primary),
-                onPressed: onAddCustomerPressed,
+                onPressed: widget.onAddCustomerPressed,
               )
             ],
           ),
@@ -157,8 +192,8 @@ class CheckoutPanel extends StatelessWidget {
           PrimaryButton(
             label: state.paymentType == 'debt' ? 'pos.checkout_debt'.tr() : 'pos.checkout_cash'.tr(),
             icon: Icons.check,
-            onPressed: onCheckoutPressed,
-            isLoading: isLoading,
+            onPressed: widget.onCheckoutPressed,
+            isLoading: widget.isLoading,
           ),
         ],
       ),

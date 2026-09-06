@@ -1,17 +1,17 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:small_mall/core/widgets/app_toast.dart';
-import 'package:small_mall/core/di/injection.dart';
-import 'package:small_mall/core/sync/sync_service.dart';
-import 'package:small_mall/core/utils/theme.dart';
-import 'package:small_mall/core/widgets/app_screen_scaffold.dart';
-import 'package:small_mall/core/widgets/loading_indicator.dart';
-import 'package:small_mall/core/widgets/primary_button.dart';
-import 'package:small_mall/features/settings/presentation/widgets/settings_section.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:small_mall/core/di/injection.dart';
+import 'package:small_mall/core/sync/sync_service.dart';
+import 'package:small_mall/core/utils/theme.dart';
+import 'package:small_mall/core/widgets/app_screen_scaffold.dart';
+import 'package:small_mall/core/widgets/app_toast.dart';
+import 'package:small_mall/core/widgets/loading_indicator.dart';
+import 'package:small_mall/core/widgets/primary_button.dart';
+import 'package:small_mall/features/settings/presentation/widgets/settings_section.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -29,18 +29,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
-    _loadSettings();
+    _pendingCount = _syncService.pendingCount.value;
+    _syncService.pendingCount.addListener(_onPendingCountChanged);
+    _loadDbPath();
   }
 
-  Future<void> _loadSettings() async {
+  Future<void> _loadDbPath() async {
     final dbFolder = await getApplicationDocumentsDirectory();
-
-    setState(() {
-      _dbPath = p.join(dbFolder.path, 'small_mall.db');
-      _pendingCount = _syncService.pendingCount.value;
-    });
-
-    _syncService.pendingCount.addListener(_onPendingCountChanged);
+    if (mounted) {
+      setState(() {
+        _dbPath = p.join(dbFolder.path, 'small_mall.db');
+      });
+    }
   }
 
   void _onPendingCountChanged() {

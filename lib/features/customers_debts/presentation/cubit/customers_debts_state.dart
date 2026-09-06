@@ -11,10 +11,26 @@ class CustomersDebtsLoaded extends CustomersDebtsState {
     required this.customers,
     this.selectedCustomerDebts,
     this.selectedCustomerId,
+    this.errorMessage,
   });
   final List<CustomerWithDebts> customers;
   final List<DebtWithPayments>? selectedCustomerDebts;
   final String? selectedCustomerId;
+  final String? errorMessage;
+
+  CustomersDebtsLoaded copyWith({
+    List<CustomerWithDebts>? customers,
+    List<DebtWithPayments>? selectedCustomerDebts,
+    String? selectedCustomerId,
+    String? errorMessage,
+  }) {
+    return CustomersDebtsLoaded(
+      customers: customers ?? this.customers,
+      selectedCustomerDebts: selectedCustomerDebts ?? this.selectedCustomerDebts,
+      selectedCustomerId: selectedCustomerId ?? this.selectedCustomerId,
+      errorMessage: errorMessage,
+    );
+  }
 }
 
 class CustomersDebtsError extends CustomersDebtsState {

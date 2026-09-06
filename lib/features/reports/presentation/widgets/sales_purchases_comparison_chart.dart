@@ -1,6 +1,6 @@
+import 'package:flutter/material.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/features/reports/data/reports_repository.dart';
-import 'package:flutter/material.dart';
 
 class SalesPurchasesComparisonChart extends StatelessWidget {
 

@@ -1,17 +1,17 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:small_mall/core/widgets/app_toast.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:small_mall/core/di/injection.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/core/widgets/app_screen_scaffold.dart';
 import 'package:small_mall/core/widgets/app_text_field.dart';
+import 'package:small_mall/core/widgets/app_toast.dart';
 import 'package:small_mall/core/widgets/loading_indicator.dart';
 import 'package:small_mall/core/widgets/primary_button.dart';
 import 'package:small_mall/features/inventory/data/inventory_repository.dart';
 import 'package:small_mall/features/inventory/presentation/cubit/inventory_cubit.dart';
 import 'package:small_mall/features/inventory/presentation/cubit/inventory_state.dart';
 import 'package:small_mall/features/inventory/presentation/widgets/inventory_table.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
 class InventoryScreen extends StatefulWidget {
   const InventoryScreen({super.key});

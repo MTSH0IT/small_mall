@@ -1,9 +1,9 @@
+import 'package:flutter/material.dart';
+import 'package:small_mall/core/utils/price_helper.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/features/pos/presentation/cubit/pos_state.dart';
-import 'package:flutter/material.dart';
 
-class CartItemRow extends StatelessWidget {
-
+class CartItemRow extends StatefulWidget {
   const CartItemRow({
     super.key,
     required this.item,
@@ -11,17 +11,48 @@ class CartItemRow extends StatelessWidget {
     required this.onQuantityChanged,
     required this.onDiscountChanged,
   });
+
   final CartItem item;
   final VoidCallback onRemove;
   final ValueChanged<double> onQuantityChanged;
   final ValueChanged<double> onDiscountChanged;
 
   @override
+  State<CartItemRow> createState() => _CartItemRowState();
+}
+
+class _CartItemRowState extends State<CartItemRow> {
+  late TextEditingController _discountController;
+
+  @override
+  void initState() {
+    super.initState();
+    _discountController = TextEditingController(
+      text: widget.item.discount > 0 ? widget.item.discount.toStringAsFixed(2) : '',
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant CartItemRow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.item.discount != widget.item.discount) {
+      final currentParsed = double.tryParse(_discountController.text) ?? 0.0;
+      if (currentParsed != widget.item.discount) {
+        _discountController.text = widget.item.discount > 0 ? widget.item.discount.toStringAsFixed(2) : '';
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _discountController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final label = item.selectedPrice.priceLabel == 'retail'
-        ? 'مفرق'
-        : (item.selectedPrice.priceLabel == 'wholesale' ? 'جملة' : 'عرض');
+    final label = widget.item.selectedPrice.priceLabel.priceLabelDisplay;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
@@ -37,14 +68,14 @@ class CartItemRow extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      item.productDetails.product.name,
+                      widget.item.productDetails.product.name,
                       style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'سعر الـ$label: ${item.selectedPrice.priceValue.toStringAsFixed(2)}',
+                      'سعر $label: ${widget.item.selectedPrice.priceValue.toStringAsFixed(2)}',
                       style: theme.textTheme.labelSmall,
                     ),
                   ],
@@ -53,7 +84,7 @@ class CartItemRow extends StatelessWidget {
               // Delete Button
               IconButton(
                 icon: const Icon(Icons.delete_outline, color: AppColors.danger, size: 20),
-                onPressed: onRemove,
+                onPressed: widget.onRemove,
               ),
             ],
           ),
@@ -66,21 +97,23 @@ class CartItemRow extends StatelessWidget {
                 children: [
                   IconButton(
                     icon: const Icon(Icons.remove_circle_outline, size: 20, color: AppColors.primary),
-                    onPressed: item.quantity > 1
-                        ? () => onQuantityChanged(item.quantity - 1)
+                    onPressed: widget.item.quantity > 1
+                        ? () => widget.onQuantityChanged(widget.item.quantity - 1)
                         : null,
                   ),
                   Container(
                     alignment: Alignment.center,
                     width: 40,
                     child: Text(
-                      item.quantity.toStringAsFixed(0),
+                      widget.item.quantity.toStringAsFixed(widget.item.quantity % 1 == 0 ? 0 : 1),
                       style: AppTheme.numericStyle(fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                   ),
                   IconButton(
                     icon: const Icon(Icons.add_circle_outline, size: 20, color: AppColors.primary),
-                    onPressed: () => onQuantityChanged(item.quantity + 1),
+                    onPressed: widget.item.quantity + 1 <= widget.item.productDetails.currentStock
+                        ? () => widget.onQuantityChanged(widget.item.quantity + 1)
+                        : null,
                   ),
                 ],
               ),
@@ -90,6 +123,7 @@ class CartItemRow extends StatelessWidget {
                 child: SizedBox(
                   height: 36,
                   child: TextField(
+                    controller: _discountController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     style: AppTheme.numericStyle(fontSize: 13),
                     decoration: InputDecoration(
@@ -101,7 +135,7 @@ class CartItemRow extends StatelessWidget {
                     ),
                     onChanged: (val) {
                       final discount = double.tryParse(val) ?? 0.0;
-                      onDiscountChanged(discount);
+                      widget.onDiscountChanged(discount);
                     },
                   ),
                 ),
@@ -109,7 +143,7 @@ class CartItemRow extends StatelessWidget {
               const SizedBox(width: 16),
               // Subtotal
               Text(
-                item.subtotal.toStringAsFixed(2),
+                widget.item.subtotal.toStringAsFixed(2),
                 style: AppTheme.numericStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
               ),
             ],

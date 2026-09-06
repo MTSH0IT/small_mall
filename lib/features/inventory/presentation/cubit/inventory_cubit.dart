@@ -1,6 +1,6 @@
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:small_mall/features/inventory/data/inventory_repository.dart';
 import 'package:small_mall/features/inventory/presentation/cubit/inventory_state.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
 class InventoryCubit extends Cubit<InventoryState> {
 
@@ -39,7 +39,11 @@ class InventoryCubit extends Cubit<InventoryState> {
       );
       await loadInventory();
     } catch (e) {
-      emit(InventoryError(e.toString()));
+      if (state is InventoryLoaded) {
+        emit((state as InventoryLoaded).copyWith(errorMessage: e.toString()));
+      } else {
+        emit(InventoryError(e.toString()));
+      }
     }
   }
 
@@ -62,7 +66,11 @@ class InventoryCubit extends Cubit<InventoryState> {
       );
       await loadInventory();
     } catch (e) {
-      emit(InventoryError(e.toString()));
+      if (state is InventoryLoaded) {
+        emit((state as InventoryLoaded).copyWith(errorMessage: e.toString()));
+      } else {
+        emit(InventoryError(e.toString()));
+      }
     }
   }
 
@@ -71,7 +79,11 @@ class InventoryCubit extends Cubit<InventoryState> {
       await _repository.deleteProduct(id);
       await loadInventory();
     } catch (e) {
-      emit(InventoryError(e.toString()));
+      if (state is InventoryLoaded) {
+        emit((state as InventoryLoaded).copyWith(errorMessage: e.toString()));
+      } else {
+        emit(InventoryError(e.toString()));
+      }
     }
   }
 
@@ -80,7 +92,11 @@ class InventoryCubit extends Cubit<InventoryState> {
       await _repository.adjustStock(productId, quantity, reason);
       await loadInventory();
     } catch (e) {
-      emit(InventoryError(e.toString()));
+      if (state is InventoryLoaded) {
+        emit((state as InventoryLoaded).copyWith(errorMessage: e.toString()));
+      } else {
+        emit(InventoryError(e.toString()));
+      }
     }
   }
 
@@ -89,7 +105,11 @@ class InventoryCubit extends Cubit<InventoryState> {
       await _repository.addCategory(name);
       await loadInventory();
     } catch (e) {
-      emit(InventoryError(e.toString()));
+      if (state is InventoryLoaded) {
+        emit((state as InventoryLoaded).copyWith(errorMessage: e.toString()));
+      } else {
+        emit(InventoryError(e.toString()));
+      }
     }
   }
 }

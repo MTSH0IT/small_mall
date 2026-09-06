@@ -1,18 +1,18 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:small_mall/core/widgets/app_toast.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/di/injection.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/core/widgets/app_screen_scaffold.dart';
 import 'package:small_mall/core/widgets/app_text_field.dart';
+import 'package:small_mall/core/widgets/app_toast.dart';
 import 'package:small_mall/core/widgets/loading_indicator.dart';
 import 'package:small_mall/core/widgets/primary_button.dart';
 import 'package:small_mall/features/inventory/data/inventory_repository.dart';
 import 'package:small_mall/features/inventory/presentation/cubit/inventory_cubit.dart';
 import 'package:small_mall/features/inventory/presentation/cubit/inventory_state.dart';
 import 'package:small_mall/features/inventory/presentation/widgets/products_table.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
 class ProductsScreen extends StatefulWidget {
   const ProductsScreen({super.key});
@@ -26,6 +26,12 @@ class _ProductsScreenState extends State<ProductsScreen> {
   String _searchQuery = '';
 
   @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return BlocProvider<InventoryCubit>(
       create: (context) => InventoryCubit(getIt<InventoryRepository>())..loadInventory(),
@@ -33,6 +39,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
         listener: (context, state) {
           if (state is InventoryError) {
             AppToast.error(context, message: state.message);
+          } else if (state is InventoryLoaded && state.errorMessage != null) {
+            AppToast.error(context, message: state.errorMessage!);
           }
         },
         builder: (context, state) {
@@ -200,7 +208,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
-                      initialValue: selectedCatId,
+                      initialValue: categories.any((c) => c.id == selectedCatId) ? selectedCatId : null,
                       hint: Text('inventory.category'.tr()),
                       decoration: InputDecoration(
                         labelText: 'inventory.category'.tr(),
@@ -291,30 +299,37 @@ class _ProductsScreenState extends State<ProductsScreen> {
               label: 'inventory.save_product'.tr(),
               onPressed: () {
                 if (formKey.currentState?.validate() ?? false) {
+                  final retailPrice = double.tryParse(retailController.text) ?? 0.0;
+                  final wholesalePrice = double.tryParse(wholesaleController.text) ?? 0.0;
+                  final promoPrice = double.tryParse(promoController.text);
+                  final costPrice = double.tryParse(costController.text) ?? 0.0;
+                  final minStock = double.tryParse(minStockController.text) ?? 5.0;
+                  final initialStock = double.tryParse(initialStockController.text) ?? 0.0;
+
                   final prices = [
-                    {'price_label': 'retail', 'price_value': double.parse(retailController.text)},
-                    {'price_label': 'wholesale', 'price_value': double.parse(wholesaleController.text)},
+                    {'price_label': 'retail', 'price_value': retailPrice},
+                    {'price_label': 'wholesale', 'price_value': wholesalePrice},
                   ];
-                  if (promoController.text.isNotEmpty) {
-                    prices.add({'price_label': 'promo', 'price_value': double.parse(promoController.text)});
+                  if (promoPrice != null && promoPrice > 0) {
+                    prices.add({'price_label': 'promo', 'price_value': promoPrice});
                   }
 
                   if (existing == null) {
                     cubit.addProduct(
                       name: nameController.text,
                       categoryId: selectedCatId,
-                      costPrice: double.parse(costController.text),
-                      minStockAlert: double.parse(minStockController.text),
+                      costPrice: costPrice,
+                      minStockAlert: minStock,
                       prices: prices,
-                      initialStock: double.parse(initialStockController.text),
+                      initialStock: initialStock,
                     );
                   } else {
                     cubit.updateProduct(
                       id: existing.product.id,
                       name: nameController.text,
                       categoryId: selectedCatId,
-                      costPrice: double.parse(costController.text),
-                      minStockAlert: double.parse(minStockController.text),
+                      costPrice: costPrice,
+                      minStockAlert: minStock,
                       prices: prices,
                     );
                   }

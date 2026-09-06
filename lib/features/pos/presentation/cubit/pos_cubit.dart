@@ -1,9 +1,10 @@
+import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/features/customers_debts/data/customers_debts_repository.dart';
 import 'package:small_mall/features/inventory/data/inventory_repository.dart';
 import 'package:small_mall/features/pos/data/pos_repository.dart';
 import 'package:small_mall/features/pos/presentation/cubit/pos_state.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
 class POSCubit extends Cubit<POSState> {
   POSCubit(
@@ -49,14 +50,12 @@ class POSCubit extends Cubit<POSState> {
     if (existingIndex >= 0) {
       final existingItem = updatedCart[existingIndex];
       if (existingItem.quantity + 1 <= product.currentStock) {
-        updatedCart[existingIndex] = CartItem(
-          productDetails: product,
-          selectedPrice: price,
+        updatedCart[existingIndex] = existingItem.copyWith(
           quantity: existingItem.quantity + 1,
-          discount: existingItem.discount,
         );
       }
     } else {
+      if (product.currentStock < 1.0) return; // Prevent adding out-of-stock item
       updatedCart.add(CartItem(
         productDetails: product,
         selectedPrice: price,
@@ -64,14 +63,7 @@ class POSCubit extends Cubit<POSState> {
       ));
     }
 
-    emit(POSLoaded(
-      products: loaded.products,
-      customers: loaded.customers,
-      cart: updatedCart,
-      selectedCustomer: loaded.selectedCustomer,
-      invoiceDiscount: loaded.invoiceDiscount,
-      paymentType: loaded.paymentType,
-    ));
+    emit(loaded.copyWith(cart: updatedCart));
   }
 
   void updateCartItemQuantity(int index, double quantity) {
@@ -81,20 +73,13 @@ class POSCubit extends Cubit<POSState> {
     final updatedCart = List<CartItem>.from(loaded.cart);
     if (index >= 0 && index < updatedCart.length) {
       final item = updatedCart[index];
-      updatedCart[index] = CartItem(
-        productDetails: item.productDetails,
-        selectedPrice: item.selectedPrice,
-        quantity: quantity,
-        discount: item.discount,
-      );
-      emit(POSLoaded(
-        products: loaded.products,
-        customers: loaded.customers,
-        cart: updatedCart,
-        selectedCustomer: loaded.selectedCustomer,
-        invoiceDiscount: loaded.invoiceDiscount,
-        paymentType: loaded.paymentType,
-      ));
+      if (quantity <= 0) {
+        removeFromCart(index);
+        return;
+      }
+      final validQty = quantity.clamp(1.0, item.productDetails.currentStock);
+      updatedCart[index] = item.copyWith(quantity: validQty);
+      emit(loaded.copyWith(cart: updatedCart));
     }
   }
 
@@ -105,20 +90,10 @@ class POSCubit extends Cubit<POSState> {
     final updatedCart = List<CartItem>.from(loaded.cart);
     if (index >= 0 && index < updatedCart.length) {
       final item = updatedCart[index];
-      updatedCart[index] = CartItem(
-        productDetails: item.productDetails,
-        selectedPrice: item.selectedPrice,
-        quantity: item.quantity,
-        discount: discount,
-      );
-      emit(POSLoaded(
-        products: loaded.products,
-        customers: loaded.customers,
-        cart: updatedCart,
-        selectedCustomer: loaded.selectedCustomer,
-        invoiceDiscount: loaded.invoiceDiscount,
-        paymentType: loaded.paymentType,
-      ));
+      final maxDiscount = item.selectedPrice.priceValue * item.quantity;
+      final validDiscount = discount.clamp(0.0, maxDiscount);
+      updatedCart[index] = item.copyWith(discount: validDiscount);
+      emit(loaded.copyWith(cart: updatedCart));
     }
   }
 
@@ -129,25 +104,16 @@ class POSCubit extends Cubit<POSState> {
     final updatedCart = List<CartItem>.from(loaded.cart);
     if (index >= 0 && index < updatedCart.length) {
       updatedCart.removeAt(index);
-      emit(POSLoaded(
-        products: loaded.products,
-        customers: loaded.customers,
-        cart: updatedCart,
-        selectedCustomer: loaded.selectedCustomer,
-        invoiceDiscount: loaded.invoiceDiscount,
-        paymentType: loaded.paymentType,
-      ));
+      emit(loaded.copyWith(cart: updatedCart));
     }
   }
 
   void clearCart() {
     if (state is! POSLoaded) return;
     final loaded = state as POSLoaded;
-    emit(POSLoaded(
-      products: loaded.products,
-      customers: loaded.customers,
+    emit(loaded.copyWith(
       cart: [],
-      selectedCustomer: null,
+      clearCustomer: true,
       invoiceDiscount: 0.0,
       paymentType: 'cash',
     ));
@@ -156,40 +122,24 @@ class POSCubit extends Cubit<POSState> {
   void selectCustomer(Customer? customer) {
     if (state is! POSLoaded) return;
     final loaded = state as POSLoaded;
-    emit(POSLoaded(
-      products: loaded.products,
-      customers: loaded.customers,
-      cart: loaded.cart,
+    emit(loaded.copyWith(
       selectedCustomer: customer,
-      invoiceDiscount: loaded.invoiceDiscount,
-      paymentType: loaded.paymentType,
+      clearCustomer: customer == null,
     ));
   }
 
   void setInvoiceDiscount(double discount) {
     if (state is! POSLoaded) return;
     final loaded = state as POSLoaded;
-    emit(POSLoaded(
-      products: loaded.products,
-      customers: loaded.customers,
-      cart: loaded.cart,
-      selectedCustomer: loaded.selectedCustomer,
-      invoiceDiscount: discount,
-      paymentType: loaded.paymentType,
+    emit(loaded.copyWith(
+      invoiceDiscount: discount.clamp(0.0, double.infinity),
     ));
   }
 
   void setPaymentType(String type) {
     if (state is! POSLoaded) return;
     final loaded = state as POSLoaded;
-    emit(POSLoaded(
-      products: loaded.products,
-      customers: loaded.customers,
-      cart: loaded.cart,
-      selectedCustomer: loaded.selectedCustomer,
-      invoiceDiscount: loaded.invoiceDiscount,
-      paymentType: type,
-    ));
+    emit(loaded.copyWith(paymentType: type));
   }
 
   Future<void> createReturn({
@@ -224,11 +174,11 @@ class POSCubit extends Cubit<POSState> {
 
     if (loaded.cart.isEmpty) return;
     if (loaded.paymentType == 'debt' && loaded.selectedCustomer == null) {
-      emit(POSError('يجب اختيار عميل للبيع بالآجل'));
+      emit(POSError('pos.debt_warning_no_customer'.tr()));
       return;
     }
 
-    emit(POSLoading());
+    emit(loaded.copyWith(isCheckingOut: true));
 
     try {
       final items = loaded.cart.map((item) => {
@@ -249,6 +199,7 @@ class POSCubit extends Cubit<POSState> {
       emit(POSCheckoutSuccess());
       await loadPOSData();
     } catch (e) {
+      emit(loaded.copyWith(isCheckingOut: false));
       emit(POSError(e.toString()));
     }
   }

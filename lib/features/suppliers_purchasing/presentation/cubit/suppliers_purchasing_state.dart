@@ -7,8 +7,22 @@ class SuppliersPurchasingInitial extends SuppliersPurchasingState {}
 class SuppliersPurchasingLoading extends SuppliersPurchasingState {}
 
 class SuppliersPurchasingLoaded extends SuppliersPurchasingState {
-  SuppliersPurchasingLoaded({required this.suppliers});
+  SuppliersPurchasingLoaded({
+    required this.suppliers,
+    this.errorMessage,
+  });
   final List<SupplierWithPurchases> suppliers;
+  final String? errorMessage;
+
+  SuppliersPurchasingLoaded copyWith({
+    List<SupplierWithPurchases>? suppliers,
+    String? errorMessage,
+  }) {
+    return SuppliersPurchasingLoaded(
+      suppliers: suppliers ?? this.suppliers,
+      errorMessage: errorMessage,
+    );
+  }
 }
 
 class SuppliersPurchasingError extends SuppliersPurchasingState {

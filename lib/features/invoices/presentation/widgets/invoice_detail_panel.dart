@@ -1,7 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/material.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/features/pos/data/pos_repository.dart';
-import 'package:flutter/material.dart';
 
 class InvoiceDetailPanel extends StatelessWidget {
   const InvoiceDetailPanel({

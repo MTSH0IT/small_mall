@@ -186,7 +186,9 @@
     "payment_recorded": "تم تسجيل الدفعة وتحديث الرصيد بنجاح",
     "max_payment": "الحد الأقصى للدفع:",
     "record_payment_title": "تسجيل دفعة سداد دين",
-    "confirm_payment": "تسجيل دفعة السداد"
+    "confirm_payment": "تسجيل دفعة السداد",
+    "partial": "سداد جزئي",
+    "payment_exceeds_debt": "المبلغ يتعدى قيمة الدين المتبقي!"
   },
   "suppliers": {
     "title": "الموردون والمشتريات",
@@ -203,7 +205,15 @@
     "empty_suppliers": "لا يوجد موردون مضافون حالياً.",
     "select_supplier_to_view": "اختر مورداً من القائمة لعرض مشترياته وحسابه.",
     "supplier_saved": "تم حفظ بيانات المورد بنجاح",
-    "purchase_recorded": "تم تسجيل فاتورة الشراء بنجاح"
+    "purchase_recorded": "تم تسجيل فاتورة الشراء بنجاح",
+    "record_purchase_from": "تسجيل فاتورة مشتريات من المورد: {}",
+    "select_product_to_add": "اختر منتجاً لإضافته للفاتورة",
+    "no_products_added": "لم يتم إضافة أي منتجات للفاتورة بعد",
+    "purchased_quantity": "الكمية المشتراة",
+    "new_cost_price": "سعر التكلفة الجديد",
+    "cost_per_unit": "التكلفة بالقطعة",
+    "total_purchase_value": "إجمالي قيمة المشتريات:",
+    "confirm_save_purchase": "تأكيد وحفظ فاتورة المشتريات"
   },
   "reports": {
     "title": "التقارير المالية والمبيعات",

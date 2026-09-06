@@ -1,10 +1,10 @@
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:small_mall/core/bloc/app_bloc_observer.dart';
 import 'package:small_mall/core/di/injection.dart';
 import 'package:small_mall/core/utils/router.dart';
 import 'package:small_mall/core/utils/theme.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

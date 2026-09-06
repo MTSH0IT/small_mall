@@ -66,18 +66,14 @@ class InventoryRepository {
     final products = await _db.select(_db.products).get();
     final categories = await getCategories();
     final allPrices = await _db.select(_db.productPrices).get();
-    final allMovements = await _db.select(_db.stockMovements).get();
+    final stockBalances = await _db.getAllStockBalances();
 
     final categoryMap = {for (var c in categories) c.id: c};
 
     return products.map((prod) {
       final category = prod.categoryId != null ? categoryMap[prod.categoryId] : null;
       final prices = allPrices.where((p) => p.productId == prod.id).toList();
-
-      // Sum all movements for this product to get current stock
-      final currentStock = allMovements
-          .where((m) => m.productId == prod.id)
-          .fold<double>(0.0, (sum, m) => sum + m.quantity);
+      final currentStock = stockBalances[prod.id] ?? 0.0;
 
       return ProductWithDetails(
         product: prod,
@@ -101,80 +97,82 @@ class InventoryRepository {
     final productId = _uuid.v4();
     final now = DateTime.now();
 
-    final product = Product(
-      id: productId,
-      name: name,
-      categoryId: categoryId,
-      costPrice: costPrice,
-      isActive: true,
-      minStockAlert: minStockAlert,
-      createdAt: now,
-      updatedAt: now,
-    );
-
-    // Insert Product
-    await _db.into(_db.products).insert(product);
-
-    // Sync Product
-    await _sync.enqueue('products', productId, 'insert', {
-      'id': productId,
-      'name': name,
-      'category_id': categoryId,
-      'cost_price': costPrice,
-      'is_active': true,
-      'min_stock_alert': minStockAlert,
-      'created_at': now.toIso8601String(),
-      'updated_at': now.toIso8601String(),
-    });
-
-    // Insert Prices
-    for (final price in prices) {
-      final priceId = _uuid.v4();
-      final priceVal = (price['price_value'] as num).toDouble();
-      final label = price['price_label'] as String;
-
-      final prodPrice = ProductPrice(
-        id: priceId,
-        productId: productId,
-        priceLabel: label,
-        priceValue: priceVal,
-      );
-
-      await _db.into(_db.productPrices).insert(prodPrice);
-
-      // Sync Price
-      await _sync.enqueue('product_prices', priceId, 'insert', {
-        'id': priceId,
-        'product_id': productId,
-        'price_label': label,
-        'price_value': priceVal,
-      });
-    }
-
-    // Insert Initial Stock Movement if > 0
-    if (initialStock > 0) {
-      final movementId = _uuid.v4();
-      final movement = StockMovement(
-        id: movementId,
-        productId: productId,
-        type: 'adjustment',
-        quantity: initialStock,
+    await _db.transaction(() async {
+      final product = Product(
+        id: productId,
+        name: name,
+        categoryId: categoryId,
+        costPrice: costPrice,
+        isActive: true,
+        minStockAlert: minStockAlert,
         createdAt: now,
-        referenceId: 'initial_stock',
+        updatedAt: now,
       );
 
-      await _db.into(_db.stockMovements).insert(movement);
+      // Insert Product
+      await _db.into(_db.products).insert(product);
 
-      // Sync Movement
-      await _sync.enqueue('stock_movements', movementId, 'insert', {
-        'id': movementId,
-        'product_id': productId,
-        'type': 'adjustment',
-        'quantity': initialStock,
+      // Sync Product
+      await _sync.enqueue('products', productId, 'insert', {
+        'id': productId,
+        'name': name,
+        'category_id': categoryId,
+        'cost_price': costPrice,
+        'is_active': true,
+        'min_stock_alert': minStockAlert,
         'created_at': now.toIso8601String(),
-        'reference_id': 'initial_stock',
+        'updated_at': now.toIso8601String(),
       });
-    }
+
+      // Insert Prices
+      for (final price in prices) {
+        final priceId = _uuid.v4();
+        final priceVal = (price['price_value'] as num).toDouble();
+        final label = price['price_label'] as String;
+
+        final prodPrice = ProductPrice(
+          id: priceId,
+          productId: productId,
+          priceLabel: label,
+          priceValue: priceVal,
+        );
+
+        await _db.into(_db.productPrices).insert(prodPrice);
+
+        // Sync Price
+        await _sync.enqueue('product_prices', priceId, 'insert', {
+          'id': priceId,
+          'product_id': productId,
+          'price_label': label,
+          'price_value': priceVal,
+        });
+      }
+
+      // Insert Initial Stock Movement if > 0
+      if (initialStock > 0) {
+        final movementId = _uuid.v4();
+        final movement = StockMovement(
+          id: movementId,
+          productId: productId,
+          type: 'adjustment',
+          quantity: initialStock,
+          createdAt: now,
+          referenceId: 'initial_stock',
+        );
+
+        await _db.into(_db.stockMovements).insert(movement);
+
+        // Sync Movement
+        await _sync.enqueue('stock_movements', movementId, 'insert', {
+          'id': movementId,
+          'product_id': productId,
+          'type': 'adjustment',
+          'quantity': initialStock,
+          'created_at': now.toIso8601String(),
+          'reference_id': 'initial_stock',
+        });
+      }
+    });
   }
 
   Future<void> updateProduct({
@@ -189,55 +187,57 @@ class InventoryRepository {
         context: LogContext.inventory);
     final now = DateTime.now();
 
-    final productUpdate = ProductsCompanion(
-      name: Value(name),
-      categoryId: Value(categoryId),
-      costPrice: Value(costPrice),
-      minStockAlert: Value(minStockAlert),
-      updatedAt: Value(now),
-    );
-
-    // Update locally
-    await (_db.update(_db.products)..where((t) => t.id.equals(id))).write(productUpdate);
-
-    // Sync update
-    await _sync.enqueue('products', id, 'update', {
-      'id': id,
-      'name': name,
-      'category_id': categoryId,
-      'cost_price': costPrice,
-      'min_stock_alert': minStockAlert,
-      'updated_at': now.toIso8601String(),
-    });
-
-    // Handle prices: Simple way is delete old ones, insert new ones
-    final oldPrices = await (_db.select(_db.productPrices)..where((t) => t.productId.equals(id))).get();
-    for (final oldPrice in oldPrices) {
-      await (_db.delete(_db.productPrices)..where((t) => t.id.equals(oldPrice.id))).go();
-      await _sync.enqueue('product_prices', oldPrice.id, 'delete', {});
-    }
-
-    for (final price in prices) {
-      final priceId = _uuid.v4();
-      final priceVal = (price['price_value'] as num).toDouble();
-      final label = price['price_label'] as String;
-
-      final prodPrice = ProductPrice(
-        id: priceId,
-        productId: id,
-        priceLabel: label,
-        priceValue: priceVal,
+    await _db.transaction(() async {
+      final productUpdate = ProductsCompanion(
+        name: Value(name),
+        categoryId: Value(categoryId),
+        costPrice: Value(costPrice),
+        minStockAlert: Value(minStockAlert),
+        updatedAt: Value(now),
       );
 
-      await _db.into(_db.productPrices).insert(prodPrice);
+      // Update locally
+      await (_db.update(_db.products)..where((t) => t.id.equals(id))).write(productUpdate);
 
-      await _sync.enqueue('product_prices', priceId, 'insert', {
-        'id': priceId,
-        'product_id': id,
-        'price_label': label,
-        'price_value': priceVal,
+      // Sync update
+      await _sync.enqueue('products', id, 'update', {
+        'id': id,
+        'name': name,
+        'category_id': categoryId,
+        'cost_price': costPrice,
+        'min_stock_alert': minStockAlert,
+        'updated_at': now.toIso8601String(),
       });
-    }
+
+      // Handle prices: Simple way is delete old ones, insert new ones
+      final oldPrices = await (_db.select(_db.productPrices)..where((t) => t.productId.equals(id))).get();
+      for (final oldPrice in oldPrices) {
+        await (_db.delete(_db.productPrices)..where((t) => t.id.equals(oldPrice.id))).go();
+        await _sync.enqueue('product_prices', oldPrice.id, 'delete', {});
+      }
+
+      for (final price in prices) {
+        final priceId = _uuid.v4();
+        final priceVal = (price['price_value'] as num).toDouble();
+        final label = price['price_label'] as String;
+
+        final prodPrice = ProductPrice(
+          id: priceId,
+          productId: id,
+          priceLabel: label,
+          priceValue: priceVal,
+        );
+
+        await _db.into(_db.productPrices).insert(prodPrice);
+
+        await _sync.enqueue('product_prices', priceId, 'insert', {
+          'id': priceId,
+          'product_id': id,
+          'price_label': label,
+          'price_value': priceVal,
+        });
+      }
+    });
   }
 
   Future<void> deleteProduct(String id) async {
