@@ -86,7 +86,9 @@ class _ReturnDialogState extends State<ReturnDialog> {
         if (qty > originalQty) {
           AppToast.warning(
             context,
-            message: 'الكمية المراد إرجاعها تتجاوز الكمية المباعة (${originalQty.toStringAsFixed(0)})',
+            message: 'pos.return_qty_exceeded'.tr(
+              namedArgs: {'qty': originalQty.toStringAsFixed(0)},
+            ),
           );
           setState(() => _isSubmitting = false);
           return;

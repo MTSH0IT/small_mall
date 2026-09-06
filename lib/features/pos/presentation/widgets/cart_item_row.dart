@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:small_mall/core/utils/price_helper.dart';
 import 'package:small_mall/core/utils/theme.dart';
@@ -120,7 +121,7 @@ class _CartItemRowState extends State<CartItemRow> {
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
                 icon: const Icon(Icons.close_rounded, color: AppColors.danger, size: 18),
-                tooltip: 'حذف',
+                tooltip: 'common.delete'.tr(),
                 onPressed: widget.onRemove,
               ),
             ],
@@ -197,7 +198,7 @@ class _CartItemRowState extends State<CartItemRow> {
                         color: AppColors.textSecondary,
                       ),
                       prefixIconConstraints: const BoxConstraints(minWidth: 28),
-                      hintText: 'خصم',
+                      hintText: 'pos.item_discount'.tr(),
                       hintStyle: theme.textTheme.labelSmall?.copyWith(fontSize: 11),
                       filled: true,
                       fillColor: AppColors.surfaceElevated,

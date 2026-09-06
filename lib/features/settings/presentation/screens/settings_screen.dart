@@ -945,7 +945,7 @@ class _ChangePinDialogState extends State<_ChangePinDialog> {
                     size: 20,
                     color: AppColors.textSecondary,
                   ),
-                  tooltip: _obscureText ? 'إظهار الرمز' : 'إخفاء الرمز',
+                  tooltip: _obscureText ? 'settings.show_pin'.tr() : 'settings.hide_pin'.tr(),
                   onPressed: () => setState(() => _obscureText = !_obscureText),
                 ),
               ],

@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/logging/app_logger.dart';
 import 'package:small_mall/core/logging/log_context.dart';
@@ -301,7 +302,7 @@ class POSRepository {
         final product = productMap[item.productId];
         return InvoiceItemWithProduct(
           invoiceItem: item,
-          productName: product?.name ?? 'منتج محذوف',
+          productName: product?.name ?? 'common.deleted_product'.tr(),
         );
       }).toList();
 
@@ -336,7 +337,7 @@ class POSRepository {
       final product = productMap[item.productId];
       return InvoiceItemWithProduct(
         invoiceItem: item,
-        productName: product?.name ?? 'منتج محذوف',
+        productName: product?.name ?? 'common.deleted_product'.tr(),
       );
     }).toList();
 

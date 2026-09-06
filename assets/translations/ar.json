@@ -29,7 +29,9 @@
     "confirm_delete": "تأكيد الحذف",
     "delete_warning": "هل أنت متأكد من رغبتك في الحذف؟ لا يمكن التراجع عن هذا الإجراء.",
     "required_field": "هذا الحقل مطلوب",
-    "currency": "ر.س"
+    "currency": "ر.س",
+    "no_phone": "بدون هاتف",
+    "deleted_product": "منتج محذوف"
   },
   "nav": {
     "pos": "نقطة البيع",
@@ -95,7 +97,9 @@
     "sync_in_progress": "جاري مزامنة البيانات مع السحاب...",
     "database_info": "بيانات التخزين المحلي",
     "database_info_desc": "معلومات ملف SQLite وموقع التخزين على هذا الجهاز",
-    "change_pin_desc": "قم بتحديث رمز PIN المكون من 4 أرقام لتسجيل الدخول"
+    "change_pin_desc": "قم بتحديث رمز PIN المكون من 4 أرقام لتسجيل الدخول",
+    "show_pin": "إظهار الرمز",
+    "hide_pin": "إخفاء الرمز"
   },
   "login": {
     "enter_pin": "الرجاء إدخال رقم التعريف الشخصي (PIN)",
@@ -104,7 +108,11 @@
     "pin_length_warning": "يجب أن يتكون الرمز من 4 أرقام",
     "pin_saved": "تم تعيين رمز PIN بنجاح",
     "pin_mismatch": "الرمزان غير متطابقين، يرجى المحاولة مجدداً",
-    "pin_error": "الرمز غير صحيح، يرجى المحاولة مجدداً"
+    "pin_error": "الرمز غير صحيح، يرجى المحاولة مجدداً",
+    "system_subtitle": "نظام نقاط البيع وإدارة المتجر",
+    "clear_all": "مسح الكل",
+    "delete_tooltip": "حذف رقم (اضغط مطولاً للمسح)",
+    "confirm_tooltip": "تأكيد الدخول"
   },
   "pos": {
     "title": "نقطة البيع",
@@ -154,7 +162,8 @@
     "barcode_scanned": "تمت إضافة {name} إلى السلة",
     "select_customer_first": "يرجى تحديد عميل للبيع الآجل",
     "items_count": "{count} أصناف",
-    "units_count": "{count} قطع"
+    "units_count": "{count} قطع",
+    "return_qty_exceeded": "الكمية المراد إرجاعها تتجاوز الكمية المباعة ({qty})"
   },
   "inventory": {
     "title": "المخزون",
@@ -168,6 +177,9 @@
     "cost_price": "سعر التكلفة",
     "retail_price": "سعر المفرق",
     "wholesale_price": "سعر الجملة",
+    "retail_label": "مفرق",
+    "wholesale_label": "جملة",
+    "promo_label": "عرض",
     "selling_prices": "أسعار البيع",
     "current_stock": "المخزون الحالي",
     "stock_qty": "الكمية بالمخزن",
@@ -245,7 +257,9 @@
     "new_cost_price": "سعر التكلفة الجديد",
     "cost_per_unit": "التكلفة بالقطعة",
     "total_purchase_value": "إجمالي قيمة المشتريات:",
-    "confirm_save_purchase": "تأكيد وحفظ فاتورة المشتريات"
+    "confirm_save_purchase": "تأكيد وحفظ فاتورة المشتريات",
+    "no_matching_suppliers": "لا يوجد موردون مطابقون للبحث.",
+    "purchases_amount": "مشتريات: {amount}"
   },
   "reports": {
     "title": "التقارير المالية والمبيعات",
@@ -262,7 +276,11 @@
     "sales": "المبيعات",
     "purchases": "المشتريات",
     "top_selling": "المنتجات الأكثر مبيعاً",
-    "low_stock_report": "تقرير نواقص المخزون"
+    "low_stock_report": "تقرير نواقص المخزون",
+    "comparison_chart_title": "مقارنة التداول المالي (المبيعات مقابل المشتريات):",
+    "total_sales_plus": "إجمالي المبيعات (+)",
+    "total_purchases_minus": "إجمالي المشتريات (-)",
+    "total_turnover": "حجم التداول الكلي: {amount}"
   },
   "invoices": {
     "title": "سجل الفواتير",

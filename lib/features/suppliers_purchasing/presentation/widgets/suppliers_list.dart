@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/utils/theme.dart';
@@ -25,7 +26,7 @@ class SuppliersList extends StatelessWidget {
     }).toList();
 
     if (filtered.isEmpty) {
-      return const Center(child: Text('لا يوجد موردين مطابقين للبحث.'));
+      return Center(child: Text('suppliers.no_matching_suppliers'.tr()));
     }
 
     return Container(
@@ -45,9 +46,11 @@ class SuppliersList extends StatelessWidget {
             selected: isSelected,
             selectedTileColor: AppColors.primary.withValues(alpha: 0.05),
             title: Text(item.supplier.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Text(item.supplier.phone ?? 'بدون هاتف'),
+            subtitle: Text(item.supplier.phone ?? 'common.no_phone'.tr()),
             trailing: PriceTagChip(
-              label: 'مشتريات: ${item.totalPurchasesAmount.toStringAsFixed(1)}',
+              label: 'suppliers.purchases_amount'.tr(
+                namedArgs: {'amount': item.totalPurchasesAmount.toStringAsFixed(1)},
+              ),
               backgroundColor: AppColors.primary,
               cutSize: 6,
             ),

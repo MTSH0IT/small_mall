@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/features/reports/data/reports_repository.dart';
@@ -25,7 +26,7 @@ class SalesPurchasesComparisonChart extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text('مقارنة التداول المالي (المبيعات مقابل المشتريات):', style: TextStyle(fontWeight: FontWeight.w600)),
+          Text('reports.comparison_chart_title'.tr(), style: const TextStyle(fontWeight: FontWeight.w600)),
           const SizedBox(height: 24),
           // Sales Bar
           Column(
@@ -34,7 +35,7 @@ class SalesPurchasesComparisonChart extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('إجمالي المبيعات (+)', style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.success)),
+                  Text('reports.total_sales_plus'.tr(), style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.success)),
                   Text(
                     sales.toStringAsFixed(2),
                     style: AppTheme.numericStyle(fontWeight: FontWeight.bold, color: AppColors.success),
@@ -62,7 +63,7 @@ class SalesPurchasesComparisonChart extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('إجمالي المشتريات (-)', style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.danger)),
+                  Text('reports.total_purchases_minus'.tr(), style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.danger)),
                   Text(
                     purchases.toStringAsFixed(2),
                     style: AppTheme.numericStyle(fontWeight: FontWeight.bold, color: AppColors.danger),
@@ -84,7 +85,9 @@ class SalesPurchasesComparisonChart extends StatelessWidget {
           ),
           const SizedBox(height: 32),
           Text(
-            'حجم التداول الكلي: ${(sales + purchases).toStringAsFixed(2)}',
+            'reports.total_turnover'.tr(
+              namedArgs: {'amount': (sales + purchases).toStringAsFixed(2)},
+            ),
             style: theme.textTheme.labelSmall,
             textAlign: TextAlign.center,
           ),

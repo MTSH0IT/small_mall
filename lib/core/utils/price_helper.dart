@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:small_mall/core/utils/theme.dart';
 
@@ -7,11 +8,11 @@ class PriceHelper {
   static String getLabel(String priceLabel) {
     switch (priceLabel.toLowerCase()) {
       case 'retail':
-        return 'مفرق';
+        return 'inventory.retail_label'.tr();
       case 'wholesale':
-        return 'جملة';
+        return 'inventory.wholesale_label'.tr();
       case 'promo':
-        return 'عرض';
+        return 'inventory.promo_label'.tr();
       default:
         return priceLabel;
     }

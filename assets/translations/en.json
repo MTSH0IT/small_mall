@@ -29,7 +29,9 @@
     "confirm_delete": "Confirm Delete",
     "delete_warning": "Are you sure you want to delete this? This action cannot be undone.",
     "required_field": "This field is required",
-    "currency": "SAR"
+    "currency": "SAR",
+    "no_phone": "No phone",
+    "deleted_product": "Deleted Product"
   },
   "nav": {
     "pos": "Point of Sale",
@@ -95,7 +97,9 @@
     "sync_in_progress": "Syncing data with cloud server...",
     "database_info": "Local Storage Information",
     "database_info_desc": "SQLite database file information and location on this device",
-    "change_pin_desc": "Update your 4-digit PIN code used for system login"
+    "change_pin_desc": "Update your 4-digit PIN code used for system login",
+    "show_pin": "Show PIN",
+    "hide_pin": "Hide PIN"
   },
   "login": {
     "enter_pin": "Please enter your PIN",
@@ -104,7 +108,11 @@
     "pin_length_warning": "PIN code must be 4 digits",
     "pin_saved": "PIN code set successfully",
     "pin_mismatch": "PINs do not match, please try again",
-    "pin_error": "Incorrect PIN, please try again"
+    "pin_error": "Incorrect PIN, please try again",
+    "system_subtitle": "POS & Store Management System",
+    "clear_all": "Clear All",
+    "delete_tooltip": "Delete digit (long-press to clear all)",
+    "confirm_tooltip": "Confirm PIN"
   },
   "pos": {
     "title": "Point of Sale",
@@ -154,7 +162,8 @@
     "barcode_scanned": "Added {name} to cart",
     "select_customer_first": "Please select a customer first",
     "items_count": "{count} items",
-    "units_count": "{count} units"
+    "units_count": "{count} units",
+    "return_qty_exceeded": "Return quantity exceeds sold quantity ({qty})"
   },
   "inventory": {
     "title": "Inventory",
@@ -168,6 +177,9 @@
     "cost_price": "Cost Price",
     "retail_price": "Retail Price",
     "wholesale_price": "Wholesale Price",
+    "retail_label": "Retail",
+    "wholesale_label": "Wholesale",
+    "promo_label": "Promo",
     "selling_prices": "Selling Prices",
     "current_stock": "Current Stock",
     "stock_qty": "Warehouse Stock",
@@ -245,7 +257,9 @@
     "new_cost_price": "New Cost Price",
     "cost_per_unit": "Cost Per Unit",
     "total_purchase_value": "Total Purchase Value:",
-    "confirm_save_purchase": "Confirm and Save Purchase Invoice"
+    "confirm_save_purchase": "Confirm and Save Purchase Invoice",
+    "no_matching_suppliers": "No suppliers match your search.",
+    "purchases_amount": "Purchases: {amount}"
   },
   "reports": {
     "title": "Financial & Sales Reports",
@@ -262,7 +276,11 @@
     "sales": "Sales",
     "purchases": "Purchases",
     "top_selling": "Top Selling Products",
-    "low_stock_report": "Low Stock Report"
+    "low_stock_report": "Low Stock Report",
+    "comparison_chart_title": "Financial Turnover (Sales vs Purchases):",
+    "total_sales_plus": "Total Sales (+)",
+    "total_purchases_minus": "Total Purchases (-)",
+    "total_turnover": "Total Turnover: {amount}"
   },
   "invoices": {
     "title": "Invoices Record",
