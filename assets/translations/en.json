@@ -142,7 +142,19 @@
     "return_btn": "Return",
     "select_invoice_return": "Select Invoice to Return",
     "return_products": "Return Products",
-    "no_invoices": "No previous sales invoices found"
+    "no_invoices": "No previous sales invoices found",
+    "clear_cart_confirm_title": "Clear Cart",
+    "clear_cart_confirm_msg": "Are you sure you want to clear all items from the shopping cart?",
+    "clear_filters": "Clear Filters",
+    "no_products_found_desc": "No products match your search or filter. Try different keywords.",
+    "in_cart": "In Cart: {count}",
+    "item_discount": "Discount",
+    "invoice_discount": "Extra Discount",
+    "debt_select_customer_hint": "A customer must be selected for credit sale",
+    "barcode_scanned": "Added {name} to cart",
+    "select_customer_first": "Please select a customer first",
+    "items_count": "{count} items",
+    "units_count": "{count} units"
   },
   "inventory": {
     "title": "Inventory",

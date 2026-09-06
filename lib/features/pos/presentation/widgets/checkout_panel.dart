@@ -36,7 +36,9 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
   void initState() {
     super.initState();
     _discountController = TextEditingController(
-      text: widget.state.invoiceDiscount > 0 ? widget.state.invoiceDiscount.toStringAsFixed(2) : '',
+      text: widget.state.invoiceDiscount > 0
+          ? widget.state.invoiceDiscount.toStringAsFixed(2)
+          : '',
     );
   }
 
@@ -46,8 +48,9 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
     if (oldWidget.state.invoiceDiscount != widget.state.invoiceDiscount) {
       final current = double.tryParse(_discountController.text) ?? 0.0;
       if (current != widget.state.invoiceDiscount) {
-        _discountController.text =
-            widget.state.invoiceDiscount > 0 ? widget.state.invoiceDiscount.toStringAsFixed(2) : '';
+        _discountController.text = widget.state.invoiceDiscount > 0
+            ? widget.state.invoiceDiscount.toStringAsFixed(2)
+            : '';
       }
     }
   }
@@ -62,90 +65,154 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final state = widget.state;
+    final isDebt = state.paymentType == 'debt';
+    final hasNoCustomerOnDebt = isDebt && state.selectedCustomer == null;
 
-    return Padding(
+    String checkoutButtonLabel;
+    if (isDebt) {
+      if (state.selectedCustomer != null) {
+        checkoutButtonLabel =
+            '${'pos.checkout_debt'.tr()} (${state.totalAmount.toStringAsFixed(2)})';
+      } else {
+        checkoutButtonLabel = 'pos.select_customer_first'.tr();
+      }
+    } else {
+      checkoutButtonLabel =
+          '${'pos.checkout_cash'.tr()} (${state.totalAmount.toStringAsFixed(2)})';
+    }
+
+    return Container(
       padding: const EdgeInsets.all(16.0),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceElevated,
+        border: const Border(top: BorderSide(color: AppColors.border)),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // Subtotal Row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('${'pos.subtotal'.tr()}:', style: theme.textTheme.bodyMedium),
-              Text(
-                state.cartSubtotal.toStringAsFixed(2),
-                style: AppTheme.numericStyle(fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          // Discount total field
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('${'pos.discount_amount'.tr()}:', style: theme.textTheme.bodyMedium),
-              SizedBox(
-                width: 120,
-                height: 38,
-                child: TextField(
-                  controller: _discountController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  textAlign: TextAlign.end,
-                  style: AppTheme.numericStyle(fontSize: 14),
-                  decoration: InputDecoration(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 10),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
-                    hintText: '0.00',
-                  ),
-                  onChanged: (val) {
-                    final discount = double.tryParse(val) ?? 0.0;
-                    widget.onInvoiceDiscountChanged(discount);
-                  },
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          // Payment type toggle (stacked to prevent horizontal overflow)
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '${'pos.payment_method'.tr()}:',
-                style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
-              ),
-              const SizedBox(height: 6),
-              SizedBox(
-                width: double.infinity,
-                child: SegmentedButton<String>(
-                  segments: [
-                    ButtonSegment<String>(
-                      value: 'cash',
-                      label: Text('pos.cash'.tr(), overflow: TextOverflow.ellipsis),
-                      icon: const Icon(Icons.payments_outlined, size: 16),
+          // Calculation Summary Box
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Column(
+              children: [
+                // Subtotal
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '${'pos.subtotal'.tr()}:',
+                      style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
                     ),
-                    ButtonSegment<String>(
-                      value: 'debt',
-                      label: Text('pos.debt'.tr(), overflow: TextOverflow.ellipsis),
-                      icon: const Icon(Icons.assignment_ind_outlined, size: 16),
+                    Text(
+                      state.cartSubtotal.toStringAsFixed(2),
+                      style: AppTheme.numericStyle(fontWeight: FontWeight.bold, fontSize: 14),
                     ),
                   ],
-                  selected: {state.paymentType},
-                  onSelectionChanged: (selection) {
-                    widget.onPaymentTypeChanged(selection.first);
-                  },
-                  style: SegmentedButton.styleFrom(
-                    selectedBackgroundColor: AppColors.primary,
-                    selectedForegroundColor: Colors.white,
-                    visualDensity: VisualDensity.compact,
-                  ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 6),
+
+                // Extra Invoice Discount
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '${'pos.invoice_discount'.tr()}:',
+                      style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+                    ),
+                    SizedBox(
+                      width: 100,
+                      height: 32,
+                      child: TextField(
+                        controller: _discountController,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        textAlign: TextAlign.end,
+                        style: AppTheme.numericStyle(fontSize: 13),
+                        decoration: InputDecoration(
+                          hintText: '0.00',
+                          filled: true,
+                          fillColor: AppColors.surfaceElevated,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(6),
+                            borderSide: const BorderSide(color: AppColors.border),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(6),
+                            borderSide: const BorderSide(color: AppColors.border),
+                          ),
+                        ),
+                        onChanged: (val) {
+                          final discount = double.tryParse(val) ?? 0.0;
+                          widget.onInvoiceDiscountChanged(discount);
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const Divider(height: 16, color: AppColors.border),
+
+                // Net Total
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '${'pos.net_total'.tr()}:',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    Text(
+                      state.totalAmount.toStringAsFixed(2),
+                      style: AppTheme.numericStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 12),
-          // Customer selector (stacked with empty/walk-in state and quick clear)
+
+          // Payment Method Selector
+          SizedBox(
+            width: double.infinity,
+            child: SegmentedButton<String>(
+              segments: [
+                ButtonSegment<String>(
+                  value: 'cash',
+                  label: Text('pos.cash'.tr(), overflow: TextOverflow.ellipsis),
+                  icon: const Icon(Icons.payments_outlined, size: 16),
+                ),
+                ButtonSegment<String>(
+                  value: 'debt',
+                  label: Text('pos.debt'.tr(), overflow: TextOverflow.ellipsis),
+                  icon: const Icon(Icons.assignment_ind_outlined, size: 16),
+                ),
+              ],
+              selected: {state.paymentType},
+              onSelectionChanged: (selection) {
+                widget.onPaymentTypeChanged(selection.first);
+              },
+              style: SegmentedButton.styleFrom(
+                selectedBackgroundColor: AppColors.primary,
+                selectedForegroundColor: Colors.white,
+                visualDensity: VisualDensity.compact,
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+
+          // Customer Selector
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -154,23 +221,26 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                 children: [
                   Text(
                     '${'pos.customer'.tr()}:',
-                    style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: hasNoCustomerOnDebt ? AppColors.danger : AppColors.textPrimary,
+                    ),
                   ),
                   if (state.selectedCustomer != null)
                     InkWell(
                       onTap: () => widget.onCustomerChanged(null),
                       borderRadius: BorderRadius.circular(4),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.close, size: 14, color: AppColors.danger),
-                            const SizedBox(width: 4),
+                            const Icon(Icons.close, size: 13, color: AppColors.danger),
+                            const SizedBox(width: 2),
                             Text(
                               'pos.walk_in_customer'.tr(),
                               style: const TextStyle(
-                                fontSize: 12,
+                                fontSize: 11,
                                 color: AppColors.danger,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -181,7 +251,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                     ),
                 ],
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 4),
               Row(
                 children: [
                   Expanded(
@@ -191,40 +261,72 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                       isExpanded: true,
                       hint: Text('pos.select_customer'.tr(), overflow: TextOverflow.ellipsis),
                       decoration: InputDecoration(
+                        filled: true,
+                        fillColor: hasNoCustomerOnDebt
+                            ? AppColors.danger.withValues(alpha: 0.05)
+                            : AppColors.surface,
                         contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(
+                            color: hasNoCustomerOnDebt ? AppColors.danger : AppColors.border,
+                          ),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(
+                            color: hasNoCustomerOnDebt ? AppColors.danger : AppColors.border,
+                          ),
+                        ),
                         prefixIcon: Icon(
                           state.selectedCustomer == null ? Icons.person_outline : Icons.person,
-                          color: state.selectedCustomer == null ? AppColors.textSecondary : AppColors.primary,
-                          size: 20,
+                          color: state.selectedCustomer == null
+                              ? AppColors.textSecondary
+                              : AppColors.primary,
+                          size: 18,
                         ),
                       ),
                       items: [
-                        // Empty / Default Walk-in Customer Option
+                        // Walk-in Customer option
                         DropdownMenuItem<Customer?>(
                           value: null,
                           child: Text(
                             'pos.walk_in_customer'.tr(),
-                            style: const TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.w500),
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontWeight: FontWeight.w500,
+                              fontSize: 13,
+                            ),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        // Registered Customers List
+                        // Registered Customers list
                         ...state.customers.map((c) {
                           return DropdownMenuItem<Customer?>(
                             value: c.customer,
                             child: Row(
                               children: [
                                 Expanded(
-                                  child: Text(c.customer.name, overflow: TextOverflow.ellipsis),
+                                  child: Text(
+                                    c.customer.name,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(fontSize: 13),
+                                  ),
                                 ),
                                 if (c.totalDebt > 0)
-                                  Text(
-                                    ' (${c.totalDebt.toStringAsFixed(1)})',
-                                    style: AppTheme.numericStyle(
-                                      fontSize: 12,
-                                      color: AppColors.accent,
-                                      fontWeight: FontWeight.bold,
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.accent.withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      c.totalDebt.toStringAsFixed(1),
+                                      style: AppTheme.numericStyle(
+                                        fontSize: 11,
+                                        color: AppColors.accent,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                   ),
                               ],
@@ -239,38 +341,35 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                   IconButton(
                     tooltip: 'customers.add_customer'.tr(),
                     icon: const Icon(Icons.person_add_alt_1_outlined, color: AppColors.primary),
+                    style: IconButton.styleFrom(
+                      backgroundColor: AppColors.surface,
+                      side: const BorderSide(color: AppColors.border),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
                     onPressed: widget.onAddCustomerPressed,
                   ),
                 ],
               ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          const Divider(color: AppColors.border, height: 16),
-          // Total Amount Row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '${'pos.net_total'.tr()}:',
-                style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: AppColors.primary),
-              ),
-              Text(
-                state.totalAmount.toStringAsFixed(2),
-                style: AppTheme.numericStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.accent,
+              if (hasNoCustomerOnDebt) ...[
+                const SizedBox(height: 4),
+                Text(
+                  'pos.debt_select_customer_hint'.tr(),
+                  style: const TextStyle(
+                    color: AppColors.danger,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
-          const SizedBox(height: 20),
-          // Checkout Button
+          const SizedBox(height: 14),
+
+          // Checkout Action Button
           PrimaryButton(
-            label: state.paymentType == 'debt' ? 'pos.checkout_debt'.tr() : 'pos.checkout_cash'.tr(),
-            icon: Icons.check,
-            onPressed: widget.onCheckoutPressed,
+            label: checkoutButtonLabel,
+            icon: isDebt ? Icons.assignment_turned_in_rounded : Icons.check_circle_outline_rounded,
+            onPressed: (state.cart.isEmpty || hasNoCustomerOnDebt) ? null : widget.onCheckoutPressed,
             isLoading: widget.isLoading,
           ),
         ],

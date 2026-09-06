@@ -142,7 +142,19 @@
     "return_btn": "إرجاع",
     "select_invoice_return": "اختيار فاتورة للإرجاع",
     "return_products": "إرجاع منتجات",
-    "no_invoices": "لا توجد فواتير بيع سابقة"
+    "no_invoices": "لا توجد فواتير بيع سابقة",
+    "clear_cart_confirm_title": "تفريغ السلة",
+    "clear_cart_confirm_msg": "هل أنت متأكد من رغبتك في تفريغ سلة المشتريات بالكامل؟",
+    "clear_filters": "مسح التصفية",
+    "no_products_found_desc": "لم نتمكن من العثور على منتجات مطابقة لبحثك، جرب البحث بكلمات أخرى.",
+    "in_cart": "في السلة: {count}",
+    "item_discount": "خصم",
+    "invoice_discount": "الخصم الإضافي",
+    "debt_select_customer_hint": "يلزم تحديد عميل لتسجيل البيع الآجل",
+    "barcode_scanned": "تمت إضافة {name} إلى السلة",
+    "select_customer_first": "يرجى تحديد عميل للبيع الآجل",
+    "items_count": "{count} أصناف",
+    "units_count": "{count} قطع"
   },
   "inventory": {
     "title": "المخزون",
