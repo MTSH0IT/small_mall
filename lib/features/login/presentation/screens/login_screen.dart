@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:small_mall/core/widgets/app_toast.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/features/login/presentation/widgets/pin_pad.dart';
@@ -16,7 +17,7 @@ class _LoginScreenState extends State<LoginScreen> {
   String _pin = '';
   bool _isNewUser = false;
   String _savedPin = '';
-  String _message = 'الرجاء إدخال رقم التعريف الشخصي (PIN)';
+  String? _messageKey;
   bool _confirmingNewPin = false;
   String _firstEnteredPin = '';
 
@@ -33,7 +34,9 @@ class _LoginScreenState extends State<LoginScreen> {
       _savedPin = savedPin;
       if (savedPin.isEmpty) {
         _isNewUser = true;
-        _message = 'يرجى تعيين رمز PIN جديد لبدء استخدام التطبيق';
+        _messageKey = 'login.set_new_pin';
+      } else {
+        _messageKey = 'login.enter_pin';
       }
     });
   }
@@ -56,7 +59,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _onConfirmPressed() async {
     if (_pin.length < 4) {
-      AppToast.warning(context, message: 'يجب أن يتكون الرمز من 4 أرقام');
+      AppToast.warning(context, message: 'login.pin_length_warning'.tr());
       return;
     }
 
@@ -69,14 +72,14 @@ class _LoginScreenState extends State<LoginScreen> {
           _firstEnteredPin = _pin;
           _pin = '';
           _confirmingNewPin = true;
-          _message = 'يرجى تأكيد رمز PIN الجديد';
+          _messageKey = 'login.confirm_pin';
         });
       } else {
         // Confirming the new PIN
         if (_pin == _firstEnteredPin) {
           await prefs.setString('user_pin', _pin);
           if (mounted) {
-            AppToast.success(context, message: 'تم تعيين رمز PIN بنجاح');
+            AppToast.success(context, message: 'login.pin_saved'.tr());
             context.go('/pos');
           }
         } else {
@@ -84,7 +87,7 @@ class _LoginScreenState extends State<LoginScreen> {
             _pin = '';
             _firstEnteredPin = '';
             _confirmingNewPin = false;
-            _message = 'الرمزان غير متطابقين، يرجى المحاولة مجدداً';
+            _messageKey = 'login.pin_mismatch';
           });
         }
       }
@@ -98,7 +101,7 @@ class _LoginScreenState extends State<LoginScreen> {
       } else {
         setState(() {
           _pin = '';
-          _message = 'الرمز غير صحيح، يرجى المحاولة مجدداً';
+          _messageKey = 'login.pin_error';
         });
       }
     }
@@ -107,89 +110,114 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isArabic = context.locale.languageCode == 'ar';
+
+    final messageText = (_messageKey ?? (_isNewUser ? 'login.set_new_pin' : 'login.enter_pin')).tr();
 
     return Scaffold(
-      body: Center(
-        child: Container(
-          width: 400,
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: AppColors.surfaceElevated,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
+      body: Stack(
+        children: [
+          // Language toggle button in corner
+          Positioned(
+            top: 24,
+            left: isArabic ? 24 : null,
+            right: isArabic ? null : 24,
+            child: OutlinedButton.icon(
+              onPressed: () async {
+                final newLocale = isArabic ? const Locale('en') : const Locale('ar');
+                await context.setLocale(newLocale);
+              },
+              icon: const Icon(Icons.language, size: 18),
+              label: Text(isArabic ? 'English' : 'العربية'),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: AppColors.border),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
-            ],
-            border: Border.all(color: AppColors.border),
+            ),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Logo
-              Center(
-                child: Container(
-                  width: 72,
-                  height: 72,
-                  decoration: const BoxDecoration(
-                    color: AppColors.primary,
-                    shape: BoxShape.circle,
+          Center(
+            child: Container(
+              width: 400,
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceElevated,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
                   ),
-                  child: const Icon(
-                    Icons.lock_outline,
-                    color: Colors.white,
-                    size: 36,
-                  ),
-                ),
+                ],
+                border: Border.all(color: AppColors.border),
               ),
-              const SizedBox(height: 24),
-              // Header
-              Text(
-                'Small Mall',
-                style: theme.textTheme.displayMedium?.copyWith(
-                  color: AppColors.primary,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                _message,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 32),
-              // Bullets displaying length of PIN entered
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(4, (index) {
-                  final filled = index < _pin.length;
-                  return AnimatedContainer(
-                    duration: const Duration(milliseconds: 150),
-                    margin: const EdgeInsets.symmetric(horizontal: 8),
-                    width: 16,
-                    height: 16,
-                    decoration: BoxDecoration(
-                      color: filled ? AppColors.primary : AppColors.border,
-                      shape: BoxShape.circle,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Logo
+                  Center(
+                    child: Container(
+                      width: 72,
+                      height: 72,
+                      decoration: const BoxDecoration(
+                        color: AppColors.primary,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.lock_outline,
+                        color: Colors.white,
+                        size: 36,
+                      ),
                     ),
-                  );
-                }),
+                  ),
+                  const SizedBox(height: 24),
+                  // Header
+                  Text(
+                    'app_title'.tr(),
+                    style: theme.textTheme.displayMedium?.copyWith(
+                      color: AppColors.primary,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    messageText,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 32),
+                  // Bullets displaying length of PIN entered
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(4, (index) {
+                      final filled = index < _pin.length;
+                      return AnimatedContainer(
+                        duration: const Duration(milliseconds: 150),
+                        margin: const EdgeInsets.symmetric(horizontal: 8),
+                        width: 16,
+                        height: 16,
+                        decoration: BoxDecoration(
+                          color: filled ? AppColors.primary : AppColors.border,
+                          shape: BoxShape.circle,
+                        ),
+                      );
+                    }),
+                  ),
+                  const SizedBox(height: 32),
+                  // Number Grid
+                  PinPad(
+                    onNumberPressed: _onNumberPressed,
+                    onDeletePressed: _onDeletePressed,
+                    onConfirmPressed: _onConfirmPressed,
+                  ),
+                ],
               ),
-              const SizedBox(height: 32),
-              // Number Grid
-              PinPad(
-                onNumberPressed: _onNumberPressed,
-                onDeletePressed: _onDeletePressed,
-                onConfirmPressed: _onConfirmPressed,
-              ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

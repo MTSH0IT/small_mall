@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:small_mall/core/widgets/app_toast.dart';
 import 'package:small_mall/core/di/injection.dart';
 import 'package:small_mall/core/utils/theme.dart';
@@ -38,7 +39,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
           final cubit = context.read<ReportsCubit>();
 
           return AppScreenScaffold(
-            title: 'التقارير والإحصائيات',
+            title: 'reports.title'.tr(),
             onRefresh: () => cubit.loadReports(start: _startDate, end: _endDate),
             body: Padding(
               padding: const EdgeInsets.all(24.0),
@@ -71,7 +72,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
       initialDateRange: DateTimeRange(start: _startDate, end: _endDate),
       firstDate: DateTime(2025),
       lastDate: DateTime.now().add(const Duration(days: 1)),
-      locale: const Locale('ar', 'AE'),
+      locale: context.locale,
     );
 
     if (picked != null) {
@@ -85,7 +86,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   Widget _buildReportContent(BuildContext context, ReportsState state) {
     if (state is ReportsLoading) {
-      return const LoadingIndicator(message: 'جاري احتساب التقارير المالية...');
+      return LoadingIndicator(message: 'common.loading'.tr());
     }
 
     if (state is ReportsLoaded) {
@@ -104,30 +105,30 @@ class _ReportsScreenState extends State<ReportsScreen> {
               children: [
                 Expanded(
                   child: StatCard(
-                    title: 'صافي أرباح الفترة',
+                    title: 'reports.net_profit'.tr(),
                     value: totalProfit.toStringAsFixed(2),
                     color: totalProfit >= 0 ? AppColors.success : AppColors.danger,
-                    subtitle: 'الإيرادات: ${revenue.toStringAsFixed(1)} | التكاليف: ${cost.toStringAsFixed(1)}',
+                    subtitle: '${'reports.sales'.tr()}: ${revenue.toStringAsFixed(1)} | ${'reports.purchases'.tr()}: ${cost.toStringAsFixed(1)}',
                     icon: Icons.payments_outlined,
                   ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: StatCard(
-                    title: 'إجمالي قيمة المخزون الحالي (سعر التكلفة)',
+                    title: 'inventory.current_stock'.tr(),
                     value: totalInventoryValuation.toStringAsFixed(2),
                     color: AppColors.primary,
-                    subtitle: 'إجمالي عدد المنتجات المخزنة: ${state.inventoryReport.length}',
+                    subtitle: '${'inventory.products_title'.tr()}: ${state.inventoryReport.length}',
                     icon: Icons.inventory_2_outlined,
                   ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: StatCard(
-                    title: 'إجمالي الديون المستحقة بذمة العملاء',
+                    title: 'customers.balance'.tr(),
                     value: state.totalOutstandingDebts.toStringAsFixed(2),
                     color: AppColors.accent,
-                    subtitle: 'ديون معلقة تحتاج للمتابعة',
+                    subtitle: 'customers.has_debt'.tr(),
                     icon: Icons.account_balance_wallet_outlined,
                   ),
                 ),
@@ -142,7 +143,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 Expanded(
                   flex: 3,
                   child: CardContainer(
-                    title: 'المبيعات مقابل المشتريات خلال الفترة',
+                    title: 'reports.comparison_chart'.tr(),
                     child: SalesPurchasesComparisonChart(summary: state.purchasesSalesSummary),
                   ),
                 ),
@@ -151,11 +152,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 Expanded(
                   flex: 3,
                   child: CardContainer(
-                    title: 'المنتجات الأكثر مبيعاً',
+                    title: 'reports.top_selling'.tr(),
                     child: state.bestSellers.isEmpty
-                        ? const Padding(
-                            padding: EdgeInsets.all(32.0),
-                            child: Center(child: Text('لم يتم بيع أي منتجات في هذه الفترة بعد')),
+                        ? Padding(
+                            padding: const EdgeInsets.all(32.0),
+                            child: Center(child: Text('invoices.empty_invoices'.tr())),
                           )
                         : ListView.separated(
                             shrinkWrap: true,
@@ -179,7 +180,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                                   ),
                                 ),
                                 title: Text(item.product.name),
-                                subtitle: Text('الكمية المباعة: ${item.totalQuantity.toStringAsFixed(0)}'),
+                                subtitle: Text('${'common.quantity'.tr()}: ${item.totalQuantity.toStringAsFixed(0)}'),
                                 trailing: Text(
                                   item.totalRevenue.toStringAsFixed(2),
                                   style: AppTheme.numericStyle(fontWeight: FontWeight.bold, color: AppColors.primary),

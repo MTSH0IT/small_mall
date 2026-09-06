@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:small_mall/core/widgets/app_toast.dart';
 import 'package:small_mall/core/di/injection.dart';
 import 'package:small_mall/core/utils/theme.dart';
@@ -38,7 +39,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
           final cubit = context.read<InventoryCubit>();
 
           return AppScreenScaffold(
-            title: 'إدارة المخزون',
+            title: 'inventory.title'.tr(),
             onRefresh: () => cubit.loadInventory(),
             body: Padding(
               padding: const EdgeInsets.all(24.0),
@@ -50,8 +51,8 @@ class _InventoryScreenState extends State<InventoryScreen> {
                     children: [
                       Expanded(
                         child: AppTextField(
-                          label: 'بحث عن منتج',
-                          hint: 'ابحث بالاسم...',
+                          label: 'common.search'.tr(),
+                          hint: 'common.search'.tr(),
                           controller: _searchController,
                           onChanged: (val) {
                             setState(() {
@@ -65,7 +66,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                       Padding(
                         padding: const EdgeInsets.only(top: 22.0),
                         child: FilterChip(
-                          label: const Text('المخزون المنخفض فقط'),
+                          label: Text('inventory.low_stock_only'.tr()),
                           selected: _filterLowStockOnly,
                           onSelected: (val) {
                             setState(() {
@@ -98,7 +99,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
 
   Widget _buildBody(BuildContext context, InventoryCubit cubit, InventoryState state) {
     if (state is InventoryLoading) {
-      return const LoadingIndicator(message: 'جاري تحميل تفاصيل المخزون...');
+      return LoadingIndicator(message: 'common.loading'.tr());
     }
 
     if (state is InventoryLoaded) {
@@ -122,81 +123,77 @@ class _InventoryScreenState extends State<InventoryScreen> {
     showDialog(
       context: context,
       builder: (ctx) {
-        return Directionality(
-          textDirection: TextDirection.rtl,
-          child: StatefulBuilder(
-            builder: (dialogCtx, setStateDialog) {
-              return AlertDialog(
-                title: Text('تعديل مخزون: ${item.product.name}',
-                    style: const TextStyle(color: AppColors.primary)),
-                content: Form(
-                  key: formKey,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      RadioGroup<String>(
-                        groupValue: direction,
-                        onChanged: (val) {
-                          setStateDialog(() => direction = val!);
-                        },
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: RadioListTile<String>(
-                                title: const Text('زيادة (+)'),
-                                value: 'add',
-                              ),
+        return StatefulBuilder(
+          builder: (dialogCtx, setStateDialog) {
+            return AlertDialog(
+              title: Text('${'inventory.adjust_stock'.tr()}: ${item.product.name}',
+                  style: const TextStyle(color: AppColors.primary)),
+              content: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    RadioGroup<String>(
+                      groupValue: direction,
+                      onChanged: (val) {
+                        setStateDialog(() => direction = val!);
+                      },
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: RadioListTile<String>(
+                              title: Text('(+) ${'inventory.stock_in'.tr()}'),
+                              value: 'add',
                             ),
-                            Expanded(
-                              child: RadioListTile<String>(
-                                title: const Text('تسوية / إنقاص (-)'),
-                                value: 'subtract',
-                              ),
+                          ),
+                          Expanded(
+                            child: RadioListTile<String>(
+                              title: Text('(-) ${'inventory.stock_out'.tr()}'),
+                              value: 'subtract',
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 12),
-                      AppTextField(
-                        label: 'الكمية *',
-                        controller: qtyController,
-                        keyboardType: TextInputType.number,
-                        validator: (val) {
-                          if (val == null || val.isEmpty) return 'الرجاء إدخال الكمية';
-                          final numVal = double.tryParse(val);
-                          if (numVal == null || numVal <= 0) return 'الرجاء إدخال كمية صحيحة أكبر من 0';
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      AppTextField(
-                        label: 'سبب التعديل / ملاحظات *',
-                        controller: reasonController,
-                        hint: 'مثال: جرد سنوي، تلف، تعديل يدوي...',
-                        validator: (val) => val == null || val.isEmpty ? 'الرجاء كتابة سبب التعديل' : null,
-                      ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 12),
+                    AppTextField(
+                      label: '${'common.quantity'.tr()} *',
+                      controller: qtyController,
+                      keyboardType: TextInputType.number,
+                      validator: (val) {
+                        if (val == null || val.isEmpty) return 'common.required_field'.tr();
+                        final numVal = double.tryParse(val);
+                        if (numVal == null || numVal <= 0) return 'common.required_field'.tr();
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    AppTextField(
+                      label: '${'inventory.adjust_reason'.tr()} *',
+                      controller: reasonController,
+                      validator: (val) => val == null || val.isEmpty ? 'common.required_field'.tr() : null,
+                    ),
+                  ],
                 ),
-                actions: [
-                  TextButton(onPressed: () => Navigator.pop(dialogCtx), child: const Text('إلغاء')),
-                  PrimaryButton(
-                    label: 'تأكيد التسوية',
-                    onPressed: () {
-                      if (formKey.currentState?.validate() ?? false) {
-                        double qty = double.parse(qtyController.text);
-                        if (direction == 'subtract') {
-                          qty = -qty;
-                        }
-                        cubit.adjustStock(item.product.id, qty, reasonController.text);
-                        Navigator.pop(dialogCtx);
+              ),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(dialogCtx), child: Text('common.cancel'.tr())),
+                PrimaryButton(
+                  label: 'common.confirm'.tr(),
+                  onPressed: () {
+                    if (formKey.currentState?.validate() ?? false) {
+                      double qty = double.parse(qtyController.text);
+                      if (direction == 'subtract') {
+                        qty = -qty;
                       }
-                    },
-                  ),
-                ],
-              );
-            },
-          ),
+                      cubit.adjustStock(item.product.id, qty, reasonController.text);
+                      Navigator.pop(dialogCtx);
+                    }
+                  },
+                ),
+              ],
+            );
+          },
         );
       },
     );

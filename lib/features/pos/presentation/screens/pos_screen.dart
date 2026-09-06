@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:small_mall/core/widgets/app_toast.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/di/injection.dart';
@@ -45,7 +46,7 @@ class _POSScreenState extends State<POSScreen> {
       child: BlocConsumer<POSCubit, POSState>(
         listener: (context, state) {
           if (state is POSCheckoutSuccess) {
-            AppToast.success(context, message: 'تمت عملية البيع بنجاح');
+            AppToast.success(context, message: 'pos.sale_success'.tr());
           } else if (state is POSError) {
             AppToast.error(context, message: state.message);
           }
@@ -56,19 +57,19 @@ class _POSScreenState extends State<POSScreen> {
           if (state is! POSLoaded) {
             if (state is POSError) {
               return AppScreenScaffold(
-                title: 'نقطة البيع',
+                title: 'pos.title'.tr(),
                 body: Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const Icon(Icons.error_outline, size: 48, color: AppColors.danger),
                       const SizedBox(height: 16),
-                      Text('حدث خطأ: ${state.message}', textAlign: TextAlign.center),
+                      Text('${'common.error'.tr()}: ${state.message}', textAlign: TextAlign.center),
                       const SizedBox(height: 16),
                       ElevatedButton.icon(
                         onPressed: cubit.loadPOSData,
                         icon: const Icon(Icons.refresh),
-                        label: const Text('إعادة المحاولة'),
+                        label: Text('common.retry'.tr()),
                       ),
                     ],
                   ),
@@ -76,15 +77,15 @@ class _POSScreenState extends State<POSScreen> {
               );
             }
             return AppScreenScaffold(
-              title: 'نقطة البيع',
+              title: 'pos.title'.tr(),
               body: const Center(child: CircularProgressIndicator()),
             );
           }
 
           // Filter products based on search query and category
           final filteredProducts = state.products.where((p) {
-            final matchQuery = p.product.name.contains(_searchQuery) ||
-                (p.category?.name.contains(_searchQuery) ?? false);
+            final matchQuery = p.product.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+                (p.category?.name.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false);
             final matchCategory = _selectedCategory == null || p.product.categoryId == _selectedCategory;
             return matchQuery && matchCategory;
           }).toList();
@@ -97,9 +98,9 @@ class _POSScreenState extends State<POSScreen> {
               .toList();
 
           return AppScreenScaffold(
-            title: 'نقطة البيع',
+            title: 'pos.title'.tr(),
             onRefresh: () => cubit.loadPOSData(),
-            actions: [],
+            actions: const [],
             body: SplitPaneLayout(
               leftFlex: 3,
               rightFlex: 2,
@@ -112,8 +113,8 @@ class _POSScreenState extends State<POSScreen> {
                       children: [
                         Expanded(
                           child: AppTextField(
-                            label: 'البحث عن منتج',
-                            hint: 'ابحث بالاسم أو الفئة...',
+                            label: 'pos.search_products'.tr(),
+                            hint: 'pos.search_products'.tr(),
                             controller: _searchController,
                             onChanged: (value) {
                               setState(() {
@@ -132,7 +133,7 @@ class _POSScreenState extends State<POSScreen> {
                         scrollDirection: Axis.horizontal,
                         children: [
                           ChoiceChip(
-                            label: const Text('الكل'),
+                            label: Text('common.all'.tr()),
                             selected: _selectedCategory == null,
                             onSelected: (val) {
                               if (val) {
@@ -147,7 +148,7 @@ class _POSScreenState extends State<POSScreen> {
                           const SizedBox(width: 8),
                           ...categories.map((cat) {
                             return Padding(
-                              padding: const EdgeInsets.only(left: 8.0),
+                              padding: const EdgeInsets.only(left: 8.0, right: 8.0),
                               child: ChoiceChip(
                                 label: Text(cat.name),
                                 selected: _selectedCategory == cat.id,
@@ -169,7 +170,7 @@ class _POSScreenState extends State<POSScreen> {
                     const SizedBox(height: 16),
                     Expanded(
                       child: filteredProducts.isEmpty
-                          ? const Center(child: Text('لا توجد منتجات مطابقة للبحث'))
+                          ? Center(child: Text('inventory.no_matching_products'.tr()))
                           : GridView.builder(
                               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: 3,
@@ -201,7 +202,7 @@ class _POSScreenState extends State<POSScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'سلة المشتريات',
+                            'pos.cart'.tr(),
                             style: Theme.of(context).textTheme.titleLarge?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: AppColors.primary,
@@ -212,12 +213,12 @@ class _POSScreenState extends State<POSScreen> {
                               TextButton.icon(
                                 onPressed: () => showDialog(context: context, builder: (_) => BlocProvider.value(value: cubit, child: const ReturnDialog())),
                                 icon: const Icon(Icons.replay, color: AppColors.accent),
-                                label: const Text('إرجاع', style: TextStyle(color: AppColors.accent)),
+                                label: Text('pos.return_btn'.tr(), style: const TextStyle(color: AppColors.accent)),
                               ),
                               TextButton.icon(
                                 onPressed: cubit.clearCart,
                                 icon: const Icon(Icons.delete_sweep, color: AppColors.danger),
-                                label: const Text('تفريغ السلة', style: TextStyle(color: AppColors.danger)),
+                                label: Text('pos.clear_cart'.tr(), style: const TextStyle(color: AppColors.danger)),
                               ),
                             ],
                           ),
@@ -227,7 +228,7 @@ class _POSScreenState extends State<POSScreen> {
                     const Divider(height: 1, color: AppColors.border),
                     Expanded(
                       child: state.cart.isEmpty
-                          ? const Center(child: Text('سلة المشتريات فارغة. اضغط على سعر منتج لإضافته.'))
+                          ? Center(child: Text('pos.empty_cart'.tr()))
                           : ListView.separated(
                               padding: const EdgeInsets.all(12),
                               itemCount: state.cart.length,
@@ -271,8 +272,8 @@ class _POSScreenState extends State<POSScreen> {
     showDialog(
       context: context,
       builder: (_) => EntityFormDialog(
-        title: 'إضافة عميل جديد',
-        saveLabel: 'حفظ العميل',
+        title: 'customers.add_customer'.tr(),
+        saveLabel: 'common.save'.tr(),
         nameController: nameController,
         phoneController: phoneController,
         notesController: notesController,

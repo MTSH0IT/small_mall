@@ -1,13 +1,12 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/core/widgets/loading_indicator.dart';
 import 'package:small_mall/core/widgets/price_tag_chip.dart';
 import 'package:small_mall/core/widgets/primary_button.dart';
 import 'package:small_mall/features/customers_debts/data/customers_debts_repository.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart' hide TextDirection;
 
 class CustomerDetailsPanel extends StatelessWidget {
-
   const CustomerDetailsPanel({
     super.key,
     required this.customerData,
@@ -15,6 +14,7 @@ class CustomerDetailsPanel extends StatelessWidget {
     required this.onRecordPayment,
     required this.onEditCustomer,
   });
+
   final CustomerWithDebts customerData;
   final List<DebtWithPayments>? debts;
   final ValueChanged<DebtWithPayments> onRecordPayment;
@@ -70,13 +70,13 @@ class CustomerDetailsPanel extends StatelessWidget {
                       const SizedBox(height: 6),
                     ],
                     if (customerData.customer.notes != null)
-                      Text('ملاحظات: ${customerData.customer.notes!}', style: theme.textTheme.bodyMedium),
+                      Text('${'common.notes'.tr()}: ${customerData.customer.notes!}', style: theme.textTheme.bodyMedium),
                   ],
                 ),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text('إجمالي الدين المستحق:', style: theme.textTheme.labelSmall),
+                    Text('${'customers.balance'.tr()}:', style: theme.textTheme.labelSmall),
                     const SizedBox(height: 4),
                     Text(
                       customerData.totalDebt.toStringAsFixed(2),
@@ -94,7 +94,7 @@ class CustomerDetailsPanel extends StatelessWidget {
           const SizedBox(height: 24),
           // Debts List
           Text(
-            'سجل الفواتير الآجلة والمدفوعات',
+            'customers.debt_history'.tr(),
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
               color: AppColors.primary,
@@ -102,9 +102,9 @@ class CustomerDetailsPanel extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           if (debts == null)
-            const LoadingIndicator(message: 'جاري تحميل الديون...')
+            LoadingIndicator(message: 'common.loading'.tr())
           else if (debts!.isEmpty)
-            const Center(child: Padding(padding: EdgeInsets.all(24), child: Text('لا توجد ديون مسجلة على هذا العميل.')))
+            Center(child: Padding(padding: const EdgeInsets.all(24), child: Text('customers.empty_customers'.tr())))
           else
             ListView.separated(
               shrinkWrap: true,
@@ -116,8 +116,8 @@ class CustomerDetailsPanel extends StatelessWidget {
                 final dateStr = DateFormat('yyyy/MM/dd hh:mm a').format(debtData.debt.createdAt);
 
                 final statusStr = debtData.debt.status == 'paid'
-                    ? 'مدفوع كامل'
-                    : (debtData.debt.status == 'partial' ? 'مدفوع جزئي' : 'غير مدفوع');
+                    ? 'customers.settled'.tr()
+                    : (debtData.debt.status == 'partial' ? 'partial' : 'customers.has_debt'.tr());
                 final statusColor = debtData.debt.status == 'paid'
                     ? AppColors.success
                     : (debtData.debt.status == 'partial' ? AppColors.primary : AppColors.danger);
@@ -136,7 +136,7 @@ class CustomerDetailsPanel extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'فاتورة مبيعات آجل - $dateStr',
+                            '${'pos.debt'.tr()} - $dateStr',
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                           PriceTagChip(
@@ -153,14 +153,14 @@ class CustomerDetailsPanel extends StatelessWidget {
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('القيمة الأصلية للبيع:', style: theme.textTheme.labelSmall),
+                              Text('${'common.total'.tr()}:', style: theme.textTheme.labelSmall),
                               Text(debtData.debt.amount.toStringAsFixed(2), style: AppTheme.numericStyle()),
                             ],
                           ),
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('المتبقي للتسديد:', style: theme.textTheme.labelSmall),
+                              Text('${'suppliers.remaining_amount'.tr()}:', style: theme.textTheme.labelSmall),
                               Text(
                                 debtData.debt.remainingAmount.toStringAsFixed(2),
                                 style: AppTheme.numericStyle(
@@ -172,7 +172,7 @@ class CustomerDetailsPanel extends StatelessWidget {
                           ),
                           if (debtData.debt.remainingAmount > 0)
                             PrimaryButton(
-                              label: 'تسجيل دفعة',
+                              label: 'customers.record_payment'.tr(),
                               icon: Icons.payments,
                               onPressed: () => onRecordPayment(debtData),
                             ),
@@ -180,7 +180,7 @@ class CustomerDetailsPanel extends StatelessWidget {
                       ),
                       if (debtData.payments.isNotEmpty) ...[
                         const SizedBox(height: 12),
-                        const Text('المدفوعات السابقة:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
+                        Text('customers.debt_history'.tr(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
                         const SizedBox(height: 4),
                         ...debtData.payments.map((p) {
                           final payDate = DateFormat('yyyy/MM/dd hh:mm a').format(p.paidAt);
@@ -189,7 +189,7 @@ class CustomerDetailsPanel extends StatelessWidget {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text('دفعة سداد بتاريخ: $payDate', style: theme.textTheme.labelSmall),
+                                Text(payDate, style: theme.textTheme.labelSmall),
                                 Text(
                                   '- ${p.amountPaid.toStringAsFixed(2)}',
                                   style: AppTheme.numericStyle(color: AppColors.success, fontWeight: FontWeight.bold),

@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:small_mall/core/di/injection.dart';
 import 'package:small_mall/core/sync/sync_service.dart';
 import 'package:small_mall/core/utils/theme.dart';
@@ -66,117 +67,116 @@ class _MainLayoutState extends State<MainLayout> {
       _NavItem(
         icon: Icons.point_of_sale_outlined,
         activeIcon: Icons.point_of_sale,
-        label: 'نقطة البيع',
+        label: 'nav.pos'.tr(),
       ),
       _NavItem(
         icon: Icons.card_giftcard_outlined,
         activeIcon: Icons.card_giftcard,
-        label: 'المنتجات',
+        label: 'nav.products'.tr(),
       ),
       _NavItem(
         icon: Icons.inventory_2_outlined,
         activeIcon: Icons.inventory_2,
-        label: 'المخزون',
+        label: 'nav.inventory'.tr(),
       ),
       _NavItem(
         icon: Icons.people_outline,
         activeIcon: Icons.people,
-        label: 'العملاء والديون',
+        label: 'nav.customers'.tr(),
       ),
       _NavItem(
         icon: Icons.local_shipping_outlined,
         activeIcon: Icons.local_shipping,
-        label: 'الموردون والمشتريات',
+        label: 'nav.suppliers'.tr(),
       ),
       _NavItem(
         icon: Icons.bar_chart_outlined,
         activeIcon: Icons.bar_chart,
-        label: 'التقارير',
+        label: 'nav.reports'.tr(),
       ),
       _NavItem(
         icon: Icons.receipt_long_outlined,
         activeIcon: Icons.receipt_long,
-        label: 'الفواتير',
+        label: 'nav.invoices'.tr(),
       ),
       _NavItem(
         icon: Icons.settings_outlined,
         activeIcon: Icons.settings,
-        label: 'الإعدادات',
+        label: 'nav.settings'.tr(),
       ),
     ];
 
     return Scaffold(
-      body: Directionality(
-        textDirection: TextDirection.rtl,
-        child: Row(
-          children: [
-            // Sidebar Navigation Rail
-            Container(
-              width: 220,
-              color: AppColors.surfaceElevated,
-              padding: const EdgeInsets.symmetric(vertical: 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // App Title / Branding
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Small Mall',
-                          style: theme.textTheme.displaySmall?.copyWith(
-                            color: AppColors.primary,
-                          ),
+      body: Row(
+        children: [
+          // Sidebar Navigation Rail
+          Container(
+            width: 220,
+            color: AppColors.surfaceElevated,
+            padding: const EdgeInsets.symmetric(vertical: 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // App Title / Branding
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'app_title'.tr(),
+                        style: theme.textTheme.displaySmall?.copyWith(
+                          color: AppColors.primary,
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Gift Shop Manager',
-                          style: theme.textTheme.labelSmall,
-                        ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'app_subtitle'.tr(),
+                        style: theme.textTheme.labelSmall,
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 32),
-                  // Navigation Items
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: navItems.length,
-                      itemBuilder: (context, index) {
-                        final item = navItems[index];
-                        final isSelected = index == selectedIndex;
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 4,
-                          ),
-                          child: InkWell(
-                            onTap: () => _onItemTapped(index, context),
-                            borderRadius: BorderRadius.circular(10),
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 12,
-                              ),
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? AppColors.primary.withValues(alpha: 0.08)
-                                    : Colors.transparent,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    isSelected ? item.activeIcon : item.icon,
-                                    color: isSelected
-                                        ? AppColors.primary
-                                        : AppColors.textSecondary,
-                                    size: 22,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Text(
+                ),
+                const SizedBox(height: 32),
+                // Navigation Items
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: navItems.length,
+                    itemBuilder: (context, index) {
+                      final item = navItems[index];
+                      final isSelected = index == selectedIndex;
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 4,
+                        ),
+                        child: InkWell(
+                          onTap: () => _onItemTapped(index, context),
+                          borderRadius: BorderRadius.circular(10),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? AppColors.primary.withValues(alpha: 0.08)
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  isSelected ? item.activeIcon : item.icon,
+                                  color: isSelected
+                                      ? AppColors.primary
+                                      : AppColors.textSecondary,
+                                  size: 22,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
                                     item.label,
                                     style: theme.textTheme.bodyMedium?.copyWith(
                                       color: isSelected
@@ -186,44 +186,45 @@ class _MainLayoutState extends State<MainLayout> {
                                           ? FontWeight.bold
                                           : FontWeight.normal,
                                     ),
+                                    overflow: TextOverflow.ellipsis,
                                   ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
                           ),
-                        );
-                      },
-                    ),
+                        ),
+                      );
+                    },
                   ),
-                  // Sync Status indicator at the bottom
-                  const Divider(color: AppColors.border, height: 24),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: ValueListenableBuilder<SyncStatus>(
-                      valueListenable: _syncService.status,
-                      builder: (context, status, child) {
-                        return ValueListenableBuilder<int>(
-                          valueListenable: _syncService.pendingCount,
-                          builder: (context, pending, child) {
-                            return _buildSyncStatusWidget(status, pending);
-                          },
-                        );
-                      },
-                    ),
+                ),
+                // Sync Status indicator at the bottom
+                const Divider(color: AppColors.border, height: 24),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: ValueListenableBuilder<SyncStatus>(
+                    valueListenable: _syncService.status,
+                    builder: (context, status, child) {
+                      return ValueListenableBuilder<int>(
+                        valueListenable: _syncService.pendingCount,
+                        builder: (context, pending, child) {
+                          return _buildSyncStatusWidget(status, pending);
+                        },
+                      );
+                    },
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            // Divider
-            const VerticalDivider(
-              width: 1,
-              thickness: 1,
-              color: AppColors.border,
-            ),
-            // Main Content
-            Expanded(child: widget.child),
-          ],
-        ),
+          ),
+          // Divider
+          const VerticalDivider(
+            width: 1,
+            thickness: 1,
+            color: AppColors.border,
+          ),
+          // Main Content
+          Expanded(child: widget.child),
+        ],
       ),
     );
   }
@@ -231,41 +232,45 @@ class _MainLayoutState extends State<MainLayout> {
   Widget _buildSyncStatusWidget(SyncStatus status, int pendingCount) {
     final theme = Theme.of(context);
     Color dotColor = Colors.grey;
-    String statusText = 'غير متصل';
+    String statusText = 'sync.disconnected'.tr();
     IconData icon = Icons.cloud_off_outlined;
 
     switch (status) {
       case SyncStatus.idle:
         if (pendingCount > 0) {
           dotColor = AppColors.accent;
-          statusText = 'معلق للرفع ($pendingCount)';
+          statusText = 'sync.pending'.tr();
           icon = Icons.sync_outlined;
         } else {
           dotColor = AppColors.success;
-          statusText = 'مزامنة كاملة';
+          statusText = 'sync.all_synced'.tr();
           icon = Icons.cloud_done_outlined;
         }
         break;
       case SyncStatus.syncing:
         dotColor = AppColors.primary;
-        statusText = 'جاري المزامنة...';
+        statusText = 'sync.syncing'.tr();
         icon = Icons.sync;
         break;
       case SyncStatus.success:
         dotColor = AppColors.success;
-        statusText = 'تمت المزامنة';
+        statusText = 'sync.synced'.tr();
         icon = Icons.cloud_done_outlined;
         break;
       case SyncStatus.error:
         dotColor = AppColors.danger;
-        statusText = 'فشل الاتصال بالخادم';
+        statusText = 'sync.error'.tr();
         icon = Icons.cloud_off;
         break;
       case SyncStatus.offline:
         dotColor = Colors.orange;
-        statusText = 'يعمل أوفلاين';
+        statusText = 'sync.offline'.tr();
         icon = Icons.wifi_off_outlined;
         break;
+    }
+
+    if (pendingCount > 0) {
+      statusText += ' ($pendingCount)';
     }
 
     return Row(
@@ -277,7 +282,7 @@ class _MainLayoutState extends State<MainLayout> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'حالة السحاب',
+                'sync.title'.tr(),
                 style: theme.textTheme.labelSmall?.copyWith(fontSize: 10),
               ),
               Row(

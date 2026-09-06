@@ -1,7 +1,7 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/features/pos/data/pos_repository.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 class InvoiceList extends StatelessWidget {
   const InvoiceList({
@@ -19,7 +19,7 @@ class InvoiceList extends StatelessWidget {
     final labelSmall = Theme.of(context).textTheme.labelSmall;
 
     if (invoices.isEmpty) {
-      return const Center(child: Text('لا توجد فواتير'));
+      return Center(child: Text('invoices.empty_invoices'.tr()));
     }
 
     return ListView.separated(
@@ -66,31 +66,33 @@ class InvoiceList extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              isReturn ? 'مرتجع' : 'مبيعات',
-                              style: TextStyle(
+                              '${'invoices.invoice_id'.tr()} #${inv.invoice.id.substring(0, 8)}',
+                              style: const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            Text(
+                              inv.invoice.totalAmount.toStringAsFixed(2),
+                              style: AppTheme.numericStyle(
                                 fontWeight: FontWeight.bold,
-                                color: isReturn ? AppColors.danger : AppColors.success,
-                                fontSize: 12,
+                                color: isReturn ? AppColors.danger : AppColors.primary,
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            Text(inv.customerName ?? 'نقدي', style: labelSmall),
                           ],
                         ),
                         const SizedBox(height: 4),
-                        Text(dateStr, style: labelSmall?.copyWith(fontSize: 11)),
-                        Text('${inv.items.length} منتجات', style: labelSmall?.copyWith(fontSize: 11)),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              inv.customerName ?? 'pos.walk_in_customer'.tr(),
+                              style: labelSmall,
+                            ),
+                            Text(dateStr, style: labelSmall),
+                          ],
+                        ),
                       ],
-                    ),
-                  ),
-                  Text(
-                    inv.invoice.totalAmount.toStringAsFixed(2),
-                    style: AppTheme.numericStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: isReturn ? AppColors.danger : AppColors.primary,
                     ),
                   ),
                 ],

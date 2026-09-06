@@ -1,10 +1,10 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/core/widgets/price_tag_chip.dart';
 import 'package:small_mall/features/customers_debts/data/customers_debts_repository.dart';
 import 'package:flutter/material.dart';
 
 class CustomersList extends StatelessWidget {
-
   const CustomersList({
     super.key,
     required this.customers,
@@ -12,6 +12,7 @@ class CustomersList extends StatelessWidget {
     required this.searchQuery,
     required this.onSelectCustomer,
   });
+
   final List<CustomerWithDebts> customers;
   final String? selectedCustomerId;
   final String searchQuery;
@@ -20,13 +21,13 @@ class CustomersList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final filtered = customers.where((c) {
-      final matchName = c.customer.name.contains(searchQuery);
+      final matchName = c.customer.name.toLowerCase().contains(searchQuery.toLowerCase());
       final matchPhone = c.customer.phone?.contains(searchQuery) ?? false;
       return matchName || matchPhone;
     }).toList();
 
     if (filtered.isEmpty) {
-      return const Center(child: Text('لا يوجد عملاء مطابقين للبحث.'));
+      return Center(child: Text('customers.empty_customers'.tr()));
     }
 
     return Container(
@@ -46,9 +47,9 @@ class CustomersList extends StatelessWidget {
             selected: isSelected,
             selectedTileColor: AppColors.primary.withValues(alpha: 0.05),
             title: Text(item.customer.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Text(item.customer.phone ?? 'بدون هاتف'),
+            subtitle: Text(item.customer.phone ?? '-'),
             trailing: PriceTagChip(
-              label: 'الدين: ${item.totalDebt.toStringAsFixed(1)}',
+              label: '${'customers.balance'.tr()}: ${item.totalDebt.toStringAsFixed(1)}',
               backgroundColor: item.totalDebt > 0 ? AppColors.accent : AppColors.success,
               cutSize: 6,
             ),

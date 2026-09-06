@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/core/widgets/primary_button.dart';
@@ -51,56 +52,76 @@ class _ReturnDialogState extends State<ReturnDialog> {
       _quantityControllers.clear();
       _originalQuantities.clear();
       for (final item in items) {
-        _quantityControllers[item.id] = TextEditingController(text: item.quantity.toStringAsFixed(0));
+        _quantityControllers[item.id] = TextEditingController(text: item.quantity.toString());
         _originalQuantities[item.id] = item.quantity;
       }
     });
   }
 
-  Future<void> _submitReturn() async {
-    if (_selectedInvoice == null || _selectedInvoiceItems == null) return;
-
-    final itemsToReturn = <Map<String, dynamic>>[];
-    for (final item in _selectedInvoiceItems!) {
-      final qtyText = _quantityControllers[item.id]?.text ?? '0';
-      final returnQty = double.tryParse(qtyText) ?? 0;
-      if (returnQty > 0) {
-        itemsToReturn.add({
-          'productId': item.productId,
-          'quantity': returnQty,
-          'priceUsed': item.priceUsed,
-        });
-      }
-    }
-
-    if (itemsToReturn.isEmpty) return;
-
-    setState(() => _isSubmitting = true);
-    try {
-      final cubit = context.read<POSCubit>();
-      await cubit.createReturn(
-        originalInvoiceId: _selectedInvoice!.id,
-        itemsToReturn: itemsToReturn,
-      );
-      if (mounted) Navigator.pop(context);
-    } catch (e) {
-      setState(() => _isSubmitting = false);
-    }
-  }
-
   String _getProductName(String productId) {
-    final state = context.read<POSCubit>().state;
-    if (state is POSLoaded) {
+    final cubit = context.read<POSCubit>();
+    if (cubit.state is POSLoaded) {
+      final state = cubit.state as POSLoaded;
       final product = state.products.where((p) => p.product.id == productId).firstOrNull;
-      return product?.product.name ?? productId;
+      if (product != null) return product.product.name;
     }
     return productId;
   }
 
+  Future<void> _submitReturn() async {
+    if (_selectedInvoice == null || _selectedInvoiceItems == null) return;
+    setState(() => _isSubmitting = true);
+
+    final returnItems = <Map<String, dynamic>>[];
+    for (final item in _selectedInvoiceItems!) {
+      final controller = _quantityControllers[item.id];
+      if (controller != null) {
+        final qty = double.tryParse(controller.text) ?? 0;
+        if (qty > 0) {
+          returnItems.add({
+            'productId': item.productId,
+            'quantity': qty,
+            'priceUsed': item.priceUsed,
+          });
+        }
+      }
+    }
+
+    if (returnItems.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('pos.return_reason'.tr())),
+      );
+      setState(() => _isSubmitting = false);
+      return;
+    }
+
+    try {
+      final cubit = context.read<POSCubit>();
+      await cubit.createReturn(
+        originalInvoiceId: _selectedInvoice!.id,
+        itemsToReturn: returnItems,
+      );
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('pos.return_success'.tr())),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${'common.error'.tr()}: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
   @override
   void dispose() {
-    for (final ctrl in _quantityControllers.values) {
-      ctrl.dispose();
+    for (final c in _quantityControllers.values) {
+      c.dispose();
     }
     super.dispose();
   }
@@ -109,50 +130,47 @@ class _ReturnDialogState extends State<ReturnDialog> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: AlertDialog(
-        title: Row(
-          children: [
-            const Icon(Icons.replay, color: AppColors.accent),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                _selectedInvoice == null ? 'اختيار فاتورة للإرجاع' : 'إرجاع منتجات',
-                style: const TextStyle(color: AppColors.primary),
-              ),
+    return AlertDialog(
+      title: Row(
+        children: [
+          const Icon(Icons.replay, color: AppColors.accent),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              _selectedInvoice == null ? 'pos.select_invoice_return'.tr() : 'pos.return_products'.tr(),
+              style: const TextStyle(color: AppColors.primary),
             ),
-          ],
-        ),
-        content: SizedBox(
-          width: 500,
-          child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : _selectedInvoice == null
-                  ? _buildInvoiceList(theme)
-                  : _buildReturnForm(theme),
-        ),
-        actions: _selectedInvoice == null
-            ? null
-            : [
-                TextButton(
-                  onPressed: () => setState(() => _selectedInvoice = null),
-                  child: const Text('رجوع'),
-                ),
-                PrimaryButton(
-                  label: 'تأكيد الإرجاع',
-                  icon: Icons.check,
-                  onPressed: _isSubmitting ? null : _submitReturn,
-                  isLoading: _isSubmitting,
-                ),
-              ],
+          ),
+        ],
       ),
+      content: SizedBox(
+        width: 500,
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _selectedInvoice == null
+                ? _buildInvoiceList(theme)
+                : _buildReturnForm(theme),
+      ),
+      actions: _selectedInvoice == null
+          ? null
+          : [
+              TextButton(
+                onPressed: () => setState(() => _selectedInvoice = null),
+                child: Text('common.back'.tr()),
+              ),
+              PrimaryButton(
+                label: 'pos.confirm_return'.tr(),
+                icon: Icons.check,
+                onPressed: _isSubmitting ? null : _submitReturn,
+                isLoading: _isSubmitting,
+              ),
+            ],
     );
   }
 
   Widget _buildInvoiceList(ThemeData theme) {
     if (_invoices == null || _invoices!.isEmpty) {
-      return const Text('لا توجد فواتير بيع سابقة');
+      return Center(child: Text('pos.no_invoices'.tr()));
     }
 
     return SizedBox(
@@ -162,16 +180,16 @@ class _ReturnDialogState extends State<ReturnDialog> {
         separatorBuilder: (_, _) => const Divider(color: AppColors.border),
         itemBuilder: (context, index) {
           final invoice = _invoices![index];
-          final paymentLabel = invoice.paymentType == 'debt' ? 'آجل' : 'نقدي';
+          final paymentLabel = invoice.paymentType == 'debt' ? 'pos.debt'.tr() : 'pos.cash'.tr();
           return ListTile(
             leading: const Icon(Icons.receipt_long, color: AppColors.primary),
-            title: Text('فاتورة #${invoice.id.substring(0, 8)}',
+            title: Text('${'invoices.invoice_id'.tr()} #${invoice.id.substring(0, 8)}',
                 style: const TextStyle(fontWeight: FontWeight.bold)),
             subtitle: Text(
               '${invoice.createdAt.toString().substring(0, 16)}  |  $paymentLabel  |  ${invoice.totalAmount.toStringAsFixed(2)}',
               style: theme.textTheme.bodySmall,
             ),
-            trailing: const Icon(Icons.arrow_back_ios_new, size: 16, color: AppColors.textSecondary),
+            trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.textSecondary),
             onTap: () => _selectInvoice(invoice),
           );
         },
@@ -181,7 +199,7 @@ class _ReturnDialogState extends State<ReturnDialog> {
 
   Widget _buildReturnForm(ThemeData theme) {
     if (_selectedInvoiceItems == null || _selectedInvoiceItems!.isEmpty) {
-      return const Text('لا توجد منتجات في هذه الفاتورة');
+      return Center(child: Text('invoices.empty_invoices'.tr()));
     }
 
     return SizedBox(
@@ -196,10 +214,10 @@ class _ReturnDialogState extends State<ReturnDialog> {
             ),
             child: Row(
               children: [
-                Text('فاتورة: ${_selectedInvoice!.id.substring(0, 8)}',
+                Text('${'invoices.invoice_id'.tr()}: ${_selectedInvoice!.id.substring(0, 8)}',
                     style: const TextStyle(fontWeight: FontWeight.bold)),
                 const Spacer(),
-                Text('المجموع: ${_selectedInvoice!.totalAmount.toStringAsFixed(2)}',
+                Text('${'common.total'.tr()}: ${_selectedInvoice!.totalAmount.toStringAsFixed(2)}',
                     style: const TextStyle(fontWeight: FontWeight.bold)),
               ],
             ),
@@ -223,7 +241,7 @@ class _ReturnDialogState extends State<ReturnDialog> {
                             Text(productName,
                                 style: const TextStyle(fontWeight: FontWeight.bold)),
                             Text(
-                              'السعر: ${item.priceUsed.toStringAsFixed(2)}',
+                              '${'common.price'.tr()}: ${item.priceUsed.toStringAsFixed(2)}',
                               style: theme.textTheme.bodySmall,
                             ),
                           ],
@@ -236,7 +254,7 @@ class _ReturnDialogState extends State<ReturnDialog> {
                           controller: _quantityControllers[item.id],
                           keyboardType: TextInputType.number,
                           decoration: InputDecoration(
-                            labelText: 'الكمية',
+                            labelText: 'common.quantity'.tr(),
                             contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
                             isDense: true,

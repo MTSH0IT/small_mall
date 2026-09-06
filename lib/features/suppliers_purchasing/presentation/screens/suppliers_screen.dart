@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:small_mall/core/widgets/app_toast.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/di/injection.dart';
@@ -61,7 +62,7 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
           final cubit = context.read<SuppliersPurchasingCubit>();
 
           return AppScreenScaffold(
-            title: 'الموردون والمشتريات',
+            title: 'suppliers.title'.tr(),
             onRefresh: () => cubit.loadSuppliers(),
             body: SplitPaneLayout(
               leftChild: Container(
@@ -70,11 +71,11 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     SearchBarWithAction(
-                      searchLabel: 'بحث عن مورد',
-                      searchHint: 'ابحث بالاسم...',
+                      searchLabel: 'suppliers.supplier_name'.tr(),
+                      searchHint: 'common.search'.tr(),
                       searchController: _searchController,
                       onSearchChanged: (val) => _searchQuery = val,
-                      actionLabel: 'إضافة مورد',
+                      actionLabel: 'suppliers.add_supplier'.tr(),
                       actionIcon: Icons.local_shipping,
                       onActionPressed: () => _showAddSupplierDialog(context, cubit),
                     ),
@@ -93,7 +94,7 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
 
   Widget _buildSuppliersList(BuildContext context, SuppliersPurchasingCubit cubit, SuppliersPurchasingState state) {
     if (state is SuppliersPurchasingLoading) {
-      return const LoadingIndicator(message: 'جاري تحميل الموردين...');
+      return LoadingIndicator(message: 'common.loading'.tr());
     }
 
     if (state is SuppliersPurchasingLoaded) {
@@ -114,7 +115,7 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
 
   Widget _buildRecordPurchasePanel(BuildContext context, SuppliersPurchasingCubit cubit, SuppliersPurchasingState state) {
     if (_selectedSupplier == null) {
-      return const Center(child: Text('اختر مورداً من القائمة للبدء بتسجيل فاتورة مشتريات'));
+      return Center(child: Text('suppliers.select_supplier_to_view'.tr()));
     }
 
     final supplier = _selectedSupplier!;
@@ -153,7 +154,7 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                 items: items,
               );
               if (context.mounted) {
-                AppToast.success(context, message: 'تم تسجيل فاتورة المشتريات وتحديث مخزون المنتجات بنجاح');
+                AppToast.success(context, message: 'suppliers.purchase_recorded'.tr());
               }
             },
           ),
@@ -170,10 +171,10 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
     showDialog(
       context: context,
       builder: (_) => EntityFormDialog(
-        title: 'تعديل بيانات المورد',
-        saveLabel: 'حفظ التعديلات',
-        nameLabel: 'اسم المورد *',
-        notesLabel: 'ملاحظات / البضائع',
+        title: 'suppliers.edit_supplier'.tr(),
+        saveLabel: 'common.save'.tr(),
+        nameLabel: 'suppliers.supplier_name'.tr(),
+        notesLabel: 'common.notes'.tr(),
         nameController: nameController,
         phoneController: phoneController,
         notesController: notesController,
@@ -197,10 +198,10 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
     showDialog(
       context: context,
       builder: (_) => EntityFormDialog(
-        title: 'إضافة مورد جديد',
-        saveLabel: 'حفظ المورد',
-        nameLabel: 'اسم المورد *',
-        notesLabel: 'ملاحظات / البضائع',
+        title: 'suppliers.add_supplier'.tr(),
+        saveLabel: 'common.save'.tr(),
+        nameLabel: 'suppliers.supplier_name'.tr(),
+        notesLabel: 'common.notes'.tr(),
         nameController: nameController,
         phoneController: phoneController,
         notesController: notesController,

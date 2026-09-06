@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:small_mall/core/widgets/app_toast.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/di/injection.dart';
@@ -42,7 +43,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
           final cubit = context.read<CustomersDebtsCubit>();
 
           return AppScreenScaffold(
-            title: 'العملاء والديون',
+            title: 'customers.title'.tr(),
             onRefresh: () => cubit.loadCustomers(),
             body: SplitPaneLayout(
               leftChild: Container(
@@ -51,11 +52,11 @@ class _CustomersScreenState extends State<CustomersScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     SearchBarWithAction(
-                      searchLabel: 'بحث عن عميل',
-                      searchHint: 'ابحث بالاسم أو الهاتف...',
+                      searchLabel: 'customers.customer_name'.tr(),
+                      searchHint: 'common.search'.tr(),
                       searchController: _searchController,
                       onSearchChanged: (val) => _searchQuery = val,
-                      actionLabel: 'إضافة عميل',
+                      actionLabel: 'customers.add_customer'.tr(),
                       actionIcon: Icons.person_add,
                       onActionPressed: () => _showAddCustomerDialog(context, cubit),
                     ),
@@ -74,7 +75,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
 
   Widget _buildCustomersList(BuildContext context, CustomersDebtsCubit cubit, CustomersDebtsState state) {
     if (state is CustomersDebtsLoading) {
-      return const LoadingIndicator(message: 'جاري تحميل قائمة العملاء...');
+      return LoadingIndicator(message: 'common.loading'.tr());
     }
 
     if (state is CustomersDebtsLoaded) {
@@ -93,8 +94,8 @@ class _CustomersScreenState extends State<CustomersScreen> {
     if (state is CustomersDebtsLoaded) {
       final custId = state.selectedCustomerId;
       if (custId == null) {
-        return const Center(
-          child: Text('اختر عميلاً من القائمة لعرض كشف الحساب وتفاصيل الديون والمدفوعات'),
+        return Center(
+          child: Text('customers.select_customer_to_view'.tr()),
         );
       }
 
@@ -120,8 +121,8 @@ class _CustomersScreenState extends State<CustomersScreen> {
     showDialog(
       context: context,
       builder: (_) => EntityFormDialog(
-        title: 'إضافة عميل جديد',
-        saveLabel: 'حفظ العميل',
+        title: 'customers.add_customer'.tr(),
+        saveLabel: 'common.save'.tr(),
         nameController: nameController,
         phoneController: phoneController,
         notesController: notesController,
@@ -144,8 +145,8 @@ class _CustomersScreenState extends State<CustomersScreen> {
     showDialog(
       context: context,
       builder: (_) => EntityFormDialog(
-        title: 'تعديل بيانات العميل',
-        saveLabel: 'حفظ التعديلات',
+        title: 'customers.edit_customer'.tr(),
+        saveLabel: 'common.save'.tr(),
         nameController: nameController,
         phoneController: phoneController,
         notesController: notesController,
@@ -173,49 +174,46 @@ class _CustomersScreenState extends State<CustomersScreen> {
     showDialog(
       context: context,
       builder: (ctx) {
-        return Directionality(
-          textDirection: TextDirection.rtl,
-          child: AlertDialog(
-            title: const Text('تسجيل دفعة سداد دين', style: TextStyle(color: AppColors.primary)),
-            content: Form(
-              key: formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('الحد الأقصى للدفع: ${debtData.debt.remainingAmount.toStringAsFixed(2)}'),
-                  const SizedBox(height: 12),
-                  AppTextField(
-                    label: 'قيمة الدفعة المسددة *',
-                    controller: amountController,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    validator: (val) {
-                      if (val == null || val.isEmpty) return 'يرجى إدخال القيمة';
-                      final parsed = double.tryParse(val);
-                      if (parsed == null || parsed <= 0) return 'يرجى إدخال مبلغ صحيح أكبر من 0';
-                      if (parsed > debtData.debt.remainingAmount) return 'المبلغ يتعدى قيمة الدين المتبقي!';
-                      return null;
-                    },
-                  ),
-                ],
-              ),
+        return AlertDialog(
+          title: Text('customers.record_payment_title'.tr(), style: const TextStyle(color: AppColors.primary)),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('${'customers.max_payment'.tr()} ${debtData.debt.remainingAmount.toStringAsFixed(2)}'),
+                const SizedBox(height: 12),
+                AppTextField(
+                  label: '${'customers.payment_amount'.tr()} *',
+                  controller: amountController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  validator: (val) {
+                    if (val == null || val.isEmpty) return 'common.required_field'.tr();
+                    final parsed = double.tryParse(val);
+                    if (parsed == null || parsed <= 0) return 'common.required_field'.tr();
+                    if (parsed > debtData.debt.remainingAmount) return 'المبلغ يتعدى قيمة الدين المتبقي!';
+                    return null;
+                  },
+                ),
+              ],
             ),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
-              PrimaryButton(
-                label: 'تسجيل دفعة السداد',
-                onPressed: () {
-                  if (formKey.currentState?.validate() ?? false) {
-                    cubit.recordPayment(
-                      customerId: customerId,
-                      debtId: debtData.debt.id,
-                      amountPaid: double.parse(amountController.text),
-                    );
-                    Navigator.pop(ctx);
-                  }
-                },
-              ),
-            ],
           ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: Text('common.cancel'.tr())),
+            PrimaryButton(
+              label: 'customers.confirm_payment'.tr(),
+              onPressed: () {
+                if (formKey.currentState?.validate() ?? false) {
+                  cubit.recordPayment(
+                    customerId: customerId,
+                    debtId: debtData.debt.id,
+                    amountPaid: double.parse(amountController.text),
+                  );
+                  Navigator.pop(ctx);
+                }
+              },
+            ),
+          ],
         );
       },
     );

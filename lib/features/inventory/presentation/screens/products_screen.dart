@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:small_mall/core/widgets/app_toast.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/di/injection.dart';
@@ -38,7 +39,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
           final cubit = context.read<InventoryCubit>();
 
           return AppScreenScaffold(
-            title: 'المنتجات',
+            title: 'inventory.products_title'.tr(),
             onRefresh: () => cubit.loadInventory(),
             body: Padding(
               padding: const EdgeInsets.all(24.0),
@@ -50,8 +51,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     children: [
                       Expanded(
                         child: AppTextField(
-                          label: 'بحث عن منتج',
-                          hint: 'ابحث بالاسم...',
+                          label: 'common.search'.tr(),
+                          hint: 'common.search'.tr(),
                           controller: _searchController,
                           onChanged: (val) {
                             setState(() {
@@ -69,7 +70,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                             OutlinedButton.icon(
                               onPressed: () => _showAddCategoryDialog(context, cubit),
                               icon: const Icon(Icons.category_outlined, color: AppColors.primary),
-                              label: const Text('إضافة فئة جديدة', style: TextStyle(color: AppColors.primary)),
+                              label: Text('inventory.add_category'.tr(), style: const TextStyle(color: AppColors.primary)),
                               style: OutlinedButton.styleFrom(
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -77,7 +78,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                             ),
                             const SizedBox(width: 12),
                             PrimaryButton(
-                              label: 'إضافة منتج جديد',
+                              label: 'inventory.add_product'.tr(),
                               icon: Icons.add,
                               onPressed: () {
                                 if (state is InventoryLoaded) {
@@ -106,7 +107,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
   Widget _buildBody(BuildContext context, InventoryCubit cubit, InventoryState state) {
     if (state is InventoryLoading) {
-      return const LoadingIndicator(message: 'جاري تحميل قائمة المنتجات...');
+      return LoadingIndicator(message: 'inventory.loading_products'.tr());
     }
 
     if (state is InventoryLoaded) {
@@ -128,31 +129,28 @@ class _ProductsScreenState extends State<ProductsScreen> {
     showDialog(
       context: context,
       builder: (ctx) {
-        return Directionality(
-          textDirection: TextDirection.rtl,
-          child: AlertDialog(
-            title: const Text('إضافة فئة جديدة', style: TextStyle(color: AppColors.primary)),
-            content: Form(
-              key: formKey,
-              child: AppTextField(
-                label: 'اسم الفئة *',
-                controller: controller,
-                validator: (val) => val == null || val.isEmpty ? 'يرجى إدخال اسم الفئة' : null,
-              ),
+        return AlertDialog(
+          title: Text('inventory.add_category'.tr(), style: const TextStyle(color: AppColors.primary)),
+          content: Form(
+            key: formKey,
+            child: AppTextField(
+              label: 'inventory.category_name'.tr(),
+              controller: controller,
+              validator: (val) => val == null || val.isEmpty ? 'common.required_field'.tr() : null,
             ),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
-              PrimaryButton(
-                label: 'حفظ الفئة',
-                onPressed: () {
-                  if (formKey.currentState?.validate() ?? false) {
-                    cubit.addCategory(controller.text);
-                    Navigator.pop(ctx);
-                  }
-                },
-              ),
-            ],
           ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: Text('common.cancel'.tr())),
+            PrimaryButton(
+              label: 'inventory.save_category'.tr(),
+              onPressed: () {
+                if (formKey.currentState?.validate() ?? false) {
+                  cubit.addCategory(controller.text);
+                  Navigator.pop(ctx);
+                }
+              },
+            ),
+          ],
         );
       },
     );
@@ -185,149 +183,146 @@ class _ProductsScreenState extends State<ProductsScreen> {
     showDialog(
       context: context,
       builder: (ctx) {
-        return Directionality(
-          textDirection: TextDirection.rtl,
-          child: AlertDialog(
-            title: Text(existing == null ? 'إضافة منتج جديد' : 'تعديل منتج',
-                style: const TextStyle(color: AppColors.primary)),
-            content: SizedBox(
-              width: 500,
-              child: SingleChildScrollView(
-                child: Form(
-                  key: formKey,
-                  child: Column(
-                    children: [
-                      AppTextField(
-                        label: 'اسم المنتج *',
-                        controller: nameController,
-                        validator: (val) => val == null || val.isEmpty ? 'يرجى إدخال الاسم' : null,
+        return AlertDialog(
+          title: Text(existing == null ? 'inventory.add_product'.tr() : 'inventory.edit_product'.tr(),
+              style: const TextStyle(color: AppColors.primary)),
+          content: SizedBox(
+            width: 500,
+            child: SingleChildScrollView(
+              child: Form(
+                key: formKey,
+                child: Column(
+                  children: [
+                    AppTextField(
+                      label: 'inventory.product_name'.tr(),
+                      controller: nameController,
+                      validator: (val) => val == null || val.isEmpty ? 'common.required_field'.tr() : null,
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      initialValue: selectedCatId,
+                      hint: Text('inventory.category'.tr()),
+                      decoration: InputDecoration(
+                        labelText: 'inventory.category'.tr(),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
                       ),
-                      const SizedBox(height: 12),
-                      DropdownButtonFormField<String>(
-                        initialValue: selectedCatId,
-                        hint: const Text('اختر فئة'),
-                        decoration: InputDecoration(
-                          labelText: 'الفئة',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
+                      items: categories.map((c) {
+                        return DropdownMenuItem(value: c.id, child: Text(c.name));
+                      }).toList(),
+                      onChanged: (val) {
+                        selectedCatId = val;
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: AppTextField(
+                            label: 'inventory.cost_price'.tr(),
+                            controller: costController,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            validator: (val) => val == null || val.isEmpty ? 'common.required_field'.tr() : null,
+                          ),
                         ),
-                        items: categories.map((c) {
-                          return DropdownMenuItem(value: c.id, child: Text(c.name));
-                        }).toList(),
-                        onChanged: (val) {
-                          selectedCatId = val;
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: AppTextField(
-                              label: 'سعر التكلفة *',
-                              controller: costController,
-                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                              validator: (val) => val == null || val.isEmpty ? 'مطلوب' : null,
-                            ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: AppTextField(
+                            label: 'inventory.alert_quantity'.tr(),
+                            controller: minStockController,
+                            keyboardType: TextInputType.number,
+                            validator: (val) => val == null || val.isEmpty ? 'common.required_field'.tr() : null,
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: AppTextField(
-                              label: 'تنبيه الحد الأدنى للمخزون *',
-                              controller: minStockController,
-                              keyboardType: TextInputType.number,
-                              validator: (val) => val == null || val.isEmpty ? 'مطلوب' : null,
-                            ),
-                          ),
-                        ],
-                      ),
-                      if (existing == null) ...[
-                        const SizedBox(height: 12),
-                        AppTextField(
-                          label: 'المخزون الافتتاحي الأولي',
-                          controller: initialStockController,
-                          keyboardType: TextInputType.number,
                         ),
                       ],
-                      const SizedBox(height: 20),
-                      const Divider(color: AppColors.border),
-                      const Align(
-                        alignment: Alignment.centerRight,
-                        child: Text(
-                          'أسعار البيع',
-                          style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: AppTextField(
-                              label: 'سعر المفرق *',
-                              controller: retailController,
-                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                              validator: (val) => val == null || val.isEmpty ? 'مطلوب' : null,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: AppTextField(
-                              label: 'سعر الجملة *',
-                              controller: wholesaleController,
-                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                              validator: (val) => val == null || val.isEmpty ? 'مطلوب' : null,
-                            ),
-                          ),
-                        ],
-                      ),
+                    ),
+                    if (existing == null) ...[
                       const SizedBox(height: 12),
                       AppTextField(
-                        label: 'سعر ترويجي / عرض (اختياري)',
-                        controller: promoController,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        label: 'inventory.initial_stock'.tr(),
+                        controller: initialStockController,
+                        keyboardType: TextInputType.number,
                       ),
                     ],
-                  ),
+                    const SizedBox(height: 20),
+                    const Divider(color: AppColors.border),
+                    Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: Text(
+                        'inventory.selling_prices'.tr(),
+                        style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: AppTextField(
+                            label: 'inventory.retail_price'.tr(),
+                            controller: retailController,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            validator: (val) => val == null || val.isEmpty ? 'common.required_field'.tr() : null,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: AppTextField(
+                            label: 'inventory.wholesale_price'.tr(),
+                            controller: wholesaleController,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            validator: (val) => val == null || val.isEmpty ? 'common.required_field'.tr() : null,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    AppTextField(
+                      label: 'inventory.promo_price'.tr(),
+                      controller: promoController,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    ),
+                  ],
                 ),
               ),
             ),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
-              PrimaryButton(
-                label: 'حفظ المنتج',
-                onPressed: () {
-                  if (formKey.currentState?.validate() ?? false) {
-                    final prices = [
-                      {'price_label': 'retail', 'price_value': double.parse(retailController.text)},
-                      {'price_label': 'wholesale', 'price_value': double.parse(wholesaleController.text)},
-                    ];
-                    if (promoController.text.isNotEmpty) {
-                      prices.add({'price_label': 'promo', 'price_value': double.parse(promoController.text)});
-                    }
-
-                    if (existing == null) {
-                      cubit.addProduct(
-                        name: nameController.text,
-                        categoryId: selectedCatId,
-                        costPrice: double.parse(costController.text),
-                        minStockAlert: double.parse(minStockController.text),
-                        prices: prices,
-                        initialStock: double.parse(initialStockController.text),
-                      );
-                    } else {
-                      cubit.updateProduct(
-                        id: existing.product.id,
-                        name: nameController.text,
-                        categoryId: selectedCatId,
-                        costPrice: double.parse(costController.text),
-                        minStockAlert: double.parse(minStockController.text),
-                        prices: prices,
-                      );
-                    }
-                    Navigator.pop(ctx);
-                  }
-                },
-              ),
-            ],
           ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: Text('common.cancel'.tr())),
+            PrimaryButton(
+              label: 'inventory.save_product'.tr(),
+              onPressed: () {
+                if (formKey.currentState?.validate() ?? false) {
+                  final prices = [
+                    {'price_label': 'retail', 'price_value': double.parse(retailController.text)},
+                    {'price_label': 'wholesale', 'price_value': double.parse(wholesaleController.text)},
+                  ];
+                  if (promoController.text.isNotEmpty) {
+                    prices.add({'price_label': 'promo', 'price_value': double.parse(promoController.text)});
+                  }
+
+                  if (existing == null) {
+                    cubit.addProduct(
+                      name: nameController.text,
+                      categoryId: selectedCatId,
+                      costPrice: double.parse(costController.text),
+                      minStockAlert: double.parse(minStockController.text),
+                      prices: prices,
+                      initialStock: double.parse(initialStockController.text),
+                    );
+                  } else {
+                    cubit.updateProduct(
+                      id: existing.product.id,
+                      name: nameController.text,
+                      categoryId: selectedCatId,
+                      costPrice: double.parse(costController.text),
+                      minStockAlert: double.parse(minStockController.text),
+                      prices: prices,
+                    );
+                  }
+                  Navigator.pop(ctx);
+                }
+              },
+            ),
+          ],
         );
       },
     );
@@ -337,23 +332,20 @@ class _ProductsScreenState extends State<ProductsScreen> {
     showDialog(
       context: context,
       builder: (ctx) {
-        return Directionality(
-          textDirection: TextDirection.rtl,
-          child: AlertDialog(
-            title: const Text('حذف المنتج', style: TextStyle(color: AppColors.danger)),
-            content: Text('هل أنت متأكد من رغبتك في حذف المنتج "${item.product.name}"؟'),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
-              PrimaryButton(
-                label: 'تأكيد الحذف',
-                backgroundColor: AppColors.danger,
-                onPressed: () {
-                  cubit.deleteProduct(item.product.id);
-                  Navigator.pop(ctx);
-                },
-              ),
-            ],
-          ),
+        return AlertDialog(
+          title: Text('inventory.delete_product'.tr(), style: const TextStyle(color: AppColors.danger)),
+          content: Text('${'common.delete_warning'.tr()}\n(${item.product.name})'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: Text('common.cancel'.tr())),
+            PrimaryButton(
+              label: 'common.confirm_delete'.tr(),
+              backgroundColor: AppColors.danger,
+              onPressed: () {
+                cubit.deleteProduct(item.product.id);
+                Navigator.pop(ctx);
+              },
+            ),
+          ],
         );
       },
     );

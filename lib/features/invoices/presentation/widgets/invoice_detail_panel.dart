@@ -1,7 +1,7 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/features/pos/data/pos_repository.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 class InvoiceDetailPanel extends StatelessWidget {
   const InvoiceDetailPanel({
@@ -41,7 +41,7 @@ class InvoiceDetailPanel extends StatelessWidget {
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        isReturn ? 'مرتجع' : 'فاتورة مبيعات',
+                        isReturn ? 'invoices.return'.tr() : 'invoices.sale'.tr(),
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           color: isReturn ? AppColors.danger : AppColors.success,
@@ -53,25 +53,25 @@ class InvoiceDetailPanel extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 20),
-            _buildInfoRow(theme, 'رقم الفاتورة', invoice.id.substring(0, 8)),
-            _buildInfoRow(theme, 'التاريخ', DateFormat('yyyy-MM-dd HH:mm').format(invoice.createdAt)),
-            _buildInfoRow(theme, 'العميل', invoiceData.customerName ?? 'عميل نقدي'),
-            _buildInfoRow(theme, 'طريقة الدفع', invoice.paymentType == 'cash' ? 'نقدي' : 'آجل / دين'),
+            _buildInfoRow(theme, 'invoices.invoice_id'.tr(), invoice.id.substring(0, 8)),
+            _buildInfoRow(theme, 'invoices.invoice_date'.tr(), DateFormat('yyyy-MM-dd HH:mm').format(invoice.createdAt)),
+            _buildInfoRow(theme, 'invoices.customer'.tr(), invoiceData.customerName ?? 'pos.walk_in_customer'.tr()),
+            _buildInfoRow(theme, 'invoices.payment_method'.tr(), invoice.paymentType == 'cash' ? 'pos.cash'.tr() : 'pos.debt'.tr()),
             const Divider(height: 24),
-            Text('المنتجات', style: theme.textTheme.titleLarge),
+            Text('inventory.products_title'.tr(), style: theme.textTheme.titleLarge),
             const SizedBox(height: 12),
             if (invoiceData.items.isEmpty)
-              const Center(child: Text('لا توجد منتجات'))
+              Center(child: Text('invoices.empty_invoices'.tr()))
             else
               ...invoiceData.items.map((item) => _buildItemCard(theme, item)),
             const Divider(height: 24),
-            _buildSummaryRow(theme, 'المجموع الفرعي', invoiceData.itemsTotal),
+            _buildSummaryRow(theme, 'pos.subtotal'.tr(), invoiceData.itemsTotal),
             if (invoice.discount > 0)
-              _buildSummaryRow(theme, 'الخصم', -invoice.discount, color: AppColors.danger),
+              _buildSummaryRow(theme, 'pos.discount_amount'.tr(), -invoice.discount, color: AppColors.danger),
             const SizedBox(height: 8),
             _buildSummaryRow(
               theme,
-              'الإجمالي',
+              'common.total'.tr(),
               invoice.totalAmount,
               isBold: true,
               color: isReturn ? AppColors.danger : AppColors.primary,
@@ -119,7 +119,7 @@ class InvoiceDetailPanel extends StatelessWidget {
                   ),
                   if (item.invoiceItem.discount > 0)
                     Text(
-                      'خصم: ${item.invoiceItem.discount.toStringAsFixed(2)}',
+                      '${'common.discount'.tr()}: ${item.invoiceItem.discount.toStringAsFixed(2)}',
                       style: theme.textTheme.labelSmall?.copyWith(color: AppColors.danger),
                     ),
                 ],

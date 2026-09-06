@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/core/widgets/price_tag_chip.dart';
@@ -5,7 +6,6 @@ import 'package:small_mall/features/inventory/data/inventory_repository.dart';
 import 'package:flutter/material.dart';
 
 class ProductsTable extends StatelessWidget {
-
   const ProductsTable({
     super.key,
     required this.products,
@@ -13,6 +13,7 @@ class ProductsTable extends StatelessWidget {
     required this.onEditProduct,
     required this.onDeleteProduct,
   });
+
   final List<ProductWithDetails> products;
   final String searchQuery;
   final ValueChanged<ProductWithDetails> onEditProduct;
@@ -21,11 +22,11 @@ class ProductsTable extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final filtered = products.where((p) {
-      return p.product.name.contains(searchQuery);
+      return p.product.name.toLowerCase().contains(searchQuery.toLowerCase());
     }).toList();
 
     if (filtered.isEmpty) {
-      return const Center(child: Text('لا توجد منتجات مضافة حالياً. ابدأ بإضافة منتج جديد.'));
+      return Center(child: Text('inventory.empty_products'.tr()));
     }
 
     return Container(
@@ -36,13 +37,13 @@ class ProductsTable extends StatelessWidget {
       ),
       child: SingleChildScrollView(
         child: DataTable(
-          columns: const [
-            DataColumn(label: Text('اسم المنتج')),
-            DataColumn(label: Text('الفئة')),
-            DataColumn(label: Text('سعر التكلفة')),
-            DataColumn(label: Text('أسعار البيع')),
-            DataColumn(label: Text('المخزون')),
-            DataColumn(label: Text('خيارات')),
+          columns: [
+            DataColumn(label: Text('inventory.product_name'.tr())),
+            DataColumn(label: Text('inventory.category'.tr())),
+            DataColumn(label: Text('inventory.cost_price'.tr())),
+            DataColumn(label: Text('inventory.selling_prices'.tr())),
+            DataColumn(label: Text('inventory.current_stock'.tr())),
+            DataColumn(label: Text('common.actions'.tr())),
           ],
           rows: filtered.map((item) {
             final retail = item.prices.firstWhere((p) => p.priceLabel == 'retail',
@@ -53,19 +54,19 @@ class ProductsTable extends StatelessWidget {
             return DataRow(
               cells: [
                 DataCell(Text(item.product.name, style: const TextStyle(fontWeight: FontWeight.bold))),
-                DataCell(Text(item.category?.name ?? 'بدون فئة')),
+                DataCell(Text(item.category?.name ?? '-')),
                 DataCell(Text(item.product.costPrice.toStringAsFixed(2), style: AppTheme.numericStyle())),
                 DataCell(
                   Wrap(
                     spacing: 8,
                     children: [
                       PriceTagChip(
-                        label: 'مفرق: ${retail.priceValue.toStringAsFixed(1)}',
+                        label: '${'inventory.retail_price'.tr()}: ${retail.priceValue.toStringAsFixed(1)}',
                         backgroundColor: AppColors.primary,
                         cutSize: 6,
                       ),
                       PriceTagChip(
-                        label: 'جملة: ${wholesale.priceValue.toStringAsFixed(1)}',
+                        label: '${'inventory.wholesale_price'.tr()}: ${wholesale.priceValue.toStringAsFixed(1)}',
                         backgroundColor: AppColors.accent,
                         cutSize: 6,
                       ),

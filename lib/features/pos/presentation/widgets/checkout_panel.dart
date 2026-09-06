@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/core/widgets/primary_button.dart';
@@ -15,6 +16,7 @@ class CheckoutPanel extends StatelessWidget {
     required this.onAddCustomerPressed,
     required this.onCheckoutPressed,
   });
+
   final POSLoaded state;
   final bool isLoading;
   final ValueChanged<double> onInvoiceDiscountChanged;
@@ -36,7 +38,7 @@ class CheckoutPanel extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('المجموع الفرعي:', style: theme.textTheme.bodyMedium),
+              Text('${'pos.subtotal'.tr()}:', style: theme.textTheme.bodyMedium),
               Text(
                 state.cartSubtotal.toStringAsFixed(2),
                 style: AppTheme.numericStyle(fontWeight: FontWeight.bold),
@@ -47,7 +49,7 @@ class CheckoutPanel extends StatelessWidget {
           // Discount total field
           Row(
             children: [
-              Text('خصم إضافي:', style: theme.textTheme.bodyMedium),
+              Text('${'pos.discount_amount'.tr()}:', style: theme.textTheme.bodyMedium),
               const SizedBox(width: 16),
               Expanded(
                 child: SizedBox(
@@ -73,20 +75,20 @@ class CheckoutPanel extends StatelessWidget {
           // Payment type toggle
           Row(
             children: [
-              Text('طريقة الدفع:', style: theme.textTheme.bodyMedium),
+              Text('${'pos.payment_method'.tr()}:', style: theme.textTheme.bodyMedium),
               const SizedBox(width: 16),
               Expanded(
                 child: SegmentedButton<String>(
-                  segments: const [
+                  segments: [
                     ButtonSegment<String>(
                       value: 'cash',
-                      label: Text('نقدي'),
-                      icon: Icon(Icons.payments_outlined, size: 16),
+                      label: Text('pos.cash'.tr()),
+                      icon: const Icon(Icons.payments_outlined, size: 16),
                     ),
                     ButtonSegment<String>(
                       value: 'debt',
-                      label: Text('آجل / دين'),
-                      icon: Icon(Icons.assignment_ind_outlined, size: 16),
+                      label: Text('pos.debt'.tr()),
+                      icon: const Icon(Icons.assignment_ind_outlined, size: 16),
                     ),
                   ],
                   selected: {state.paymentType},
@@ -102,15 +104,15 @@ class CheckoutPanel extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          // Customer selector (Required for debt, optional for cash)
+          // Customer selector
           Row(
             children: [
-              Text('العميل:', style: theme.textTheme.bodyMedium),
+              Text('${'pos.customer'.tr()}:', style: theme.textTheme.bodyMedium),
               const SizedBox(width: 16),
               Expanded(
                 child: DropdownButtonFormField<Customer>(
                   initialValue: state.selectedCustomer,
-                  hint: const Text('اختر عميلاً (اختياري)'),
+                  hint: Text('pos.select_customer'.tr()),
                   decoration: InputDecoration(
                     contentPadding: const EdgeInsets.symmetric(horizontal: 10),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
@@ -118,7 +120,7 @@ class CheckoutPanel extends StatelessWidget {
                   items: state.customers.map((c) {
                     return DropdownMenuItem<Customer>(
                       value: c.customer,
-                      child: Text('${c.customer.name} (دين: ${c.totalDebt.toStringAsFixed(1)})'),
+                      child: Text('${c.customer.name} (${'customers.balance'.tr()}: ${c.totalDebt.toStringAsFixed(1)})'),
                     );
                   }).toList(),
                   onChanged: onCustomerChanged,
@@ -137,7 +139,7 @@ class CheckoutPanel extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'المجموع النهائي:',
+                '${'pos.net_total'.tr()}:',
                 style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: AppColors.primary),
               ),
               Text(
@@ -153,7 +155,7 @@ class CheckoutPanel extends StatelessWidget {
           const SizedBox(height: 20),
           // Checkout Button
           PrimaryButton(
-            label: state.paymentType == 'debt' ? 'تأكيد البيع الآجل' : 'تأكيد البيع النقدي',
+            label: state.paymentType == 'debt' ? 'pos.checkout_debt'.tr() : 'pos.checkout_cash'.tr(),
             icon: Icons.check,
             onPressed: onCheckoutPressed,
             isLoading: isLoading,

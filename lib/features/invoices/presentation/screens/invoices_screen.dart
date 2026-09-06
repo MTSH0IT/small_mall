@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:small_mall/core/widgets/app_toast.dart';
 import 'package:small_mall/core/di/injection.dart';
 import 'package:small_mall/core/utils/theme.dart';
@@ -34,7 +35,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
           final cubit = context.read<InvoicesCubit>();
 
           return AppScreenScaffold(
-            title: 'الفواتير',
+            title: 'invoices.title'.tr(),
             onRefresh: () => cubit.loadInvoices(),
             body: SplitPaneLayout(
               leftFlex: 2,
@@ -70,7 +71,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
     return Row(
       children: [
         ChoiceChip(
-          label: const Text('الكل'),
+          label: Text('common.all'.tr()),
           selected: currentFilter == 'all',
           onSelected: (_) => cubit.setTypeFilter('all'),
           selectedColor: AppColors.primary,
@@ -80,7 +81,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
         ),
         const SizedBox(width: 8),
         ChoiceChip(
-          label: const Text('مبيعات'),
+          label: Text('invoices.sale'.tr()),
           selected: currentFilter == 'sale',
           onSelected: (_) => cubit.setTypeFilter('sale'),
           selectedColor: AppColors.success,
@@ -90,7 +91,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
         ),
         const SizedBox(width: 8),
         ChoiceChip(
-          label: const Text('مرتجعات'),
+          label: Text('invoices.return'.tr()),
           selected: currentFilter == 'return',
           onSelected: (_) => cubit.setTypeFilter('return'),
           selectedColor: AppColors.danger,
@@ -107,7 +108,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
       children: [
         Expanded(
           child: _buildMiniStat(
-            'المبيعات',
+            'invoices.sale'.tr(),
             '${loaded.salesCount}',
             loaded.totalSalesAmount.toStringAsFixed(2),
             AppColors.success,
@@ -116,7 +117,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
         const SizedBox(width: 8),
         Expanded(
           child: _buildMiniStat(
-            'المرتجعات',
+            'invoices.return'.tr(),
             '${loaded.returnsCount}',
             loaded.totalReturnsAmount.toStringAsFixed(2),
             AppColors.danger,
@@ -142,7 +143,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('$count فاتورة', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+              Text(count, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
               Text(amount, style: AppTheme.numericStyle(fontSize: 12, fontWeight: FontWeight.bold, color: color)),
             ],
           ),
@@ -153,7 +154,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
 
   Widget _buildInvoiceList(InvoicesCubit cubit, InvoicesState state) {
     if (state is InvoicesLoading) {
-      return const LoadingIndicator(message: 'جاري تحميل الفواتير...');
+      return LoadingIndicator(message: 'common.loading'.tr());
     }
 
     if (state is InvoicesLoaded) {
@@ -173,8 +174,8 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
       if (selected != null) {
         return InvoiceDetailPanel(invoiceData: selected);
       }
-      return const Center(
-        child: Text('اختر فاتورة من القائمة لعرض التفاصيل'),
+      return Center(
+        child: Text('invoices.select_invoice_to_view'.tr()),
       );
     }
 

@@ -1,15 +1,15 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart' hide TextDirection;
 
 class PeriodFilterRow extends StatelessWidget {
-
   const PeriodFilterRow({
     super.key,
     required this.startDate,
     required this.endDate,
     required this.onSelectDateRange,
   });
+
   final DateTime startDate;
   final DateTime endDate;
   final VoidCallback onSelectDateRange;
@@ -31,14 +31,14 @@ class PeriodFilterRow extends StatelessWidget {
           const Icon(Icons.date_range, color: AppColors.primary),
           const SizedBox(width: 12),
           Text(
-            'الفترة المحددة: من $startStr إلى $endStr',
+            '$startStr - $endStr',
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
           const Spacer(),
           TextButton.icon(
             onPressed: onSelectDateRange,
             icon: const Icon(Icons.edit_calendar, color: AppColors.primary),
-            label: const Text('تعديل الفترة', style: TextStyle(color: AppColors.primary)),
+            label: Text('reports.custom_period'.tr(), style: const TextStyle(color: AppColors.primary)),
           ),
         ],
       ),
