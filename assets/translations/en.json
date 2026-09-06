@@ -3,6 +3,7 @@
   "app_subtitle": "Gift Shop Manager",
   "common": {
     "save": "Save",
+    "add": "Add",
     "cancel": "Cancel",
     "delete": "Delete",
     "edit": "Edit",
@@ -158,6 +159,10 @@
     "add_category": "Add New Category",
     "category_name": "Category Name",
     "save_category": "Save Category",
+    "categories": "Categories Management",
+    "existing_categories": "Current Categories",
+    "no_categories": "No categories added yet",
+    "products_count": "{} products",
     "save_product": "Save Product",
     "initial_stock": "Initial Opening Stock",
     "promo_price": "Promo / Special Price (Optional)",

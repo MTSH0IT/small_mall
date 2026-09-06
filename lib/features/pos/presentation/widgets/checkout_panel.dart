@@ -82,47 +82,52 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
           const SizedBox(height: 8),
           // Discount total field
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('${'pos.discount_amount'.tr()}:', style: theme.textTheme.bodyMedium),
-              const SizedBox(width: 16),
-              Expanded(
-                child: SizedBox(
-                  height: 38,
-                  child: TextField(
-                    controller: _discountController,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    style: AppTheme.numericStyle(fontSize: 14),
-                    decoration: InputDecoration(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 10),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
-                      hintText: '0.00',
-                    ),
-                    onChanged: (val) {
-                      final discount = double.tryParse(val) ?? 0.0;
-                      widget.onInvoiceDiscountChanged(discount);
-                    },
+              SizedBox(
+                width: 120,
+                height: 38,
+                child: TextField(
+                  controller: _discountController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  textAlign: TextAlign.end,
+                  style: AppTheme.numericStyle(fontSize: 14),
+                  decoration: InputDecoration(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 10),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
+                    hintText: '0.00',
                   ),
+                  onChanged: (val) {
+                    final discount = double.tryParse(val) ?? 0.0;
+                    widget.onInvoiceDiscountChanged(discount);
+                  },
                 ),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          // Payment type toggle
-          Row(
+          // Payment type toggle (stacked to prevent horizontal overflow)
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('${'pos.payment_method'.tr()}:', style: theme.textTheme.bodyMedium),
-              const SizedBox(width: 16),
-              Expanded(
+              Text(
+                '${'pos.payment_method'.tr()}:',
+                style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(height: 6),
+              SizedBox(
+                width: double.infinity,
                 child: SegmentedButton<String>(
                   segments: [
                     ButtonSegment<String>(
                       value: 'cash',
-                      label: Text('pos.cash'.tr()),
+                      label: Text('pos.cash'.tr(), overflow: TextOverflow.ellipsis),
                       icon: const Icon(Icons.payments_outlined, size: 16),
                     ),
                     ButtonSegment<String>(
                       value: 'debt',
-                      label: Text('pos.debt'.tr()),
+                      label: Text('pos.debt'.tr(), overflow: TextOverflow.ellipsis),
                       icon: const Icon(Icons.assignment_ind_outlined, size: 16),
                     ),
                   ],
@@ -133,38 +138,111 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                   style: SegmentedButton.styleFrom(
                     selectedBackgroundColor: AppColors.primary,
                     selectedForegroundColor: Colors.white,
+                    visualDensity: VisualDensity.compact,
                   ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          // Customer selector
-          Row(
+          // Customer selector (stacked with empty/walk-in state and quick clear)
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('${'pos.customer'.tr()}:', style: theme.textTheme.bodyMedium),
-              const SizedBox(width: 16),
-              Expanded(
-                child: DropdownButtonFormField<Customer>(
-                  initialValue: state.selectedCustomer,
-                  hint: Text('pos.select_customer'.tr()),
-                  decoration: InputDecoration(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 10),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '${'pos.customer'.tr()}:',
+                    style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
                   ),
-                  items: state.customers.map((c) {
-                    return DropdownMenuItem<Customer>(
-                      value: c.customer,
-                      child: Text('${c.customer.name} (${'customers.balance'.tr()}: ${c.totalDebt.toStringAsFixed(1)})'),
-                    );
-                  }).toList(),
-                  onChanged: widget.onCustomerChanged,
-                ),
+                  if (state.selectedCustomer != null)
+                    InkWell(
+                      onTap: () => widget.onCustomerChanged(null),
+                      borderRadius: BorderRadius.circular(4),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.close, size: 14, color: AppColors.danger),
+                            const SizedBox(width: 4),
+                            Text(
+                              'pos.walk_in_customer'.tr(),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: AppColors.danger,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
               ),
-              IconButton(
-                icon: const Icon(Icons.person_add_alt_1_outlined, color: AppColors.primary),
-                onPressed: widget.onAddCustomerPressed,
-              )
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  Expanded(
+                    child: DropdownButtonFormField<Customer?>(
+                      key: ValueKey(state.selectedCustomer?.id),
+                      initialValue: state.selectedCustomer,
+                      isExpanded: true,
+                      hint: Text('pos.select_customer'.tr(), overflow: TextOverflow.ellipsis),
+                      decoration: InputDecoration(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
+                        prefixIcon: Icon(
+                          state.selectedCustomer == null ? Icons.person_outline : Icons.person,
+                          color: state.selectedCustomer == null ? AppColors.textSecondary : AppColors.primary,
+                          size: 20,
+                        ),
+                      ),
+                      items: [
+                        // Empty / Default Walk-in Customer Option
+                        DropdownMenuItem<Customer?>(
+                          value: null,
+                          child: Text(
+                            'pos.walk_in_customer'.tr(),
+                            style: const TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.w500),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        // Registered Customers List
+                        ...state.customers.map((c) {
+                          return DropdownMenuItem<Customer?>(
+                            value: c.customer,
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(c.customer.name, overflow: TextOverflow.ellipsis),
+                                ),
+                                if (c.totalDebt > 0)
+                                  Text(
+                                    ' (${c.totalDebt.toStringAsFixed(1)})',
+                                    style: AppTheme.numericStyle(
+                                      fontSize: 12,
+                                      color: AppColors.accent,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          );
+                        }),
+                      ],
+                      onChanged: widget.onCustomerChanged,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    tooltip: 'customers.add_customer'.tr(),
+                    icon: const Icon(Icons.person_add_alt_1_outlined, color: AppColors.primary),
+                    onPressed: widget.onAddCustomerPressed,
+                  ),
+                ],
+              ),
             ],
           ),
           const SizedBox(height: 16),

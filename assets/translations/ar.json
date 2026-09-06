@@ -3,6 +3,7 @@
   "app_subtitle": "إدارة متجر الهدايا",
   "common": {
     "save": "حفظ",
+    "add": "إضافة",
     "cancel": "إلغاء",
     "delete": "حذف",
     "edit": "تعديل",
@@ -158,6 +159,10 @@
     "add_category": "إضافة فئة جديدة",
     "category_name": "اسم الفئة",
     "save_category": "حفظ الفئة",
+    "categories": "إدارة الأصناف والفئات",
+    "existing_categories": "الأصناف الحالية",
+    "no_categories": "لا توجد أصناف مضافة حالياً",
+    "products_count": "{} منتج",
     "save_product": "حفظ المنتج",
     "initial_stock": "المخزون الافتتاحي الأولي",
     "promo_price": "سعر ترويجي / عرض (اختياري)",
