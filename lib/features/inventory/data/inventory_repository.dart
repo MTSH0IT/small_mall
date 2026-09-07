@@ -59,6 +59,43 @@ class InventoryRepository {
     return category;
   }
 
+  Future<void> updateCategory(String id, String name) async {
+    _logger.info('Updating category: $id with name: $name', context: LogContext.inventory);
+    await (_db.update(_db.categories)..where((t) => t.id.equals(id))).write(
+      CategoriesCompanion(name: Value(name)),
+    );
+
+    // Sync
+    await _sync.enqueue('categories', id, 'update', {
+      'id': id,
+      'name': name,
+    });
+  }
+
+  Future<void> deleteCategory(String id) async {
+    _logger.info('Deleting category: $id', context: LogContext.inventory);
+
+    // Unlink products assigned to this category
+    final affectedProducts = await (_db.select(_db.products)..where((t) => t.categoryId.equals(id))).get();
+    for (final p in affectedProducts) {
+      await (_db.update(_db.products)..where((t) => t.id.equals(p.id))).write(
+        const ProductsCompanion(categoryId: Value(null)),
+      );
+      await _sync.enqueue('products', p.id, 'update', {
+        'id': p.id,
+        'category_id': null,
+      });
+    }
+
+    // Delete category
+    await (_db.delete(_db.categories)..where((t) => t.id.equals(id))).go();
+
+    // Sync
+    await _sync.enqueue('categories', id, 'delete', {
+      'id': id,
+    });
+  }
+
   // --- Products ---
 
   Future<List<ProductWithDetails>> getProducts() async {

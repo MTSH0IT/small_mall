@@ -112,4 +112,30 @@ class InventoryCubit extends Cubit<InventoryState> {
       }
     }
   }
+
+  Future<void> updateCategory(String id, String name) async {
+    try {
+      await _repository.updateCategory(id, name);
+      await loadInventory();
+    } catch (e) {
+      if (state is InventoryLoaded) {
+        emit((state as InventoryLoaded).copyWith(errorMessage: e.toString()));
+      } else {
+        emit(InventoryError(e.toString()));
+      }
+    }
+  }
+
+  Future<void> deleteCategory(String id) async {
+    try {
+      await _repository.deleteCategory(id);
+      await loadInventory();
+    } catch (e) {
+      if (state is InventoryLoaded) {
+        emit((state as InventoryLoaded).copyWith(errorMessage: e.toString()));
+      } else {
+        emit(InventoryError(e.toString()));
+      }
+    }
+  }
 }

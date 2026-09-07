@@ -161,276 +161,589 @@ class _ProductsScreenState extends State<ProductsScreen> {
   }
 
   void _showAddCategoryDialog(BuildContext context, InventoryCubit cubit) {
-    final controller = TextEditingController();
+    final addController = TextEditingController();
+    final searchController = TextEditingController();
     final formKey = GlobalKey<FormState>();
+    String searchQuery = '';
 
     showDialog(
       context: context,
       builder: (ctx) {
         return BlocProvider.value(
           value: cubit,
-          child: Dialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            backgroundColor: AppColors.surfaceElevated,
-            child: Container(
-              width: 480,
-              constraints: const BoxConstraints(maxHeight: 520),
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Header: Title and Close button
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          child: StatefulBuilder(
+            builder: (context, setDialogState) {
+              return Dialog(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                backgroundColor: AppColors.surfaceElevated,
+                child: Container(
+                  width: 520,
+                  constraints: const BoxConstraints(maxHeight: 640),
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      // Header: Title and Close button
                       Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Icon(
-                              Icons.category_outlined,
-                              color: AppColors.primary,
-                              size: 22,
-                            ),
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(
+                                  Icons.category_outlined,
+                                  color: AppColors.primary,
+                                  size: 22,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                'inventory.categories'.tr(),
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 12),
-                          Text(
-                            'inventory.categories'.tr(),
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.primary,
+                          IconButton(
+                            icon: const Icon(
+                              Icons.close,
+                              size: 20,
+                              color: AppColors.textSecondary,
                             ),
+                            onPressed: () => Navigator.pop(ctx),
+                            splashRadius: 20,
                           ),
                         ],
                       ),
-                      IconButton(
-                        icon: const Icon(
-                          Icons.close,
-                          size: 20,
-                          color: AppColors.textSecondary,
+                      const SizedBox(height: 18),
+
+                      // Add Category Input & Button
+                      Form(
+                        key: formKey,
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                controller: addController,
+                                decoration: InputDecoration(
+                                  labelText: 'inventory.category_name'.tr(),
+                                  hintText: 'inventory.category_name'.tr(),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 12,
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  prefixIcon: const Icon(
+                                    Icons.add_circle_outline,
+                                    size: 20,
+                                  ),
+                                ),
+                                validator: (val) =>
+                                    val == null || val.trim().isEmpty
+                                        ? 'common.required_field'.tr()
+                                        : null,
+                                onFieldSubmitted: (_) {
+                                  if (formKey.currentState?.validate() ?? false) {
+                                    cubit.addCategory(addController.text.trim());
+                                    addController.clear();
+                                  }
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Padding(
+                              padding: const EdgeInsets.only(top: 2),
+                              child: ElevatedButton.icon(
+                                onPressed: () {
+                                  if (formKey.currentState?.validate() ?? false) {
+                                    cubit.addCategory(addController.text.trim());
+                                    addController.clear();
+                                  }
+                                },
+                                icon: const Icon(Icons.add, size: 18),
+                                label: Text('common.add'.tr()),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.primary,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 14,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                        onPressed: () => Navigator.pop(ctx),
-                        splashRadius: 20,
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Search Categories Bar
+                      TextFormField(
+                        controller: searchController,
+                        decoration: InputDecoration(
+                          hintText: 'inventory.search_categories'.tr(),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 10,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: AppColors.border),
+                          ),
+                          prefixIcon: const Icon(
+                            Icons.search,
+                            size: 20,
+                            color: AppColors.textSecondary,
+                          ),
+                          suffixIcon: searchQuery.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear, size: 18),
+                                  onPressed: () {
+                                    searchController.clear();
+                                    setDialogState(() {
+                                      searchQuery = '';
+                                    });
+                                  },
+                                )
+                              : null,
+                        ),
+                        onChanged: (val) {
+                          setDialogState(() {
+                            searchQuery = val.trim();
+                          });
+                        },
+                      ),
+
+                      const SizedBox(height: 14),
+
+                      // Section Title (Existing categories / Search results)
+                      BlocBuilder<InventoryCubit, InventoryState>(
+                        builder: (context, state) {
+                          final allCategories = state is InventoryLoaded
+                              ? state.categories
+                              : <Category>[];
+                          final filtered = allCategories.where((c) {
+                            if (searchQuery.isEmpty) return true;
+                            return c.name
+                                .toLowerCase()
+                                .contains(searchQuery.toLowerCase());
+                          }).toList();
+
+                          final titleText = searchQuery.isEmpty
+                              ? '${'inventory.existing_categories'.tr()} (${allCategories.length})'
+                              : '${'inventory.existing_categories'.tr()} (${filtered.length} / ${allCategories.length})';
+
+                          return Text(
+                            titleText,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                              color: AppColors.textSecondary,
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 8),
+
+                      // Categories List
+                      Flexible(
+                        child: BlocBuilder<InventoryCubit, InventoryState>(
+                          builder: (context, state) {
+                            if (state is! InventoryLoaded) {
+                              return const Center(
+                                child: CircularProgressIndicator(),
+                              );
+                            }
+
+                            final allCategories = state.categories;
+                            final filteredCategories = allCategories.where((c) {
+                              if (searchQuery.isEmpty) return true;
+                              return c.name
+                                  .toLowerCase()
+                                  .contains(searchQuery.toLowerCase());
+                            }).toList();
+
+                            if (allCategories.isEmpty) {
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 24),
+                                child: Center(
+                                  child: Text(
+                                    'inventory.no_categories'.tr(),
+                                    style: const TextStyle(
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }
+
+                            if (filteredCategories.isEmpty) {
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 24),
+                                child: Center(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(
+                                        Icons.search_off_rounded,
+                                        size: 36,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'inventory.no_matching_categories'.tr(),
+                                        style: const TextStyle(
+                                          color: AppColors.textSecondary,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }
+
+                            return Container(
+                              decoration: BoxDecoration(
+                                color: AppColors.surface,
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: AppColors.border),
+                              ),
+                              child: ListView.separated(
+                                shrinkWrap: true,
+                                padding: const EdgeInsets.all(6),
+                                itemCount: filteredCategories.length,
+                                separatorBuilder: (_, _) => const Divider(
+                                  color: AppColors.border,
+                                  height: 1,
+                                ),
+                                itemBuilder: (context, index) {
+                                  final cat = filteredCategories[index];
+                                  final count = state.products
+                                      .where((p) => p.product.categoryId == cat.id)
+                                      .length;
+
+                                  return Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 6,
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Container(
+                                          width: 32,
+                                          height: 32,
+                                          decoration: BoxDecoration(
+                                            color: AppColors.primary.withValues(
+                                              alpha: 0.08,
+                                            ),
+                                            borderRadius: BorderRadius.circular(6),
+                                          ),
+                                          child: const Icon(
+                                            Icons.folder_outlined,
+                                            size: 18,
+                                            color: AppColors.primary,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: Text(
+                                            cat.name,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                        ),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 3,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.border.withValues(
+                                              alpha: 0.5,
+                                            ),
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          child: Text(
+                                            'inventory.products_count'.tr(
+                                              args: [count.toString()],
+                                            ),
+                                            style: const TextStyle(
+                                              fontSize: 11,
+                                              color: AppColors.textSecondary,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 4),
+
+                                        // Edit Button
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.edit_outlined,
+                                            size: 18,
+                                            color: AppColors.primary,
+                                          ),
+                                          tooltip: 'inventory.edit_category'.tr(),
+                                          splashRadius: 18,
+                                          onPressed: () => _showEditCategoryDialog(
+                                            context,
+                                            cubit,
+                                            cat,
+                                          ),
+                                        ),
+
+                                        // Delete Button
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.delete_outline_rounded,
+                                            size: 18,
+                                            color: AppColors.danger,
+                                          ),
+                                          tooltip: 'inventory.delete_category'.tr(),
+                                          splashRadius: 18,
+                                          onPressed: () => _showDeleteCategoryDialog(
+                                            context,
+                                            cubit,
+                                            cat,
+                                            count,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+                      Align(
+                        alignment: AlignmentDirectional.centerEnd,
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          child: Text('common.close'.tr()),
+                        ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 18),
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
 
-                  // Add Category Input & Button
-                  Form(
-                    key: formKey,
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: TextFormField(
-                            controller: controller,
-                            decoration: InputDecoration(
-                              labelText: 'inventory.category_name'.tr(),
-                              hintText: 'inventory.category_name'.tr(),
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 12,
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              prefixIcon: const Icon(
-                                Icons.add_circle_outline,
-                                size: 20,
-                              ),
-                            ),
-                            validator: (val) =>
-                                val == null || val.trim().isEmpty
-                                ? 'common.required_field'.tr()
-                                : null,
-                            onFieldSubmitted: (_) {
-                              if (formKey.currentState?.validate() ?? false) {
-                                cubit.addCategory(controller.text.trim());
-                                controller.clear();
-                              }
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Padding(
-                          padding: const EdgeInsets.only(top: 2),
-                          child: ElevatedButton.icon(
-                            onPressed: () {
-                              if (formKey.currentState?.validate() ?? false) {
-                                cubit.addCategory(controller.text.trim());
-                                controller.clear();
-                              }
-                            },
-                            icon: const Icon(Icons.add, size: 18),
-                            label: Text('common.add'.tr()),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 14,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+  void _showEditCategoryDialog(
+    BuildContext context,
+    InventoryCubit cubit,
+    Category category,
+  ) {
+    final controller = TextEditingController(text: category.name);
+    final formKey = GlobalKey<FormState>();
 
-                  const SizedBox(height: 20),
-                  const Divider(color: AppColors.border, height: 1),
-                  const SizedBox(height: 12),
-
-                  // Existing Categories Title
-                  BlocBuilder<InventoryCubit, InventoryState>(
-                    builder: (context, state) {
-                      final categories = state is InventoryLoaded
-                          ? state.categories
-                          : <Category>[];
-                      return Text(
-                        '${'inventory.existing_categories'.tr()} (${categories.length})',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
-                          color: AppColors.textSecondary,
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 8),
-
-                  // Existing Categories List
-                  Flexible(
-                    child: BlocBuilder<InventoryCubit, InventoryState>(
-                      builder: (context, state) {
-                        if (state is! InventoryLoaded) {
-                          return const Center(
-                            child: CircularProgressIndicator(),
-                          );
-                        }
-
-                        final categories = state.categories;
-                        if (categories.isEmpty) {
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 24),
-                            child: Center(
-                              child: Text(
-                                'inventory.no_categories'.tr(),
-                                style: const TextStyle(
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                            ),
-                          );
-                        }
-
-                        return Container(
-                          decoration: BoxDecoration(
-                            color: AppColors.surface,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: AppColors.border),
-                          ),
-                          child: ListView.separated(
-                            shrinkWrap: true,
-                            padding: const EdgeInsets.all(8),
-                            itemCount: categories.length,
-                            separatorBuilder: (_, _) => const Divider(
-                              color: AppColors.border,
-                              height: 1,
-                            ),
-                            itemBuilder: (context, index) {
-                              final cat = categories[index];
-                              final count = state.products
-                                  .where((p) => p.product.categoryId == cat.id)
-                                  .length;
-
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 8,
-                                ),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      width: 32,
-                                      height: 32,
-                                      decoration: BoxDecoration(
-                                        color: AppColors.primary.withValues(
-                                          alpha: 0.08,
-                                        ),
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: const Icon(
-                                        Icons.folder_outlined,
-                                        size: 18,
-                                        color: AppColors.primary,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Text(
-                                        cat.name,
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                    ),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 4,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: AppColors.border.withValues(
-                                          alpha: 0.5,
-                                        ),
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Text(
-                                        'inventory.products_count'.tr(
-                                          args: [count.toString()],
-                                        ),
-                                        style: const TextStyle(
-                                          fontSize: 11,
-                                          color: AppColors.textSecondary,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-                  Align(
-                    alignment: AlignmentDirectional.centerEnd,
-                    child: TextButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      child: Text('common.close'.tr()),
-                    ),
-                  ),
-                ],
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          backgroundColor: AppColors.surfaceElevated,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.edit_outlined,
+                  color: AppColors.primary,
+                  size: 20,
+                ),
               ),
+              const SizedBox(width: 10),
+              Text(
+                'inventory.edit_category'.tr(),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
+                ),
+              ),
+            ],
+          ),
+          content: Form(
+            key: formKey,
+            child: TextFormField(
+              controller: controller,
+              autofocus: true,
+              decoration: InputDecoration(
+                labelText: 'inventory.category_name'.tr(),
+                hintText: 'inventory.category_name'.tr(),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              validator: (val) => val == null || val.trim().isEmpty
+                  ? 'common.required_field'.tr()
+                  : null,
+              onFieldSubmitted: (_) {
+                if (formKey.currentState?.validate() ?? false) {
+                  final newName = controller.text.trim();
+                  if (newName != category.name) {
+                    cubit.updateCategory(category.id, newName);
+                    AppToast.success(
+                      context,
+                      message: 'inventory.category_updated'.tr(),
+                    );
+                  }
+                  Navigator.pop(ctx);
+                }
+              },
             ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(
+                'common.cancel'.tr(),
+                style: const TextStyle(color: AppColors.textSecondary),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (formKey.currentState?.validate() ?? false) {
+                  final newName = controller.text.trim();
+                  if (newName != category.name) {
+                    cubit.updateCategory(category.id, newName);
+                    AppToast.success(
+                      context,
+                      message: 'inventory.category_updated'.tr(),
+                    );
+                  }
+                  Navigator.pop(ctx);
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Text('common.save'.tr()),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showDeleteCategoryDialog(
+    BuildContext context,
+    InventoryCubit cubit,
+    Category category,
+    int productCount,
+  ) {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          backgroundColor: AppColors.surfaceElevated,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.danger.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.warning_amber_rounded,
+                  color: AppColors.danger,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                'inventory.delete_category_confirm_title'.tr(),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.danger,
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            productCount > 0
+                ? 'inventory.delete_category_confirm_msg'.tr(
+                    namedArgs: {
+                      'name': category.name,
+                      'count': productCount.toString(),
+                    },
+                  )
+                : 'inventory.delete_category_confirm_msg_empty'.tr(
+                    namedArgs: {'name': category.name},
+                  ),
+            style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(
+                'common.cancel'.tr(),
+                style: const TextStyle(color: AppColors.textSecondary),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                cubit.deleteCategory(category.id);
+                AppToast.success(
+                  context,
+                  message: 'inventory.category_deleted'.tr(),
+                );
+                Navigator.pop(ctx);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.danger,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Text('common.delete'.tr()),
+            ),
+          ],
         );
       },
     );
