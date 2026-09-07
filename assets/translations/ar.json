@@ -218,7 +218,9 @@
     "adjust_reason": "سبب التعديل",
     "low_stock": "مخزون منخفض",
     "in_stock": "متوفر",
-    "no_matching_products": "لا توجد منتجات مطابقة لخيارات الفلترة"
+    "no_matching_products": "لا توجد منتجات مطابقة لخيارات الفلترة",
+    "all_categories": "كل الأصناف",
+    "uncategorized": "بدون تصنيف"
   },
   "customers": {
     "title": "العملاء والديون",

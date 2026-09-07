@@ -218,7 +218,9 @@
     "adjust_reason": "Adjustment Reason",
     "low_stock": "Low Stock",
     "in_stock": "In Stock",
-    "no_matching_products": "No products match current filter"
+    "no_matching_products": "No products match current filter",
+    "all_categories": "All Categories",
+    "uncategorized": "Uncategorized"
   },
   "customers": {
     "title": "Customers & Debts",

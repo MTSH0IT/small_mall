@@ -24,11 +24,20 @@ class ProductsScreen extends StatefulWidget {
 class _ProductsScreenState extends State<ProductsScreen> {
   final _searchController = TextEditingController();
   String _searchQuery = '';
+  String? _selectedCategoryId;
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  void _clearFilters() {
+    _searchController.clear();
+    setState(() {
+      _searchQuery = '';
+      _selectedCategoryId = null;
+    });
   }
 
   @override
@@ -46,6 +55,14 @@ class _ProductsScreenState extends State<ProductsScreen> {
         },
         builder: (context, state) {
           final cubit = context.read<InventoryCubit>();
+
+          // Validate selected category still exists if categories changed/deleted
+          if (state is InventoryLoaded &&
+              _selectedCategoryId != null &&
+              _selectedCategoryId != '__uncategorized__' &&
+              !state.categories.any((c) => c.id == _selectedCategoryId)) {
+            _selectedCategoryId = null;
+          }
 
           return AppScreenScaffold(
             title: 'inventory.products_title'.tr(),
@@ -72,6 +89,17 @@ class _ProductsScreenState extends State<ProductsScreen> {
                             Icons.search,
                             color: AppColors.textSecondary,
                           ),
+                          suffixIcon: _searchQuery.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear, size: 18),
+                                  onPressed: () {
+                                    _searchController.clear();
+                                    setState(() {
+                                      _searchQuery = '';
+                                    });
+                                  },
+                                )
+                              : null,
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -121,7 +149,69 @@ class _ProductsScreenState extends State<ProductsScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 24),
+                  // Modern Category Filter Chips Strip
+                  if (state is InventoryLoaded &&
+                      (state.categories.isNotEmpty ||
+                          state.products.any((p) => p.product.categoryId == null))) ...[
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      height: 38,
+                      child: ListView(
+                        scrollDirection: Axis.horizontal,
+                        children: [
+                          // "All" / "كل الأصناف" Chip
+                          _buildCategoryChip(
+                            label: 'inventory.all_categories'.tr(),
+                            count: state.products.length,
+                            isSelected: _selectedCategoryId == null,
+                            onTap: () => setState(() => _selectedCategoryId = null),
+                          ),
+                          // Specific Category Chips
+                          ...state.categories.map((cat) {
+                            final count = state.products
+                                .where((p) => p.product.categoryId == cat.id)
+                                .length;
+                            return Padding(
+                              padding: const EdgeInsetsDirectional.only(start: 8.0),
+                              child: _buildCategoryChip(
+                                label: cat.name,
+                                count: count,
+                                isSelected: _selectedCategoryId == cat.id,
+                                onTap: () {
+                                  setState(() {
+                                    _selectedCategoryId =
+                                        _selectedCategoryId == cat.id ? null : cat.id;
+                                  });
+                                },
+                              ),
+                            );
+                          }),
+                          // Uncategorized products chip (if any exist)
+                          if (state.products.any((p) => p.product.categoryId == null)) ...[
+                            Padding(
+                              padding: const EdgeInsetsDirectional.only(start: 8.0),
+                              child: _buildCategoryChip(
+                                label: 'inventory.uncategorized'.tr(),
+                                count: state.products
+                                    .where((p) => p.product.categoryId == null)
+                                    .length,
+                                isSelected: _selectedCategoryId == '__uncategorized__',
+                                onTap: () {
+                                  setState(() {
+                                    _selectedCategoryId =
+                                        _selectedCategoryId == '__uncategorized__'
+                                            ? null
+                                            : '__uncategorized__';
+                                  });
+                                },
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 20),
                   // Table or List
                   Expanded(child: _buildBody(context, cubit, state)),
                 ],
@@ -146,6 +236,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
       return ProductsTable(
         products: state.products,
         searchQuery: _searchQuery,
+        selectedCategoryId: _selectedCategoryId,
+        onResetFilters: _clearFilters,
         onEditProduct: (item) => _showProductFormDialog(
           context,
           cubit,
@@ -158,6 +250,70 @@ class _ProductsScreenState extends State<ProductsScreen> {
     }
 
     return const SizedBox();
+  }
+
+  Widget _buildCategoryChip({
+    required String label,
+    required int count,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary : AppColors.surfaceElevated,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? AppColors.primary : AppColors.border,
+            width: isSelected ? 1.5 : 1.0,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.2),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? Colors.white : AppColors.textPrimary,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                fontSize: 12.5,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? Colors.white.withValues(alpha: 0.25)
+                    : AppColors.surface,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                '$count',
+                style: TextStyle(
+                  color: isSelected ? Colors.white : AppColors.textSecondary,
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _showAddCategoryDialog(BuildContext context, InventoryCubit cubit) {
