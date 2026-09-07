@@ -73,13 +73,8 @@ class CustomersDebtsRepository {
 
     await _db.into(_db.customers).insert(customer);
 
-    await _sync.enqueue('customers', id, 'insert', {
-      'id': id,
-      'name': name,
-      'phone': phone,
-      'notes': notes,
-      'created_at': now.toIso8601String(),
-    });
+    _sync.updatePendingCount();
+    _sync.sync();
 
     return customer;
   }
@@ -95,16 +90,13 @@ class CustomersDebtsRepository {
       name: Value(name),
       phone: Value(phone),
       notes: Value(notes),
+      syncedAt: const Value(null),
     );
 
     await (_db.update(_db.customers)..where((t) => t.id.equals(id))).write(companion);
 
-    await _sync.enqueue('customers', id, 'update', {
-      'id': id,
-      'name': name,
-      'phone': phone,
-      'notes': notes,
-    });
+    _sync.updatePendingCount();
+    _sync.sync();
   }
 
   // --- Debts & Payments ---
@@ -164,13 +156,8 @@ class CustomersDebtsRepository {
       await (_db.update(_db.debts)..where((t) => t.id.equals(debtId))).write(DebtsCompanion(
         remainingAmount: Value(newRemaining),
         status: Value(newStatus),
+        syncedAt: const Value(null),
       ));
-
-      await _sync.enqueue('debts', debtId, 'update', {
-        'id': debtId,
-        'remaining_amount': newRemaining,
-        'status': newStatus,
-      });
 
       // Insert debt payment record
       final payment = DebtPayment(
@@ -181,13 +168,9 @@ class CustomersDebtsRepository {
       );
 
       await _db.into(_db.debtPayments).insert(payment);
-
-      await _sync.enqueue('debt_payments', paymentId, 'insert', {
-        'id': paymentId,
-        'debt_id': debtId,
-        'amount_paid': amountPaid,
-        'paid_at': now.toIso8601String(),
-      });
     });
+
+    _sync.updatePendingCount();
+    _sync.sync();
   }
 }

@@ -50,26 +50,19 @@ class InventoryRepository {
     final category = Category(id: id, name: name);
     await _db.into(_db.categories).insert(category);
 
-    // Sync
-    await _sync.enqueue('categories', id, 'insert', {
-      'id': id,
-      'name': name,
-    });
-
+    _sync.updatePendingCount();
+    _sync.sync();
     return category;
   }
 
   Future<void> updateCategory(String id, String name) async {
     _logger.info('Updating category: $id with name: $name', context: LogContext.inventory);
     await (_db.update(_db.categories)..where((t) => t.id.equals(id))).write(
-      CategoriesCompanion(name: Value(name)),
+      CategoriesCompanion(name: Value(name), syncedAt: const Value(null)),
     );
 
-    // Sync
-    await _sync.enqueue('categories', id, 'update', {
-      'id': id,
-      'name': name,
-    });
+    _sync.updatePendingCount();
+    _sync.sync();
   }
 
   Future<void> deleteCategory(String id) async {
@@ -79,21 +72,25 @@ class InventoryRepository {
     final affectedProducts = await (_db.select(_db.products)..where((t) => t.categoryId.equals(id))).get();
     for (final p in affectedProducts) {
       await (_db.update(_db.products)..where((t) => t.id.equals(p.id))).write(
-        const ProductsCompanion(categoryId: Value(null)),
+        const ProductsCompanion(categoryId: Value(null), syncedAt: Value(null)),
       );
-      await _sync.enqueue('products', p.id, 'update', {
-        'id': p.id,
-        'category_id': null,
-      });
     }
+
+    // Record deletion for sync
+    await _db.into(_db.deletedRecords).insert(
+      DeletedRecordsCompanion.insert(
+        id: _uuid.v4(),
+        targetTable: 'categories',
+        recordId: id,
+        createdAt: DateTime.now(),
+      ),
+    );
 
     // Delete category
     await (_db.delete(_db.categories)..where((t) => t.id.equals(id))).go();
 
-    // Sync
-    await _sync.enqueue('categories', id, 'delete', {
-      'id': id,
-    });
+    _sync.updatePendingCount();
+    _sync.sync();
   }
 
   // --- Products ---
@@ -149,18 +146,6 @@ class InventoryRepository {
       // Insert Product
       await _db.into(_db.products).insert(product);
 
-      // Sync Product
-      await _sync.enqueue('products', productId, 'insert', {
-        'id': productId,
-        'name': name,
-        'category_id': categoryId,
-        'cost_price': costPrice,
-        'is_active': true,
-        'min_stock_alert': minStockAlert,
-        'created_at': now.toIso8601String(),
-        'updated_at': now.toIso8601String(),
-      });
-
       // Insert Prices
       for (final price in prices) {
         final priceId = _uuid.v4();
@@ -175,14 +160,6 @@ class InventoryRepository {
         );
 
         await _db.into(_db.productPrices).insert(prodPrice);
-
-        // Sync Price
-        await _sync.enqueue('product_prices', priceId, 'insert', {
-          'id': priceId,
-          'product_id': productId,
-          'price_label': label,
-          'price_value': priceVal,
-        });
       }
 
       // Insert Initial Stock Movement if > 0
@@ -198,18 +175,11 @@ class InventoryRepository {
         );
 
         await _db.into(_db.stockMovements).insert(movement);
-
-        // Sync Movement
-        await _sync.enqueue('stock_movements', movementId, 'insert', {
-          'id': movementId,
-          'product_id': productId,
-          'type': 'adjustment',
-          'quantity': initialStock,
-          'created_at': now.toIso8601String(),
-          'reference_id': 'initial_stock',
-        });
       }
     });
+
+    _sync.updatePendingCount();
+    _sync.sync();
   }
 
   Future<void> updateProduct({
@@ -231,26 +201,24 @@ class InventoryRepository {
         costPrice: Value(costPrice),
         minStockAlert: Value(minStockAlert),
         updatedAt: Value(now),
+        syncedAt: const Value(null),
       );
 
       // Update locally
       await (_db.update(_db.products)..where((t) => t.id.equals(id))).write(productUpdate);
 
-      // Sync update
-      await _sync.enqueue('products', id, 'update', {
-        'id': id,
-        'name': name,
-        'category_id': categoryId,
-        'cost_price': costPrice,
-        'min_stock_alert': minStockAlert,
-        'updated_at': now.toIso8601String(),
-      });
-
       // Handle prices: Simple way is delete old ones, insert new ones
       final oldPrices = await (_db.select(_db.productPrices)..where((t) => t.productId.equals(id))).get();
       for (final oldPrice in oldPrices) {
+        await _db.into(_db.deletedRecords).insert(
+          DeletedRecordsCompanion.insert(
+            id: _uuid.v4(),
+            targetTable: 'product_prices',
+            recordId: oldPrice.id,
+            createdAt: now,
+          ),
+        );
         await (_db.delete(_db.productPrices)..where((t) => t.id.equals(oldPrice.id))).go();
-        await _sync.enqueue('product_prices', oldPrice.id, 'delete', {});
       }
 
       for (final price in prices) {
@@ -266,28 +234,21 @@ class InventoryRepository {
         );
 
         await _db.into(_db.productPrices).insert(prodPrice);
-
-        await _sync.enqueue('product_prices', priceId, 'insert', {
-          'id': priceId,
-          'product_id': id,
-          'price_label': label,
-          'price_value': priceVal,
-        });
       }
     });
+
+    _sync.updatePendingCount();
+    _sync.sync();
   }
 
   Future<void> deleteProduct(String id) async {
     _logger.info('Soft-deleting product: $id', context: LogContext.inventory);
     final now = DateTime.now();
     await (_db.update(_db.products)..where((t) => t.id.equals(id)))
-        .write(ProductsCompanion(isActive: const Value(false), updatedAt: Value(now)));
+        .write(ProductsCompanion(isActive: const Value(false), updatedAt: Value(now), syncedAt: const Value(null)));
 
-    await _sync.enqueue('products', id, 'update', {
-      'id': id,
-      'is_active': false,
-      'updated_at': now.toIso8601String(),
-    });
+    _sync.updatePendingCount();
+    _sync.sync();
   }
 
   Future<void> adjustStock(String productId, double quantity, String reason) async {
@@ -307,13 +268,7 @@ class InventoryRepository {
 
     await _db.into(_db.stockMovements).insert(movement);
 
-    await _sync.enqueue('stock_movements', id, 'insert', {
-      'id': id,
-      'product_id': productId,
-      'type': 'adjustment',
-      'quantity': quantity,
-      'created_at': now.toIso8601String(),
-      'reference_id': reason,
-    });
+    _sync.updatePendingCount();
+    _sync.sync();
   }
 }

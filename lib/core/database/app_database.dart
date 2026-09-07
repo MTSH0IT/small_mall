@@ -10,6 +10,7 @@ part 'app_database.g.dart';
 class Categories extends Table {
   TextColumn get id => text()();
   TextColumn get name => text()();
+  DateTimeColumn get syncedAt => dateTime().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -47,6 +48,7 @@ class StockMovements extends Table {
   RealColumn get quantity => real()();
   TextColumn get referenceId => text().nullable()();
   DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get syncedAt => dateTime().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -58,6 +60,7 @@ class Customers extends Table {
   TextColumn get phone => text().nullable()();
   TextColumn get notes => text().nullable()();
   DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get syncedAt => dateTime().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -97,6 +100,7 @@ class Debts extends Table {
   RealColumn get remainingAmount => real()();
   TextColumn get status => text()(); // open, paid, partial
   DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get syncedAt => dateTime().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -107,6 +111,7 @@ class DebtPayments extends Table {
   TextColumn get debtId => text()();
   RealColumn get amountPaid => real()();
   DateTimeColumn get paidAt => dateTime()();
+  DateTimeColumn get syncedAt => dateTime().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -117,6 +122,7 @@ class Suppliers extends Table {
   TextColumn get name => text()();
   TextColumn get phone => text().nullable()();
   TextColumn get notes => text().nullable()();
+  DateTimeColumn get syncedAt => dateTime().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -127,6 +133,7 @@ class PurchaseInvoices extends Table {
   TextColumn get supplierId => text()();
   RealColumn get totalAmount => real()();
   DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get syncedAt => dateTime().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -138,6 +145,16 @@ class PurchaseItems extends Table {
   TextColumn get productId => text()();
   RealColumn get quantity => real()();
   RealColumn get unitCost => real()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+class DeletedRecords extends Table {
+  TextColumn get id => text()();
+  TextColumn get targetTable => text()();
+  TextColumn get recordId => text()();
+  DateTimeColumn get createdAt => dateTime()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -169,13 +186,33 @@ class SyncQueue extends Table {
   Suppliers,
   PurchaseInvoices,
   PurchaseItems,
+  DeletedRecords,
   SyncQueue,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+        onCreate: (m) async {
+          await m.createAll();
+        },
+        onUpgrade: (m, from, to) async {
+          if (from < 2) {
+            await m.addColumn(categories, categories.syncedAt);
+            await m.addColumn(stockMovements, stockMovements.syncedAt);
+            await m.addColumn(customers, customers.syncedAt);
+            await m.addColumn(debts, debts.syncedAt);
+            await m.addColumn(debtPayments, debtPayments.syncedAt);
+            await m.addColumn(suppliers, suppliers.syncedAt);
+            await m.addColumn(purchaseInvoices, purchaseInvoices.syncedAt);
+            await m.createTable(deletedRecords);
+          }
+        },
+      );
 
   /// Fast SQL aggregation for all product stock balances
   Future<Map<String, double>> getAllStockBalances() async {

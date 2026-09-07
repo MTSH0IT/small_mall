@@ -61,12 +61,8 @@ class SuppliersPurchasingRepository {
 
     await _db.into(_db.suppliers).insert(supplier);
 
-    await _sync.enqueue('suppliers', id, 'insert', {
-      'id': id,
-      'name': name,
-      'phone': phone,
-      'notes': notes,
-    });
+    _sync.updatePendingCount();
+    _sync.sync();
 
     return supplier;
   }
@@ -85,18 +81,15 @@ class SuppliersPurchasingRepository {
       name: Value(name),
       phone: Value(phone),
       notes: Value(notes),
+      syncedAt: const Value(null),
     );
 
     await (_db.update(
       _db.suppliers,
     )..where((t) => t.id.equals(id))).write(companion);
 
-    await _sync.enqueue('suppliers', id, 'update', {
-      'id': id,
-      'name': name,
-      'phone': phone,
-      'notes': notes,
-    });
+    _sync.updatePendingCount();
+    _sync.sync();
   }
 
   // --- Purchases ---
@@ -123,12 +116,6 @@ class SuppliersPurchasingRepository {
 
       // Insert purchase invoice
       await _db.into(_db.purchaseInvoices).insert(invoice);
-      await _sync.enqueue('purchase_invoices', purchaseId, 'insert', {
-        'id': purchaseId,
-        'supplier_id': supplierId,
-        'total_amount': totalAmount,
-        'created_at': now.toIso8601String(),
-      });
 
       for (final item in items) {
         final itemId = _uuid.v4();
@@ -146,13 +133,6 @@ class SuppliersPurchasingRepository {
 
         // Insert purchase item record
         await _db.into(_db.purchaseItems).insert(purchaseItem);
-        await _sync.enqueue('purchase_items', itemId, 'insert', {
-          'id': itemId,
-          'purchase_invoice_id': purchaseId,
-          'product_id': prodId,
-          'quantity': qty,
-          'unit_cost': cost,
-        });
 
         // Increase stock via Stock Movement (positive quantity)
         final movementId = _uuid.v4();
@@ -166,26 +146,15 @@ class SuppliersPurchasingRepository {
         );
 
         await _db.into(_db.stockMovements).insert(movement);
-        await _sync.enqueue('stock_movements', movementId, 'insert', {
-          'id': movementId,
-          'product_id': prodId,
-          'type': 'purchase',
-          'quantity': qty,
-          'created_at': now.toIso8601String(),
-          'reference_id': purchaseId,
-        });
 
-        // Update product's cost price
+        // Update product's cost price (mark syncedAt null)
         await (_db.update(_db.products)..where((t) => t.id.equals(prodId))).write(
-          ProductsCompanion(costPrice: Value(cost), updatedAt: Value(now)),
+          ProductsCompanion(costPrice: Value(cost), updatedAt: Value(now), syncedAt: const Value(null)),
         );
-
-        await _sync.enqueue('products', prodId, 'update', {
-          'id': prodId,
-          'cost_price': cost,
-          'updated_at': now.toIso8601String(),
-        });
       }
     });
+
+    _sync.updatePendingCount();
+    _sync.sync();
   }
 }

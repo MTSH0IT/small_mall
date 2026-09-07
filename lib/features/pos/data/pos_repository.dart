@@ -66,15 +66,6 @@ class POSRepository {
 
       // Insert Invoice
       await _db.into(_db.invoices).insert(invoice);
-      await _sync.enqueue('invoices', invoiceId, 'insert', {
-        'id': invoiceId,
-        'type': 'sale',
-        'customer_id': customerId,
-        'total_amount': totalAmount,
-        'discount': discount,
-        'payment_type': paymentType,
-        'created_at': now.toIso8601String(),
-      });
 
       // Insert Invoice Items & Stock Movements
       for (final item in items) {
@@ -94,14 +85,6 @@ class POSRepository {
         );
 
         await _db.into(_db.invoiceItems).insert(invItem);
-        await _sync.enqueue('invoice_items', itemId, 'insert', {
-          'id': itemId,
-          'invoice_id': invoiceId,
-          'product_id': prodId,
-          'price_used': priceUsed,
-          'quantity': qty,
-          'discount': itemDiscount,
-        });
 
         // Write Stock Movement (negative quantity for sale)
         final movementId = _uuid.v4();
@@ -115,14 +98,6 @@ class POSRepository {
         );
 
         await _db.into(_db.stockMovements).insert(movement);
-        await _sync.enqueue('stock_movements', movementId, 'insert', {
-          'id': movementId,
-          'product_id': prodId,
-          'type': 'sale',
-          'quantity': -qty,
-          'created_at': now.toIso8601String(),
-          'reference_id': invoiceId,
-        });
       }
 
       if (paymentType == 'debt' && customerId != null) {
@@ -138,18 +113,11 @@ class POSRepository {
         );
 
         await _db.into(_db.debts).insert(debt);
-        await _sync.enqueue('debts', debtId, 'insert', {
-          'id': debtId,
-          'customer_id': customerId,
-          'invoice_id': invoiceId,
-          'amount': totalAmount,
-          'remaining_amount': totalAmount,
-          'status': 'open',
-          'created_at': now.toIso8601String(),
-        });
       }
     });
 
+    _sync.updatePendingCount();
+    _sync.sync();
     _logger.debug('Sale created: invoiceId=$invoiceId', context: LogContext.pos);
   }
 
@@ -187,15 +155,6 @@ class POSRepository {
 
       // Insert return invoice record
       await _db.into(_db.invoices).insert(returnInvoice);
-      await _sync.enqueue('invoices', returnInvoiceId, 'insert', {
-        'id': returnInvoiceId,
-        'type': 'return',
-        'customer_id': originalInvoice.customerId,
-        'total_amount': totalReturnVal,
-        'discount': 0.0,
-        'payment_type': originalInvoice.paymentType,
-        'created_at': now.toIso8601String(),
-      });
 
       // Write return items and restore stock
       for (final item in itemsToReturn) {
@@ -214,14 +173,6 @@ class POSRepository {
         );
 
         await _db.into(_db.invoiceItems).insert(invItem);
-        await _sync.enqueue('invoice_items', itemId, 'insert', {
-          'id': itemId,
-          'invoice_id': returnInvoiceId,
-          'product_id': prodId,
-          'price_used': priceUsed,
-          'quantity': qty,
-          'discount': 0.0,
-        });
 
         // Stock movement: POSITIVE quantity to restore stock
         final movementId = _uuid.v4();
@@ -235,14 +186,6 @@ class POSRepository {
         );
 
         await _db.into(_db.stockMovements).insert(movement);
-        await _sync.enqueue('stock_movements', movementId, 'insert', {
-          'id': movementId,
-          'product_id': prodId,
-          'type': 'return',
-          'quantity': qty,
-          'created_at': now.toIso8601String(),
-          'reference_id': returnInvoiceId,
-        });
       }
 
       // Adjust debt if this was a credit sale
@@ -260,16 +203,14 @@ class POSRepository {
               .write(DebtsCompanion(
                 remainingAmount: Value(newRemaining),
                 status: Value(newStatus),
+                syncedAt: const Value(null),
               ));
-
-          await _sync.enqueue('debts', debt.id, 'update', {
-            'id': debt.id,
-            'remaining_amount': newRemaining,
-            'status': newStatus,
-          });
         }
       }
     });
+
+    _sync.updatePendingCount();
+    _sync.sync();
   }
 
   Future<List<Invoice>> getRecentSales() async {
