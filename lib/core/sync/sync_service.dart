@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:drift/drift.dart';
@@ -53,8 +54,18 @@ class SyncService {
     final connectivity = Connectivity();
     _connectivitySubscription = connectivity.onConnectivityChanged.listen((
       result,
-    ) {
-      final hasConnection = result != ConnectivityResult.none;
+    ) async {
+      bool hasConnection = result != ConnectivityResult.none;
+      if (!hasConnection && !kIsWeb) {
+        try {
+          final lookup = await InternetAddress.lookup('xkhmfkrdwuupfqrecfzj.supabase.co')
+              .timeout(const Duration(seconds: 2));
+          if (lookup.isNotEmpty && lookup.first.rawAddress.isNotEmpty) {
+            hasConnection = true;
+          }
+        } catch (_) {}
+      }
+
       if (hasConnection) {
         _logger.info(
           'Connectivity restored, triggering sync',
@@ -126,7 +137,17 @@ class SyncService {
 
     try {
       final connectivityResult = await Connectivity().checkConnectivity();
-      final hasConnection = connectivityResult != ConnectivityResult.none;
+      bool hasConnection = connectivityResult != ConnectivityResult.none;
+      if (!hasConnection && !kIsWeb) {
+        try {
+          final lookup = await InternetAddress.lookup('xkhmfkrdwuupfqrecfzj.supabase.co')
+              .timeout(const Duration(seconds: 3));
+          if (lookup.isNotEmpty && lookup.first.rawAddress.isNotEmpty) {
+            hasConnection = true;
+          }
+        } catch (_) {}
+      }
+
       if (!hasConnection) {
         _logger.warning(
           'Sync skipped - no connectivity',
@@ -185,10 +206,8 @@ class SyncService {
             context: LogContext.syncQueue,
           );
 
-          if (op == 'insert') {
-            await client.from(tableName).insert(payload);
-          } else if (op == 'update') {
-            await client.from(tableName).update(payload).eq('id', recordId);
+          if (op == 'insert' || op == 'update') {
+            await client.from(tableName).upsert(payload);
           } else if (op == 'delete') {
             await client.from(tableName).delete().eq('id', recordId);
           }
@@ -196,6 +215,21 @@ class SyncService {
           await (_db.update(_db.syncQueue)..where((t) => t.id.equals(item.id)))
               .write(const SyncQueueCompanion(status: Value('synced')));
         } catch (e) {
+          // If the record already exists (unique constraint violation code 23505),
+          // it means the record is already safely on the server!
+          if (e is PostgrestException &&
+              (e.code == '23505' ||
+                  e.message.contains('unique constraint') ||
+                  e.message.contains('already exists'))) {
+            _logger.info(
+              'Item ${item.id} already exists on server, marking synced',
+              context: LogContext.syncQueue,
+            );
+            await (_db.update(_db.syncQueue)..where((t) => t.id.equals(item.id)))
+                .write(const SyncQueueCompanion(status: Value('synced')));
+            continue;
+          }
+
           _logger.error(
             'Failed to sync item ${item.id}',
             error: e,
@@ -236,7 +270,18 @@ class SyncService {
 
     try {
       final connectivityResult = await Connectivity().checkConnectivity();
-      if (connectivityResult == ConnectivityResult.none) {
+      bool hasConnection = connectivityResult != ConnectivityResult.none;
+      if (!hasConnection && !kIsWeb) {
+        try {
+          final lookup = await InternetAddress.lookup('xkhmfkrdwuupfqrecfzj.supabase.co')
+              .timeout(const Duration(seconds: 3));
+          if (lookup.isNotEmpty && lookup.first.rawAddress.isNotEmpty) {
+            hasConnection = true;
+          }
+        } catch (_) {}
+      }
+
+      if (!hasConnection) {
         _logger.warning(
           'Fetch skipped - no connectivity',
           context: LogContext.connectivity,
