@@ -314,6 +314,7 @@
   "invoices": {
     "title": "Invoices Record",
     "invoice_id": "Invoice ID",
+    "serial_number": "Serial No.",
     "invoice_date": "Date & Time",
     "invoice_type": "Invoice Type",
     "sale": "Sale",
@@ -325,6 +326,26 @@
     "total": "Total",
     "details": "Invoice Details",
     "select_invoice_to_view": "Select an invoice to inspect details.",
-    "empty_invoices": "No invoices found for this period."
+    "empty_invoices": "No invoices found for this period.",
+    "search_hint": "Search by invoice # (#1), customer, or amount...",
+    "edit_invoice": "Edit Invoice",
+    "delete_invoice": "Delete Invoice",
+    "delete_invoice_confirm_title": "Confirm Invoice Deletion",
+    "delete_invoice_confirm_msg": "Are you sure you want to delete invoice #{id}? Items will be automatically restored to stock and associated debt entries cancelled.",
+    "delete_invoice_debt_has_payments_warning": "Cannot delete invoice because payments have already been made on its debt. Please review payment records in Customers first.",
+    "invoice_deleted_success": "Invoice deleted and stock restored successfully",
+    "invoice_updated_success": "Invoice updated successfully",
+    "filter_all": "All",
+    "filter_today": "Today",
+    "filter_yesterday": "Yesterday",
+    "filter_this_week": "This Week",
+    "filter_this_month": "This Month",
+    "filter_custom_date": "Custom Date",
+    "custom_date_range": "Period: {start} to {end}",
+    "edit_dialog_title": "Edit Invoice #{id}",
+    "edit_items_title": "Invoice Items",
+    "quantity": "Quantity",
+    "price": "Price",
+    "item_total": "Total"
   }
 }

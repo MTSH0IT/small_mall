@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:drift/drift.dart';
@@ -22,6 +23,34 @@ class SyncService {
   bool _isInitialized = false;
   bool _isSyncing = false;
   StreamSubscription<ConnectivityResult>? _connectivitySubscription;
+
+  /// Real Internet connection check with Windows desktop fallback
+  Future<bool> hasInternetConnection() async {
+    try {
+      final connectivityResult = await Connectivity().checkConnectivity();
+      if (connectivityResult != ConnectivityResult.none) {
+        return true;
+      }
+    } catch (_) {}
+
+    // Fallback: On Windows Desktop, connectivity_plus often reports ConnectivityResult.none
+    // even when active internet is reachable (e.g. mobile hotspots, private LANs).
+    try {
+      final addresses = await InternetAddress.lookup('xkhmfkrdwuupfqrecfzj.supabase.co')
+          .timeout(const Duration(seconds: 3));
+      if (addresses.isNotEmpty && addresses[0].rawAddress.isNotEmpty) {
+        return true;
+      }
+    } catch (_) {}
+
+    try {
+      final fallback = await InternetAddress.lookup('1.1.1.1')
+          .timeout(const Duration(seconds: 2));
+      return fallback.isNotEmpty && fallback[0].rawAddress.isNotEmpty;
+    } catch (_) {
+      return false;
+    }
+  }
 
   Future<void> initialize() async {
     _logger.info('Initializing SyncService', context: LogContext.syncQueue);
@@ -50,8 +79,8 @@ class SyncService {
     final connectivity = Connectivity();
     _connectivitySubscription = connectivity.onConnectivityChanged.listen((
       result,
-    ) {
-      final hasConnection = result != ConnectivityResult.none;
+    ) async {
+      final hasConnection = await hasInternetConnection();
       if (hasConnection) {
         _logger.info(
           'Connectivity restored, triggering sync',
@@ -136,8 +165,7 @@ class SyncService {
     _logger.info('Sync started (Batch Mode)', context: LogContext.syncQueue);
 
     try {
-      final connectivityResult = await Connectivity().checkConnectivity();
-      final hasConnection = connectivityResult != ConnectivityResult.none;
+      final hasConnection = await hasInternetConnection();
       if (!hasConnection) {
         _logger.warning(
           'Sync skipped - no connectivity',
@@ -281,6 +309,7 @@ class SyncService {
           final invIds = unsynced.map((i) => i.id).toList();
           final payload = unsynced.map((i) => {
             'id': i.id,
+            'serial_number': i.serialNumber,
             'type': i.type,
             'customer_id': i.customerId,
             'total_amount': i.totalAmount,
@@ -438,8 +467,8 @@ class SyncService {
     _logger.info('Fetching all data from server', context: LogContext.supabase);
 
     try {
-      final connectivityResult = await Connectivity().checkConnectivity();
-      if (connectivityResult == ConnectivityResult.none) {
+      final hasConnection = await hasInternetConnection();
+      if (!hasConnection) {
         _logger.warning(
           'Fetch skipped - no connectivity',
           context: LogContext.connectivity,
@@ -611,6 +640,7 @@ class SyncService {
           await _db.into(_db.invoices).insert(
                 InvoicesCompanion.insert(
                   id: json['id'] as String,
+                  serialNumber: Value(json['serial_number'] as int?),
                   type: json['type'] as String,
                   customerId: Value(json['customer_id'] as String?),
                   totalAmount: (json['total_amount'] as num).toDouble(),

@@ -39,7 +39,11 @@ class InvoiceList extends StatelessWidget {
         final inv = invoices[index];
         final isSelected = inv.invoice.id == selectedInvoiceId;
         final isReturn = inv.invoice.type == 'return';
+        final isDebt = inv.invoice.paymentType == 'debt';
         final dateStr = DateFormat('yyyy-MM-dd HH:mm').format(inv.invoice.createdAt);
+        final serialText = inv.invoice.serialNumber != null
+            ? '#${inv.invoice.serialNumber}'
+            : '#${inv.invoice.id.substring(0, 8)}';
 
         return Card(
           elevation: isSelected ? 2 : 0,
@@ -77,9 +81,42 @@ class InvoiceList extends StatelessWidget {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              '${'invoices.invoice_id'.tr()} #${inv.invoice.id.substring(0, 8)}',
-                              style: const TextStyle(fontWeight: FontWeight.bold),
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    serialText,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+                                ),
+                                if (isDebt) ...[
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.warning.withValues(alpha: 0.12),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      'pos.debt'.tr(),
+                                      style: const TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.warning,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
                             ),
                             Text(
                               inv.invoice.totalAmount.toStringAsFixed(2),
@@ -90,13 +127,13 @@ class InvoiceList extends StatelessWidget {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 6),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
                               inv.customerName ?? 'pos.walk_in_customer'.tr(),
-                              style: labelSmall,
+                              style: labelSmall?.copyWith(fontWeight: FontWeight.w500),
                             ),
                             Text(dateStr, style: labelSmall),
                           ],

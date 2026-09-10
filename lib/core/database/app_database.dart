@@ -70,6 +70,7 @@ class Customers extends Table {
 
 class Invoices extends Table {
   TextColumn get id => text()();
+  IntColumn get serialNumber => integer().nullable()();
   TextColumn get type => text()(); // sale, return
   TextColumn get customerId => text().nullable()();
   RealColumn get totalAmount => real()();
@@ -195,7 +196,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -219,6 +220,20 @@ class AppDatabase extends _$AppDatabase {
           if (from < 4) {
             await m.addColumn(products, products.serialNumber);
           }
+          if (from < 5) {
+            await m.addColumn(invoices, invoices.serialNumber);
+            // Backfill serial numbers for existing invoices ordered by createdAt
+            final existingInvoices = await (select(invoices)
+                  ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
+                .get();
+            for (int i = 0; i < existingInvoices.length; i++) {
+              final inv = existingInvoices[i];
+              if (inv.serialNumber == null) {
+                await (update(invoices)..where((t) => t.id.equals(inv.id)))
+                    .write(InvoicesCompanion(serialNumber: Value(i + 1)));
+              }
+            }
+          }
         },
       );
 
@@ -226,6 +241,15 @@ class AppDatabase extends _$AppDatabase {
   Future<int> getNextProductSerialNumber() async {
     final maxExp = products.serialNumber.max();
     final query = selectOnly(products)..addColumns([maxExp]);
+    final row = await query.getSingleOrNull();
+    final currentMax = row?.read(maxExp) ?? 0;
+    return currentMax + 1;
+  }
+
+  /// Get the next available invoice serial number
+  Future<int> getNextInvoiceSerialNumber() async {
+    final maxExp = invoices.serialNumber.max();
+    final query = selectOnly(invoices)..addColumns([maxExp]);
     final row = await query.getSingleOrNull();
     final currentMax = row?.read(maxExp) ?? 0;
     return currentMax + 1;

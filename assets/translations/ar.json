@@ -314,6 +314,7 @@
   "invoices": {
     "title": "سجل الفواتير",
     "invoice_id": "رقم الفاتورة",
+    "serial_number": "الرقم التسلسلي",
     "invoice_date": "تاريخ ووقت الفاتورة",
     "invoice_type": "نوع الفاتورة",
     "sale": "بيع",
@@ -325,6 +326,26 @@
     "total": "الإجمالي",
     "details": "تفاصيل الفاتورة",
     "select_invoice_to_view": "اختر فاتورة من القائمة لعرض تفاصيلها.",
-    "empty_invoices": "لا توجد فواتير مسجلة في هذه الفترة."
+    "empty_invoices": "لا توجد فواتير مسجلة في هذه الفترة.",
+    "search_hint": "بحث برقم الفاتورة (#1)، العميل، أو المبلغ...",
+    "edit_invoice": "تعديل الفاتورة",
+    "delete_invoice": "حذف الفاتورة",
+    "delete_invoice_confirm_title": "تأكيد حذف الفاتورة",
+    "delete_invoice_confirm_msg": "هل أنت متأكد من حذف الفاتورة رقم #{id}؟ سيتم استرجاع الكميات للمخزون تلقائياً وإلغاء قيود الدين.",
+    "delete_invoice_debt_has_payments_warning": "لا يمكن حذف الفاتورة لوجود دفعات مسددة على دينها. يرجى مراجعة سجل السداد في قسم العملاء أولاً.",
+    "invoice_deleted_success": "تم حذف الفاتورة واسترجاع المخزون بنجاح",
+    "invoice_updated_success": "تم حفظ تعديلات الفاتورة بنجاح",
+    "filter_all": "الكل",
+    "filter_today": "اليوم",
+    "filter_yesterday": "الأمس",
+    "filter_this_week": "هذا الأسبوع",
+    "filter_this_month": "هذا الشهر",
+    "filter_custom_date": "تاريخ مخصص",
+    "custom_date_range": "الفترة: {start} إلى {end}",
+    "edit_dialog_title": "تعديل بيانات الفاتورة #{id}",
+    "edit_items_title": "أصناف الفاتورة",
+    "quantity": "الكمية",
+    "price": "السعر",
+    "item_total": "المجموع"
   }
 }
