@@ -55,14 +55,30 @@ class _POSScreenState extends State<POSScreen> {
     final query = value.trim().toLowerCase();
     if (query.isEmpty) return;
 
-    // Look for exact match first
-    final exactMatch = state.products.where((p) {
+    // Look for exact match by serial number (#ID), code (barcode), or name
+    final exactSerialMatch = int.tryParse(query) != null
+        ? state.products.where((p) => p.product.serialNumber == int.tryParse(query)).firstOrNull
+        : null;
+
+    final exactCodeMatch = state.products.where((p) {
+      return p.product.code != null && p.product.code!.trim().toLowerCase() == query;
+    }).firstOrNull;
+
+    final exactNameMatch = state.products.where((p) {
       return p.product.name.toLowerCase() == query;
     }).firstOrNull;
 
-    final target = exactMatch ??
-        (state.products.where((p) => p.product.name.toLowerCase().contains(query)).length == 1
-            ? state.products.where((p) => p.product.name.toLowerCase().contains(query)).first
+    final target = exactSerialMatch ??
+        exactCodeMatch ??
+        exactNameMatch ??
+        (state.products.where((p) =>
+            p.product.name.toLowerCase().contains(query) ||
+            (p.product.serialNumber != null && p.product.serialNumber.toString() == query) ||
+            (p.product.code != null && p.product.code!.toLowerCase().contains(query))).length == 1
+            ? state.products.where((p) =>
+                p.product.name.toLowerCase().contains(query) ||
+                (p.product.serialNumber != null && p.product.serialNumber.toString() == query) ||
+                (p.product.code != null && p.product.code!.toLowerCase().contains(query))).first
             : null);
 
     if (target != null && target.prices.isNotEmpty && target.currentStock > 0) {
@@ -178,9 +194,13 @@ class _POSScreenState extends State<POSScreen> {
           }
 
           // Filter products based on search query and category
+          final query = _searchQuery.trim().toLowerCase();
           final filteredProducts = state.products.where((p) {
-            final matchQuery = p.product.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-                (p.category?.name.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false);
+            final matchQuery = query.isEmpty ||
+                p.product.name.toLowerCase().contains(query) ||
+                (p.product.serialNumber != null && p.product.serialNumber.toString() == query) ||
+                (p.product.code?.toLowerCase().contains(query) ?? false) ||
+                (p.category?.name.toLowerCase().contains(query) ?? false);
             final matchCategory = _selectedCategory == null || p.product.categoryId == _selectedCategory;
             return matchQuery && matchCategory;
           }).toList();
@@ -511,6 +531,8 @@ class _POSScreenState extends State<POSScreen> {
                                       cubit.updateCartItemQuantity(index, qty),
                                   onDiscountChanged: (disc) =>
                                       cubit.updateCartItemDiscount(index, disc),
+                                  onPriceChanged: (newPrice) =>
+                                      cubit.updateCartItemPrice(index, newPrice),
                                 );
                               },
                             ),

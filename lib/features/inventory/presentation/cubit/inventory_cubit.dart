@@ -20,7 +20,11 @@ class InventoryCubit extends Cubit<InventoryState> {
     }
   }
 
+  Future<int> getNextSerialNumber() => _repository.getNextSerialNumber();
+
   Future<void> addProduct({
+    int? serialNumber,
+    String? code,
     required String name,
     required String? categoryId,
     required double costPrice,
@@ -30,6 +34,8 @@ class InventoryCubit extends Cubit<InventoryState> {
   }) async {
     try {
       await _repository.addProduct(
+        serialNumber: serialNumber,
+        code: code,
         name: name,
         categoryId: categoryId,
         costPrice: costPrice,
@@ -49,6 +55,8 @@ class InventoryCubit extends Cubit<InventoryState> {
 
   Future<void> updateProduct({
     required String id,
+    int? serialNumber,
+    String? code,
     required String name,
     required String? categoryId,
     required double costPrice,
@@ -58,6 +66,8 @@ class InventoryCubit extends Cubit<InventoryState> {
     try {
       await _repository.updateProduct(
         id: id,
+        serialNumber: serialNumber,
+        code: code,
         name: name,
         categoryId: categoryId,
         costPrice: costPrice,

@@ -30,7 +30,9 @@ class ProductsTable extends StatelessWidget {
     final query = searchQuery.trim().toLowerCase();
     final filtered = products.where((p) {
       final matchesSearch = query.isEmpty ||
-          p.product.name.toLowerCase().contains(query);
+          p.product.name.toLowerCase().contains(query) ||
+          (p.product.serialNumber != null && p.product.serialNumber.toString() == query) ||
+          (p.product.code?.toLowerCase().contains(query) ?? false);
 
       final bool matchesCategory;
       if (selectedCategoryId == null) {
@@ -108,6 +110,7 @@ class ProductsTable extends StatelessWidget {
       child: SingleChildScrollView(
         child: DataTable(
           columns: [
+            DataColumn(label: Text('inventory.product_id'.tr())),
             DataColumn(label: Text('inventory.product_name'.tr())),
             DataColumn(label: Text('inventory.category'.tr())),
             DataColumn(label: Text('inventory.cost_price'.tr())),
@@ -123,7 +126,61 @@ class ProductsTable extends StatelessWidget {
 
             return DataRow(
               cells: [
-                DataCell(Text(item.product.name, style: const TextStyle(fontWeight: FontWeight.bold))),
+                DataCell(
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: AppColors.primary.withValues(alpha: 0.25),
+                        width: 0.8,
+                      ),
+                    ),
+                    child: Text(
+                      '#${item.product.serialNumber ?? '-'}',
+                      style: AppTheme.numericStyle(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                        fontSize: 12.5,
+                      ),
+                    ),
+                  ),
+                ),
+                DataCell(
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.product.name,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      if (item.product.code != null && item.product.code!.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2.0),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.qr_code_2_rounded,
+                                size: 12,
+                                color: AppColors.textSecondary,
+                              ),
+                              const SizedBox(width: 3),
+                              Text(
+                                item.product.code!,
+                                style: AppTheme.numericStyle(
+                                  fontSize: 11,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
                 DataCell(Text(item.category?.name ?? '-')),
                 DataCell(Text(item.product.costPrice.toStringAsFixed(2), style: AppTheme.numericStyle())),
                 DataCell(

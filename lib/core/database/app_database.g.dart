@@ -276,6 +276,26 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _serialNumberMeta = const VerificationMeta(
+    'serialNumber',
+  );
+  @override
+  late final GeneratedColumn<int> serialNumber = GeneratedColumn<int>(
+    'serial_number',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _codeMeta = const VerificationMeta('code');
+  @override
+  late final GeneratedColumn<String> code = GeneratedColumn<String>(
+    'code',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _nameMeta = const VerificationMeta('name');
   @override
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
@@ -371,6 +391,8 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
   @override
   List<GeneratedColumn> get $columns => [
     id,
+    serialNumber,
+    code,
     name,
     categoryId,
     costPrice,
@@ -396,6 +418,21 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
     } else if (isInserting) {
       context.missing(_idMeta);
+    }
+    if (data.containsKey('serial_number')) {
+      context.handle(
+        _serialNumberMeta,
+        serialNumber.isAcceptableOrUnknown(
+          data['serial_number']!,
+          _serialNumberMeta,
+        ),
+      );
+    }
+    if (data.containsKey('code')) {
+      context.handle(
+        _codeMeta,
+        code.isAcceptableOrUnknown(data['code']!, _codeMeta),
+      );
     }
     if (data.containsKey('name')) {
       context.handle(
@@ -467,6 +504,14 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
         DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
+      serialNumber: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}serial_number'],
+      ),
+      code: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}code'],
+      ),
       name: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}name'],
@@ -510,6 +555,8 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
 
 class Product extends DataClass implements Insertable<Product> {
   final String id;
+  final int? serialNumber;
+  final String? code;
   final String name;
   final String? categoryId;
   final double costPrice;
@@ -520,6 +567,8 @@ class Product extends DataClass implements Insertable<Product> {
   final DateTime? syncedAt;
   const Product({
     required this.id,
+    this.serialNumber,
+    this.code,
     required this.name,
     this.categoryId,
     required this.costPrice,
@@ -533,6 +582,12 @@ class Product extends DataClass implements Insertable<Product> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
+    if (!nullToAbsent || serialNumber != null) {
+      map['serial_number'] = Variable<int>(serialNumber);
+    }
+    if (!nullToAbsent || code != null) {
+      map['code'] = Variable<String>(code);
+    }
     map['name'] = Variable<String>(name);
     if (!nullToAbsent || categoryId != null) {
       map['category_id'] = Variable<String>(categoryId);
@@ -551,6 +606,10 @@ class Product extends DataClass implements Insertable<Product> {
   ProductsCompanion toCompanion(bool nullToAbsent) {
     return ProductsCompanion(
       id: Value(id),
+      serialNumber: serialNumber == null && nullToAbsent
+          ? const Value.absent()
+          : Value(serialNumber),
+      code: code == null && nullToAbsent ? const Value.absent() : Value(code),
       name: Value(name),
       categoryId: categoryId == null && nullToAbsent
           ? const Value.absent()
@@ -573,6 +632,8 @@ class Product extends DataClass implements Insertable<Product> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Product(
       id: serializer.fromJson<String>(json['id']),
+      serialNumber: serializer.fromJson<int?>(json['serialNumber']),
+      code: serializer.fromJson<String?>(json['code']),
       name: serializer.fromJson<String>(json['name']),
       categoryId: serializer.fromJson<String?>(json['categoryId']),
       costPrice: serializer.fromJson<double>(json['costPrice']),
@@ -588,6 +649,8 @@ class Product extends DataClass implements Insertable<Product> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
+      'serialNumber': serializer.toJson<int?>(serialNumber),
+      'code': serializer.toJson<String?>(code),
       'name': serializer.toJson<String>(name),
       'categoryId': serializer.toJson<String?>(categoryId),
       'costPrice': serializer.toJson<double>(costPrice),
@@ -601,6 +664,8 @@ class Product extends DataClass implements Insertable<Product> {
 
   Product copyWith({
     String? id,
+    Value<int?> serialNumber = const Value.absent(),
+    Value<String?> code = const Value.absent(),
     String? name,
     Value<String?> categoryId = const Value.absent(),
     double? costPrice,
@@ -611,6 +676,8 @@ class Product extends DataClass implements Insertable<Product> {
     Value<DateTime?> syncedAt = const Value.absent(),
   }) => Product(
     id: id ?? this.id,
+    serialNumber: serialNumber.present ? serialNumber.value : this.serialNumber,
+    code: code.present ? code.value : this.code,
     name: name ?? this.name,
     categoryId: categoryId.present ? categoryId.value : this.categoryId,
     costPrice: costPrice ?? this.costPrice,
@@ -623,6 +690,10 @@ class Product extends DataClass implements Insertable<Product> {
   Product copyWithCompanion(ProductsCompanion data) {
     return Product(
       id: data.id.present ? data.id.value : this.id,
+      serialNumber: data.serialNumber.present
+          ? data.serialNumber.value
+          : this.serialNumber,
+      code: data.code.present ? data.code.value : this.code,
       name: data.name.present ? data.name.value : this.name,
       categoryId: data.categoryId.present
           ? data.categoryId.value
@@ -642,6 +713,8 @@ class Product extends DataClass implements Insertable<Product> {
   String toString() {
     return (StringBuffer('Product(')
           ..write('id: $id, ')
+          ..write('serialNumber: $serialNumber, ')
+          ..write('code: $code, ')
           ..write('name: $name, ')
           ..write('categoryId: $categoryId, ')
           ..write('costPrice: $costPrice, ')
@@ -657,6 +730,8 @@ class Product extends DataClass implements Insertable<Product> {
   @override
   int get hashCode => Object.hash(
     id,
+    serialNumber,
+    code,
     name,
     categoryId,
     costPrice,
@@ -671,6 +746,8 @@ class Product extends DataClass implements Insertable<Product> {
       identical(this, other) ||
       (other is Product &&
           other.id == this.id &&
+          other.serialNumber == this.serialNumber &&
+          other.code == this.code &&
           other.name == this.name &&
           other.categoryId == this.categoryId &&
           other.costPrice == this.costPrice &&
@@ -683,6 +760,8 @@ class Product extends DataClass implements Insertable<Product> {
 
 class ProductsCompanion extends UpdateCompanion<Product> {
   final Value<String> id;
+  final Value<int?> serialNumber;
+  final Value<String?> code;
   final Value<String> name;
   final Value<String?> categoryId;
   final Value<double> costPrice;
@@ -694,6 +773,8 @@ class ProductsCompanion extends UpdateCompanion<Product> {
   final Value<int> rowid;
   const ProductsCompanion({
     this.id = const Value.absent(),
+    this.serialNumber = const Value.absent(),
+    this.code = const Value.absent(),
     this.name = const Value.absent(),
     this.categoryId = const Value.absent(),
     this.costPrice = const Value.absent(),
@@ -706,6 +787,8 @@ class ProductsCompanion extends UpdateCompanion<Product> {
   });
   ProductsCompanion.insert({
     required String id,
+    this.serialNumber = const Value.absent(),
+    this.code = const Value.absent(),
     required String name,
     this.categoryId = const Value.absent(),
     this.costPrice = const Value.absent(),
@@ -721,6 +804,8 @@ class ProductsCompanion extends UpdateCompanion<Product> {
        updatedAt = Value(updatedAt);
   static Insertable<Product> custom({
     Expression<String>? id,
+    Expression<int>? serialNumber,
+    Expression<String>? code,
     Expression<String>? name,
     Expression<String>? categoryId,
     Expression<double>? costPrice,
@@ -733,6 +818,8 @@ class ProductsCompanion extends UpdateCompanion<Product> {
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
+      if (serialNumber != null) 'serial_number': serialNumber,
+      if (code != null) 'code': code,
       if (name != null) 'name': name,
       if (categoryId != null) 'category_id': categoryId,
       if (costPrice != null) 'cost_price': costPrice,
@@ -747,6 +834,8 @@ class ProductsCompanion extends UpdateCompanion<Product> {
 
   ProductsCompanion copyWith({
     Value<String>? id,
+    Value<int?>? serialNumber,
+    Value<String?>? code,
     Value<String>? name,
     Value<String?>? categoryId,
     Value<double>? costPrice,
@@ -759,6 +848,8 @@ class ProductsCompanion extends UpdateCompanion<Product> {
   }) {
     return ProductsCompanion(
       id: id ?? this.id,
+      serialNumber: serialNumber ?? this.serialNumber,
+      code: code ?? this.code,
       name: name ?? this.name,
       categoryId: categoryId ?? this.categoryId,
       costPrice: costPrice ?? this.costPrice,
@@ -776,6 +867,12 @@ class ProductsCompanion extends UpdateCompanion<Product> {
     final map = <String, Expression>{};
     if (id.present) {
       map['id'] = Variable<String>(id.value);
+    }
+    if (serialNumber.present) {
+      map['serial_number'] = Variable<int>(serialNumber.value);
+    }
+    if (code.present) {
+      map['code'] = Variable<String>(code.value);
     }
     if (name.present) {
       map['name'] = Variable<String>(name.value);
@@ -811,6 +908,8 @@ class ProductsCompanion extends UpdateCompanion<Product> {
   String toString() {
     return (StringBuffer('ProductsCompanion(')
           ..write('id: $id, ')
+          ..write('serialNumber: $serialNumber, ')
+          ..write('code: $code, ')
           ..write('name: $name, ')
           ..write('categoryId: $categoryId, ')
           ..write('costPrice: $costPrice, ')
@@ -5895,6 +5994,8 @@ typedef $$CategoriesTableProcessedTableManager =
 typedef $$ProductsTableCreateCompanionBuilder =
     ProductsCompanion Function({
       required String id,
+      Value<int?> serialNumber,
+      Value<String?> code,
       required String name,
       Value<String?> categoryId,
       Value<double> costPrice,
@@ -5908,6 +6009,8 @@ typedef $$ProductsTableCreateCompanionBuilder =
 typedef $$ProductsTableUpdateCompanionBuilder =
     ProductsCompanion Function({
       Value<String> id,
+      Value<int?> serialNumber,
+      Value<String?> code,
       Value<String> name,
       Value<String?> categoryId,
       Value<double> costPrice,
@@ -5930,6 +6033,16 @@ class $$ProductsTableFilterComposer
   });
   ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get serialNumber => $composableBuilder(
+    column: $table.serialNumber,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get code => $composableBuilder(
+    column: $table.code,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -5988,6 +6101,16 @@ class $$ProductsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get serialNumber => $composableBuilder(
+    column: $table.serialNumber,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get code => $composableBuilder(
+    column: $table.code,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get name => $composableBuilder(
     column: $table.name,
     builder: (column) => ColumnOrderings(column),
@@ -6040,6 +6163,14 @@ class $$ProductsTableAnnotationComposer
   });
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get serialNumber => $composableBuilder(
+    column: $table.serialNumber,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get code =>
+      $composableBuilder(column: $table.code, builder: (column) => column);
 
   GeneratedColumn<String> get name =>
       $composableBuilder(column: $table.name, builder: (column) => column);
@@ -6099,6 +6230,8 @@ class $$ProductsTableTableManager
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
+                Value<int?> serialNumber = const Value.absent(),
+                Value<String?> code = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<String?> categoryId = const Value.absent(),
                 Value<double> costPrice = const Value.absent(),
@@ -6110,6 +6243,8 @@ class $$ProductsTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => ProductsCompanion(
                 id: id,
+                serialNumber: serialNumber,
+                code: code,
                 name: name,
                 categoryId: categoryId,
                 costPrice: costPrice,
@@ -6123,6 +6258,8 @@ class $$ProductsTableTableManager
           createCompanionCallback:
               ({
                 required String id,
+                Value<int?> serialNumber = const Value.absent(),
+                Value<String?> code = const Value.absent(),
                 required String name,
                 Value<String?> categoryId = const Value.absent(),
                 Value<double> costPrice = const Value.absent(),
@@ -6134,6 +6271,8 @@ class $$ProductsTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => ProductsCompanion.insert(
                 id: id,
+                serialNumber: serialNumber,
+                code: code,
                 name: name,
                 categoryId: categoryId,
                 costPrice: costPrice,

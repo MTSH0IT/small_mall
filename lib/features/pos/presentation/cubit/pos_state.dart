@@ -8,25 +8,33 @@ class CartItem {
     required this.selectedPrice,
     this.quantity = 1.0,
     this.discount = 0.0,
+    this.customPrice,
   });
   final ProductWithDetails productDetails;
   final ProductPrice selectedPrice;
   final double quantity;
   final double discount;
+  final double? customPrice;
 
-  double get subtotal => (selectedPrice.priceValue * quantity) - discount;
+  double get unitPrice => customPrice ?? selectedPrice.priceValue;
+  bool get hasCustomPrice => customPrice != null && customPrice != selectedPrice.priceValue;
+
+  double get subtotal => (unitPrice * quantity) - discount;
 
   CartItem copyWith({
     ProductWithDetails? productDetails,
     ProductPrice? selectedPrice,
     double? quantity,
     double? discount,
+    double? customPrice,
+    bool clearCustomPrice = false,
   }) {
     return CartItem(
       productDetails: productDetails ?? this.productDetails,
       selectedPrice: selectedPrice ?? this.selectedPrice,
       quantity: quantity ?? this.quantity,
       discount: discount ?? this.discount,
+      customPrice: clearCustomPrice ? null : (customPrice ?? this.customPrice),
     );
   }
 }

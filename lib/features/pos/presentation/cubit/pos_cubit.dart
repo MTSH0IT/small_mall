@@ -83,6 +83,22 @@ class POSCubit extends Cubit<POSState> {
     }
   }
 
+  void updateCartItemPrice(int index, double? newPrice) {
+    if (state is! POSLoaded) return;
+    final loaded = state as POSLoaded;
+
+    final updatedCart = List<CartItem>.from(loaded.cart);
+    if (index >= 0 && index < updatedCart.length) {
+      final item = updatedCart[index];
+      if (newPrice != null && newPrice < 0) return;
+      updatedCart[index] = item.copyWith(
+        customPrice: newPrice,
+        clearCustomPrice: newPrice == null,
+      );
+      emit(loaded.copyWith(cart: updatedCart));
+    }
+  }
+
   void updateCartItemDiscount(int index, double discount) {
     if (state is! POSLoaded) return;
     final loaded = state as POSLoaded;
@@ -90,7 +106,7 @@ class POSCubit extends Cubit<POSState> {
     final updatedCart = List<CartItem>.from(loaded.cart);
     if (index >= 0 && index < updatedCart.length) {
       final item = updatedCart[index];
-      final maxDiscount = item.selectedPrice.priceValue * item.quantity;
+      final maxDiscount = item.unitPrice * item.quantity;
       final validDiscount = discount.clamp(0.0, maxDiscount);
       updatedCart[index] = item.copyWith(discount: validDiscount);
       emit(loaded.copyWith(cart: updatedCart));
@@ -183,7 +199,7 @@ class POSCubit extends Cubit<POSState> {
     try {
       final items = loaded.cart.map((item) => {
             'productId': item.productDetails.product.id,
-            'priceUsed': item.selectedPrice.priceValue,
+            'priceUsed': item.unitPrice,
             'quantity': item.quantity,
             'discount': item.discount,
           }).toList();

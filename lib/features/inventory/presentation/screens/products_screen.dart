@@ -905,13 +905,22 @@ class _ProductsScreenState extends State<ProductsScreen> {
     );
   }
 
-  void _showProductFormDialog(
+  Future<void> _showProductFormDialog(
     BuildContext context,
     InventoryCubit cubit,
     List<Category> categories, {
     ProductWithDetails? existing,
-  }) {
+  }) async {
     final formKey = GlobalKey<FormState>();
+    final nextSeq = existing == null ? await cubit.getNextSerialNumber() : null;
+    final idController = TextEditingController(
+      text: existing != null
+          ? (existing.product.serialNumber?.toString() ?? '')
+          : (nextSeq?.toString() ?? '1'),
+    );
+    final codeController = TextEditingController(
+      text: existing?.product.code ?? '',
+    );
     final nameController = TextEditingController(
       text: existing?.product.name ?? '',
     );
@@ -962,6 +971,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
       text: promo?.priceValue.toString() ?? '',
     );
 
+    if (!context.mounted) return;
+
     showDialog(
       context: context,
       builder: (ctx) {
@@ -1009,6 +1020,56 @@ class _ProductsScreenState extends State<ProductsScreen> {
                       validator: (val) => val == null || val.isEmpty
                           ? 'common.required_field'.tr()
                           : null,
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: AppTextField(
+                            label: 'inventory.product_id'.tr(),
+                            controller: idController,
+                            hint: '1, 2, 3...',
+                            keyboardType: TextInputType.number,
+                            prefixIcon: const Icon(
+                              Icons.tag_rounded,
+                              size: 18,
+                              color: AppColors.textSecondary,
+                            ),
+                            suffixIcon: existing == null
+                                ? IconButton(
+                                    icon: const Icon(Icons.refresh_rounded, size: 18),
+                                    tooltip: 'inventory.auto_generate_id'.tr(),
+                                    onPressed: () async {
+                                      final seq = await cubit.getNextSerialNumber();
+                                      idController.text = seq.toString();
+                                    },
+                                  )
+                                : null,
+                            validator: (val) {
+                              if (val == null || val.trim().isEmpty) {
+                                return 'common.required_field'.tr();
+                              }
+                              if (int.tryParse(val.trim()) == null) {
+                                return 'common.numeric_only'.tr();
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: AppTextField(
+                            label: 'inventory.product_code'.tr(),
+                            controller: codeController,
+                            hint: 'inventory.code_hint'.tr(),
+                            prefixIcon: const Icon(
+                              Icons.qr_code_scanner_outlined,
+                              size: 18,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
@@ -1151,6 +1212,10 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   foregroundColor: AppColors.textSecondary,
                 ),
                 onPressed: () {
+                  if (existing == null) {
+                    idController.clear();
+                  }
+                  codeController.clear();
                   nameController.clear();
                   costController.clear();
                   minStockController.text = '5';
@@ -1207,9 +1272,14 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         });
                       }
 
+                      final serialNumber = int.tryParse(idController.text.trim());
+                      final customCode = codeController.text.trim();
+
                       if (existing == null) {
                         cubit.addProduct(
-                          name: nameController.text,
+                          serialNumber: serialNumber,
+                          code: customCode.isNotEmpty ? customCode : null,
+                          name: nameController.text.trim(),
                           categoryId: selectedCatId,
                           costPrice: costPrice,
                           minStockAlert: minStock,
@@ -1219,7 +1289,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
                       } else {
                         cubit.updateProduct(
                           id: existing.product.id,
-                          name: nameController.text,
+                          serialNumber: serialNumber,
+                          code: customCode.isNotEmpty ? customCode : null,
+                          name: nameController.text.trim(),
                           categoryId: selectedCatId,
                           costPrice: costPrice,
                           minStockAlert: minStock,

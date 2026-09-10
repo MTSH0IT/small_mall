@@ -31,7 +31,8 @@
     "required_field": "هذا الحقل مطلوب",
     "currency": "ر.س",
     "no_phone": "بدون هاتف",
-    "deleted_product": "منتج محذوف"
+    "deleted_product": "منتج محذوف",
+    "numeric_only": "يرجى إدخال أرقام فقط"
   },
   "nav": {
     "pos": "نقطة البيع",
@@ -163,7 +164,14 @@
     "select_customer_first": "يرجى تحديد عميل للبيع الآجل",
     "items_count": "{count} أصناف",
     "units_count": "{count} قطع",
-    "return_qty_exceeded": "الكمية المراد إرجاعها تتجاوز الكمية المباعة ({qty})"
+    "return_qty_exceeded": "الكمية المراد إرجاعها تتجاوز الكمية المباعة ({qty})",
+    "edit_price": "تعديل سعر المنتج",
+    "custom_price": "سعر مخصص",
+    "unit_price": "سعر الوحدة",
+    "final_line_price": "السعر النهائي للإجمالي",
+    "reset_price": "استعادة السعر الافتراضي",
+    "modified_price": "مُعدّل",
+    "original_price": "السعر الأصلي: {price}"
   },
   "inventory": {
     "title": "المخزون",
@@ -172,6 +180,13 @@
     "edit_product": "تعديل المنتج",
     "delete_product": "حذف المنتج",
     "product_name": "اسم المنتج",
+    "product_id": "معرف المنتج (ID)",
+    "product_code": "كود المنتج / الباركود",
+    "auto_generate_id": "توليد تلقائي",
+    "id_hint": "اتركه فارغاً للتوليد التلقائي أو أدخل معرفاً فريداً",
+    "code_hint": "أدخل الكود أو امسح الباركود...",
+    "id_exists": "معرف المنتج مستخدم بالفعل، يرجى اختيار معرف آخر",
+    "id_copied": "تم نسخ معرف المنتج",
     "barcode": "الباركود",
     "category": "الفئة",
     "cost_price": "سعر التكلفة",

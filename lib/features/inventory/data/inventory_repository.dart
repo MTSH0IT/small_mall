@@ -97,7 +97,9 @@ class InventoryRepository {
 
   Future<List<ProductWithDetails>> getProducts() async {
     _logger.debug('Fetching products', context: LogContext.inventory);
-    final products = await _db.select(_db.products).get();
+    final products = await (_db.select(_db.products)
+          ..orderBy([(t) => OrderingTerm.asc(t.serialNumber)]))
+        .get();
     final categories = await getCategories();
     final allPrices = await _db.select(_db.productPrices).get();
     final stockBalances = await _db.getAllStockBalances();
@@ -118,7 +120,13 @@ class InventoryRepository {
     }).toList();
   }
 
+  Future<int> getNextSerialNumber() async {
+    return _db.getNextProductSerialNumber();
+  }
+
   Future<void> addProduct({
+    int? serialNumber,
+    String? code,
     required String name,
     required String? categoryId,
     required double costPrice,
@@ -129,11 +137,15 @@ class InventoryRepository {
     _logger.info('Adding product: $name, cost=$costPrice, stock=$initialStock',
         context: LogContext.inventory);
     final productId = _uuid.v4();
+    final productCode = (code != null && code.trim().isNotEmpty) ? code.trim() : null;
+    final productSeq = serialNumber ?? await _db.getNextProductSerialNumber();
     final now = DateTime.now();
 
     await _db.transaction(() async {
       final product = Product(
         id: productId,
+        serialNumber: productSeq,
+        code: productCode,
         name: name,
         categoryId: categoryId,
         costPrice: costPrice,
@@ -184,6 +196,8 @@ class InventoryRepository {
 
   Future<void> updateProduct({
     required String id,
+    int? serialNumber,
+    String? code,
     required String name,
     required String? categoryId,
     required double costPrice,
@@ -193,9 +207,12 @@ class InventoryRepository {
     _logger.info('Updating product: $id, name=$name, cost=$costPrice',
         context: LogContext.inventory);
     final now = DateTime.now();
+    final productCode = (code != null && code.trim().isNotEmpty) ? code.trim() : null;
 
     await _db.transaction(() async {
       final productUpdate = ProductsCompanion(
+        serialNumber: Value(serialNumber),
+        code: Value(productCode),
         name: Value(name),
         categoryId: Value(categoryId),
         costPrice: Value(costPrice),

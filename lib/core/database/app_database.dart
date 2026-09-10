@@ -18,6 +18,8 @@ class Categories extends Table {
 
 class Products extends Table {
   TextColumn get id => text()();
+  IntColumn get serialNumber => integer().nullable()();
+  TextColumn get code => text().nullable()();
   TextColumn get name => text()();
   TextColumn get categoryId => text().nullable()();
   RealColumn get costPrice => real().withDefault(const Constant(0.0))();
@@ -193,7 +195,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -211,8 +213,23 @@ class AppDatabase extends _$AppDatabase {
             await m.addColumn(purchaseInvoices, purchaseInvoices.syncedAt);
             await m.createTable(deletedRecords);
           }
+          if (from < 3) {
+            await m.addColumn(products, products.code);
+          }
+          if (from < 4) {
+            await m.addColumn(products, products.serialNumber);
+          }
         },
       );
+
+  /// Get the next available product serial number
+  Future<int> getNextProductSerialNumber() async {
+    final maxExp = products.serialNumber.max();
+    final query = selectOnly(products)..addColumns([maxExp]);
+    final row = await query.getSingleOrNull();
+    final currentMax = row?.read(maxExp) ?? 0;
+    return currentMax + 1;
+  }
 
   /// Fast SQL aggregation for all product stock balances
   Future<Map<String, double>> getAllStockBalances() async {

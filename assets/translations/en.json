@@ -31,7 +31,8 @@
     "required_field": "This field is required",
     "currency": "SAR",
     "no_phone": "No phone",
-    "deleted_product": "Deleted Product"
+    "deleted_product": "Deleted Product",
+    "numeric_only": "Please enter numbers only"
   },
   "nav": {
     "pos": "Point of Sale",
@@ -163,7 +164,14 @@
     "select_customer_first": "Please select a customer first",
     "items_count": "{count} items",
     "units_count": "{count} units",
-    "return_qty_exceeded": "Return quantity exceeds sold quantity ({qty})"
+    "return_qty_exceeded": "Return quantity exceeds sold quantity ({qty})",
+    "edit_price": "Edit Product Price",
+    "custom_price": "Custom Price",
+    "unit_price": "Unit Price",
+    "final_line_price": "Final Line Total",
+    "reset_price": "Reset to Default",
+    "modified_price": "Modified",
+    "original_price": "Original: {price}"
   },
   "inventory": {
     "title": "Inventory",
@@ -172,6 +180,13 @@
     "edit_product": "Edit Product",
     "delete_product": "Delete Product",
     "product_name": "Product Name",
+    "product_id": "Product ID",
+    "product_code": "Product Code / Barcode",
+    "auto_generate_id": "Auto Generate",
+    "id_hint": "Leave blank to auto-generate or enter unique ID",
+    "code_hint": "Enter code or scan barcode...",
+    "id_exists": "Product ID is already in use, please choose another",
+    "id_copied": "Product ID copied",
     "barcode": "Barcode",
     "category": "Category",
     "cost_price": "Cost Price",

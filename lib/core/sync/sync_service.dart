@@ -200,6 +200,8 @@ class SyncService {
           final prodIds = unsynced.map((p) => p.id).toList();
           final payload = unsynced.map((p) => {
             'id': p.id,
+            'serial_number': p.serialNumber,
+            'code': p.code,
             'name': p.name,
             'category_id': p.categoryId,
             'cost_price': p.costPrice,
@@ -556,6 +558,8 @@ class SyncService {
           await _db.into(_db.products).insert(
                 ProductsCompanion.insert(
                   id: json['id'] as String,
+                  serialNumber: Value(json['serial_number'] as int?),
+                  code: Value(json['code'] as String?),
                   name: json['name'] as String,
                   categoryId: Value(json['category_id'] as String?),
                   costPrice: Value((json['cost_price'] as num).toDouble()),
