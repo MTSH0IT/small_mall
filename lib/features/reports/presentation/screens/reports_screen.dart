@@ -95,10 +95,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
     }
 
     if (state is ReportsLoaded) {
-      final double totalProfit = state.profitData.totalProfit;
-      final double revenue = state.profitData.totalRevenue;
-      final double cost = state.profitData.totalCost;
-
       // Calculate total current inventory valuation cost
       final double totalInventoryValuation = state.inventoryReport.fold(
         0.0,
@@ -114,13 +110,23 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 Expanded(
                   child: StatCard(
                     title: 'reports.net_profit'.tr(),
-                    value: totalProfit.toStringAsFixed(2),
-                    color: totalProfit >= 0
+                    value: state.profitData.netProfit.toStringAsFixed(2),
+                    color: state.profitData.netProfit >= 0
                         ? AppColors.success
                         : AppColors.danger,
                     subtitle:
-                        '${'reports.sales'.tr()}: ${revenue.toStringAsFixed(1)} | ${'reports.purchases'.tr()}: ${cost.toStringAsFixed(1)}',
+                        '${'reports.gross_profit'.tr()}: ${state.profitData.grossProfit.toStringAsFixed(1)} | ${'expenses.title'.tr()}: ${state.profitData.totalExpenses.toStringAsFixed(1)}',
                     icon: Icons.payments_outlined,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: StatCard(
+                    title: 'expenses.title'.tr(),
+                    value: state.profitData.totalExpenses.toStringAsFixed(2),
+                    color: AppColors.warning,
+                    subtitle: 'expenses.operational_expenses'.tr(),
+                    icon: Icons.receipt_long_outlined,
                   ),
                 ),
                 const SizedBox(width: 16),

@@ -4,15 +4,22 @@ import 'package:small_mall/core/logging/app_logger.dart';
 import 'package:small_mall/core/logging/log_context.dart';
 
 class ProfitReportData {
-
   ProfitReportData({
     required this.totalRevenue,
     required this.totalCost,
-    required this.totalProfit,
+    required this.grossProfit,
+    required this.totalExpenses,
+    required this.netProfit,
   });
+
   final double totalRevenue;
   final double totalCost;
-  final double totalProfit;
+  final double grossProfit;
+  final double totalExpenses;
+  final double netProfit;
+
+  // Backwards compatibility alias
+  double get totalProfit => netProfit;
 }
 
 class ProductSalesSummary {
@@ -59,13 +66,23 @@ class ReportsRepository {
 
   Future<ProfitReportData> getProfitReport(DateTime start, DateTime end) async {
     _logger.debug('Fetching profit report: $start - $end', context: LogContext.inventory);
+
+    // Get operational expenses in period
+    final totalExpenses = await _db.getTotalExpensesInPeriod(start, end);
+
     // Get all sale and return invoices in period
     final invoices = await (_db.select(_db.invoices)
           ..where((t) => t.createdAt.isBiggerOrEqualValue(start) & t.createdAt.isSmallerOrEqualValue(end)))
         .get();
 
     if (invoices.isEmpty) {
-      return ProfitReportData(totalRevenue: 0.0, totalCost: 0.0, totalProfit: 0.0);
+      return ProfitReportData(
+        totalRevenue: 0.0,
+        totalCost: 0.0,
+        grossProfit: 0.0,
+        totalExpenses: totalExpenses,
+        netProfit: -totalExpenses,
+      );
     }
 
     final invoiceIds = invoices.map((i) => i.id).toSet();
@@ -101,10 +118,15 @@ class ReportsRepository {
       }
     }
 
+    final grossProfit = totalRevenue - totalCost;
+    final netProfit = grossProfit - totalExpenses;
+
     return ProfitReportData(
       totalRevenue: totalRevenue,
       totalCost: totalCost,
-      totalProfit: totalRevenue - totalCost,
+      grossProfit: grossProfit,
+      totalExpenses: totalExpenses,
+      netProfit: netProfit,
     );
   }
 

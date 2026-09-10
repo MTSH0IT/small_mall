@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:small_mall/core/utils/theme.dart';
 
 class AppTextField extends StatelessWidget {
@@ -16,6 +17,8 @@ class AppTextField extends StatelessWidget {
     this.onChanged,
     this.readOnly = false,
     this.onTap,
+    this.maxLines = 1,
+    this.inputFormatters,
   });
   final String label;
   final String? hint;
@@ -28,6 +31,8 @@ class AppTextField extends StatelessWidget {
   final void Function(String)? onChanged;
   final bool readOnly;
   final VoidCallback? onTap;
+  final int maxLines;
+  final List<TextInputFormatter>? inputFormatters;
 
   @override
   Widget build(BuildContext context) {
@@ -52,6 +57,8 @@ class AppTextField extends StatelessWidget {
           onTap: onTap,
           onChanged: onChanged,
           validator: validator,
+          maxLines: isPassword ? 1 : maxLines,
+          inputFormatters: inputFormatters,
           style: keyboardType == TextInputType.number || keyboardType == const TextInputType.numberWithOptions(decimal: true)
               ? AppTheme.numericStyle()
               : theme.textTheme.bodyMedium,

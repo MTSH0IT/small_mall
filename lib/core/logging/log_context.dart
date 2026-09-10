@@ -6,4 +6,5 @@ enum LogContext {
   pos,
   inventory,
   debts,
+  expenses,
 }

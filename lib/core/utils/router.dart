@@ -1,6 +1,7 @@
 import 'package:go_router/go_router.dart';
 import 'package:small_mall/core/widgets/main_layout.dart';
 import 'package:small_mall/features/customers_debts/presentation/screens/customers_screen.dart';
+import 'package:small_mall/features/expenses/presentation/screens/expenses_screen.dart';
 import 'package:small_mall/features/inventory/presentation/screens/inventory_screen.dart';
 import 'package:small_mall/features/inventory/presentation/screens/products_screen.dart';
 import 'package:small_mall/features/invoices/presentation/screens/invoices_screen.dart';
@@ -51,6 +52,10 @@ final GoRouter appRouter = GoRouter(
         GoRoute(
           path: '/invoices',
           builder: (context, state) => const InvoicesScreen(),
+        ),
+        GoRoute(
+          path: '/expenses',
+          builder: (context, state) => const ExpensesScreen(),
         ),
         GoRoute(
           path: '/settings',

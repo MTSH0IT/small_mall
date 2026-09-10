@@ -176,6 +176,30 @@ class SyncQueue extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+class ExpenseCategories extends Table {
+  TextColumn get id => text()();
+  TextColumn get name => text()();
+  TextColumn get description => text().nullable()();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get syncedAt => dateTime().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+class Expenses extends Table {
+  TextColumn get id => text()();
+  TextColumn get categoryId => text()();
+  RealColumn get amount => real()();
+  TextColumn get notes => text().nullable()();
+  TextColumn get paymentMethod => text().withDefault(const Constant('cash'))();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get syncedAt => dateTime().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 @DriftDatabase(tables: [
   Categories,
   Products,
@@ -191,12 +215,14 @@ class SyncQueue extends Table {
   PurchaseItems,
   DeletedRecords,
   SyncQueue,
+  ExpenseCategories,
+  Expenses,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -232,6 +258,30 @@ class AppDatabase extends _$AppDatabase {
                 await (update(invoices)..where((t) => t.id.equals(inv.id)))
                     .write(InvoicesCompanion(serialNumber: Value(i + 1)));
               }
+            }
+          }
+          if (from < 6) {
+            await m.createTable(expenseCategories);
+            await m.createTable(expenses);
+
+            final defaultCategories = [
+              'الرواتب والأجور',
+              'الإيجار',
+              'فواتير ومرافق',
+              'طعام وضيافة',
+              'صيانة ونظافة',
+              'شحن ونقل وتوصيل',
+              'مصاريف عامة أخرى',
+            ];
+            final now = DateTime.now();
+            for (final catName in defaultCategories) {
+              await into(expenseCategories).insert(
+                ExpenseCategoriesCompanion.insert(
+                  id: 'exp-cat-${catName.hashCode.abs()}',
+                  name: catName,
+                  createdAt: now,
+                ),
+              );
             }
           }
         },
@@ -311,6 +361,17 @@ class AppDatabase extends _$AppDatabase {
       for (final row in rows)
         row.read(debts.customerId)!: row.read(countExp) ?? 0,
     };
+  }
+
+  /// Fast SQL sum of expenses in a period
+  Future<double> getTotalExpensesInPeriod(DateTime start, DateTime end) async {
+    final amountSum = expenses.amount.sum();
+    final query = selectOnly(expenses)
+      ..addColumns([amountSum])
+      ..where(expenses.createdAt.isBiggerOrEqualValue(start) &
+          expenses.createdAt.isSmallerOrEqualValue(end));
+    final row = await query.getSingleOrNull();
+    return row?.read(amountSum) ?? 0.0;
   }
 }
 

@@ -25,7 +25,8 @@ class _MainLayoutState extends State<MainLayout> {
     if (location.startsWith('/suppliers')) return 4;
     if (location.startsWith('/reports')) return 5;
     if (location.startsWith('/invoices')) return 6;
-    if (location.startsWith('/settings')) return 7;
+    if (location.startsWith('/expenses')) return 7;
+    if (location.startsWith('/settings')) return 8;
     return 0; // default to pos
   }
 
@@ -53,6 +54,9 @@ class _MainLayoutState extends State<MainLayout> {
         context.go('/invoices');
         break;
       case 7:
+        context.go('/expenses');
+        break;
+      case 8:
         context.go('/settings');
         break;
     }
@@ -98,6 +102,11 @@ class _MainLayoutState extends State<MainLayout> {
         icon: Icons.receipt_long_outlined,
         activeIcon: Icons.receipt_long,
         label: 'nav.invoices'.tr(),
+      ),
+      _NavItem(
+        icon: Icons.account_balance_wallet_outlined,
+        activeIcon: Icons.account_balance_wallet,
+        label: 'nav.expenses'.tr(),
       ),
       _NavItem(
         icon: Icons.settings_outlined,

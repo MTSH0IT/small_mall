@@ -149,6 +149,16 @@ class SyncService {
               ..where(_db.stockMovements.syncedAt.isNull()))
             .map((r) => r.read(_db.stockMovements.id.count()) ?? 0)
             .getSingle(),
+        (_db.selectOnly(_db.expenseCategories)
+              ..addColumns([_db.expenseCategories.id.count()])
+              ..where(_db.expenseCategories.syncedAt.isNull()))
+            .map((r) => r.read(_db.expenseCategories.id.count()) ?? 0)
+            .getSingle(),
+        (_db.selectOnly(_db.expenses)
+              ..addColumns([_db.expenses.id.count()])
+              ..where(_db.expenses.syncedAt.isNull()))
+            .map((r) => r.read(_db.expenses.id.count()) ?? 0)
+            .getSingle(),
       ]);
 
       pendingCount.value = counts.fold<int>(0, (sum, count) => sum + count);
@@ -444,6 +454,52 @@ class SyncService {
         hasErrors = true;
       }
 
+      // 11. Sync Expense Categories
+      try {
+        final unsynced = await (_db.select(_db.expenseCategories)..where((t) => t.syncedAt.isNull())).get();
+        if (unsynced.isNotEmpty) {
+          final payload = unsynced.map((c) => {
+            'id': c.id,
+            'name': c.name,
+            'description': c.description,
+            'created_at': c.createdAt.toIso8601String(),
+          }).toList();
+          await client.from('expense_categories').upsert(payload);
+
+          final now = DateTime.now();
+          final ids = unsynced.map((c) => c.id).toList();
+          await (_db.update(_db.expenseCategories)..where((t) => t.id.isIn(ids)))
+              .write(ExpenseCategoriesCompanion(syncedAt: Value(now)));
+        }
+      } catch (e) {
+        _logger.error('Failed to sync expense categories', error: e, context: LogContext.syncQueue);
+        hasErrors = true;
+      }
+
+      // 12. Sync Expenses
+      try {
+        final unsynced = await (_db.select(_db.expenses)..where((t) => t.syncedAt.isNull())).get();
+        if (unsynced.isNotEmpty) {
+          final payload = unsynced.map((e) => {
+            'id': e.id,
+            'category_id': e.categoryId,
+            'amount': e.amount,
+            'notes': e.notes,
+            'payment_method': e.paymentMethod,
+            'created_at': e.createdAt.toIso8601String(),
+          }).toList();
+          await client.from('expenses').upsert(payload);
+
+          final now = DateTime.now();
+          final ids = unsynced.map((e) => e.id).toList();
+          await (_db.update(_db.expenses)..where((t) => t.id.isIn(ids)))
+              .write(ExpensesCompanion(syncedAt: Value(now)));
+        }
+      } catch (e) {
+        _logger.error('Failed to sync expenses', error: e, context: LogContext.syncQueue);
+        hasErrors = true;
+      }
+
       await updatePendingCount();
       status.value = hasErrors ? SyncStatus.error : SyncStatus.success;
       if (hasErrors) {
@@ -504,6 +560,8 @@ class SyncService {
         'debt_payments',
         'purchase_invoices',
         'purchase_items',
+        'expense_categories',
+        'expenses',
       ];
 
       for (final tableName in tableNames) {
@@ -524,6 +582,8 @@ class SyncService {
 
         // Delete all existing data in reverse dependency order
         for (final table in [
+          _db.expenses,
+          _db.expenseCategories,
           _db.debtPayments,
           _db.debts,
           _db.purchaseItems,
@@ -722,6 +782,36 @@ class SyncService {
                   productId: json['product_id'] as String,
                   quantity: (json['quantity'] as num).toDouble(),
                   unitCost: (json['unit_cost'] as num).toDouble(),
+                ),
+              );
+        }
+
+        // Insert expense_categories (marked synced)
+        for (final row in serverData['expense_categories']!) {
+          final json = row as Map<String, dynamic>;
+          await _db.into(_db.expenseCategories).insert(
+                ExpenseCategoriesCompanion.insert(
+                  id: json['id'] as String,
+                  name: json['name'] as String,
+                  description: Value(json['description'] as String?),
+                  createdAt: DateTime.parse(json['created_at'] as String),
+                  syncedAt: Value(now),
+                ),
+              );
+        }
+
+        // Insert expenses (marked synced)
+        for (final row in serverData['expenses']!) {
+          final json = row as Map<String, dynamic>;
+          await _db.into(_db.expenses).insert(
+                ExpensesCompanion.insert(
+                  id: json['id'] as String,
+                  categoryId: json['category_id'] as String,
+                  amount: (json['amount'] as num).toDouble(),
+                  notes: Value(json['notes'] as String?),
+                  paymentMethod: Value(json['payment_method'] as String? ?? 'cash'),
+                  createdAt: DateTime.parse(json['created_at'] as String),
+                  syncedAt: Value(now),
                 ),
               );
         }
