@@ -173,7 +173,10 @@
     "final_line_price": "السعر النهائي للإجمالي",
     "reset_price": "استعادة السعر الافتراضي",
     "modified_price": "مُعدّل",
-    "original_price": "السعر الأصلي: {price}"
+    "original_price": "السعر الأصلي: {price}",
+    "grid_view": "عرض شبكي",
+    "list_view": "عرض قائمة",
+    "barcode": "الباركود"
   },
   "inventory": {
     "title": "المخزون",

@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/di/injection.dart';
 import 'package:small_mall/core/utils/theme.dart';
@@ -15,7 +16,10 @@ import 'package:small_mall/features/pos/presentation/cubit/pos_state.dart';
 import 'package:small_mall/features/pos/presentation/widgets/cart_item_row.dart';
 import 'package:small_mall/features/pos/presentation/widgets/checkout_panel.dart';
 import 'package:small_mall/features/pos/presentation/widgets/pos_product_card.dart';
+import 'package:small_mall/features/pos/presentation/widgets/pos_product_list_tile.dart';
 import 'package:small_mall/features/pos/presentation/widgets/return_dialog.dart';
+
+enum POSViewMode { grid, list }
 
 class POSScreen extends StatefulWidget {
   const POSScreen({super.key});
@@ -29,6 +33,35 @@ class _POSScreenState extends State<POSScreen> {
   final _searchFocusNode = FocusNode();
   String _searchQuery = '';
   String? _selectedCategory;
+  POSViewMode _viewMode = POSViewMode.grid;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadViewMode();
+  }
+
+  Future<void> _loadViewMode() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final mode = prefs.getString('pos_view_mode');
+      if (mode != null && mounted) {
+        setState(() {
+          _viewMode = mode == 'list' ? POSViewMode.list : POSViewMode.grid;
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _setViewMode(POSViewMode mode) async {
+    setState(() {
+      _viewMode = mode;
+    });
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('pos_view_mode', mode == POSViewMode.list ? 'list' : 'grid');
+    } catch (_) {}
+  }
 
   @override
   void dispose() {
@@ -142,6 +175,73 @@ class _POSScreenState extends State<POSScreen> {
     if (shouldClear == true) {
       cubit.clearCart();
     }
+  }
+
+  Widget _buildViewModeToggle() {
+    return Container(
+      height: 44,
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceElevated,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildToggleOption(
+            icon: Icons.grid_view_rounded,
+            tooltip: 'pos.grid_view'.tr(),
+            isSelected: _viewMode == POSViewMode.grid,
+            onTap: () => _setViewMode(POSViewMode.grid),
+          ),
+          const SizedBox(width: 2),
+          _buildToggleOption(
+            icon: Icons.view_list_rounded,
+            tooltip: 'pos.list_view'.tr(),
+            isSelected: _viewMode == POSViewMode.list,
+            onTap: () => _setViewMode(POSViewMode.list),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildToggleOption({
+    required IconData icon,
+    required String tooltip,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(7),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: isSelected ? AppColors.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(7),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.25),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Icon(
+            icon,
+            size: 18,
+            color: isSelected ? Colors.white : AppColors.textSecondary,
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -273,10 +373,10 @@ class _POSScreenState extends State<POSScreen> {
                             onSubmitted: (value) => _handleBarcodeOrSubmit(value, state, cubit),
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 10),
                         // Category Filter Dropdown
                         SizedBox(
-                          width: 220,
+                          width: 200,
                           child: AppSearchableDropdown<String?>(
                             value: _selectedCategory,
                             hint: 'inventory.all_categories'.tr(),
@@ -357,6 +457,9 @@ class _POSScreenState extends State<POSScreen> {
                             },
                           ),
                         ),
+                        const SizedBox(width: 10),
+                        // View Mode Toggle (Grid / List)
+                        _buildViewModeToggle(),
                       ],
                     ),
                     const SizedBox(height: 14),
@@ -413,19 +516,45 @@ class _POSScreenState extends State<POSScreen> {
                                 ],
                               ),
                             )
-                          : LayoutBuilder(
-                              builder: (context, constraints) {
-                                final width = constraints.maxWidth;
-                                final crossAxisCount = width >= 720 ? 4 : (width >= 460 ? 3 : 2);
+                          : (_viewMode == POSViewMode.grid
+                              ? LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    final width = constraints.maxWidth;
+                                    final crossAxisCount = width >= 720 ? 4 : (width >= 460 ? 3 : 2);
+                                    final childAspectRatio = width >= 720
+                                        ? 1.35
+                                        : (width >= 460 ? 1.30 : 1.22);
 
-                                return GridView.builder(
-                                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: crossAxisCount,
-                                    childAspectRatio: 0.92,
-                                    crossAxisSpacing: 10,
-                                    mainAxisSpacing: 10,
-                                  ),
+                                    return GridView.builder(
+                                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: crossAxisCount,
+                                        childAspectRatio: childAspectRatio,
+                                        crossAxisSpacing: 10,
+                                        mainAxisSpacing: 10,
+                                      ),
+                                      itemCount: filteredProducts.length,
+                                      itemBuilder: (context, index) {
+                                        final item = filteredProducts[index];
+                                        final inCartItems = state.cart.where(
+                                          (c) => c.productDetails.product.id == item.product.id,
+                                        );
+                                        final totalInCart = inCartItems.fold<double>(
+                                          0.0,
+                                          (sum, c) => sum + c.quantity,
+                                        );
+
+                                        return POSProductCard(
+                                          item: item,
+                                          quantityInCart: totalInCart,
+                                          onPriceSelected: (price) => cubit.addToCart(item, price),
+                                        );
+                                      },
+                                    );
+                                  },
+                                )
+                              : ListView.builder(
                                   itemCount: filteredProducts.length,
+                                  padding: const EdgeInsets.only(bottom: 8),
                                   itemBuilder: (context, index) {
                                     final item = filteredProducts[index];
                                     final inCartItems = state.cart.where(
@@ -436,15 +565,16 @@ class _POSScreenState extends State<POSScreen> {
                                       (sum, c) => sum + c.quantity,
                                     );
 
-                                    return POSProductCard(
-                                      item: item,
-                                      quantityInCart: totalInCart,
-                                      onPriceSelected: (price) => cubit.addToCart(item, price),
+                                    return Padding(
+                                      padding: const EdgeInsets.only(bottom: 6.0),
+                                      child: POSProductListTile(
+                                        item: item,
+                                        quantityInCart: totalInCart,
+                                        onPriceSelected: (price) => cubit.addToCart(item, price),
+                                      ),
                                     );
                                   },
-                                );
-                              },
-                            ),
+                                )),
                     ),
                   ],
                 ),

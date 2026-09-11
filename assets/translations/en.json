@@ -173,7 +173,10 @@
     "final_line_price": "Final Line Total",
     "reset_price": "Reset to Default",
     "modified_price": "Modified",
-    "original_price": "Original: {price}"
+    "original_price": "Original: {price}",
+    "grid_view": "Grid View",
+    "list_view": "List View",
+    "barcode": "Barcode"
   },
   "inventory": {
     "title": "Inventory",
