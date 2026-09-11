@@ -192,7 +192,6 @@ class Expenses extends Table {
   TextColumn get categoryId => text()();
   RealColumn get amount => real()();
   TextColumn get notes => text().nullable()();
-  TextColumn get paymentMethod => text().withDefault(const Constant('cash'))();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get syncedAt => dateTime().nullable()();
 
@@ -222,7 +221,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -283,6 +282,11 @@ class AppDatabase extends _$AppDatabase {
                 ),
               );
             }
+          }
+          if (from < 7) {
+            try {
+              await customStatement('ALTER TABLE expenses DROP COLUMN payment_method;');
+            } catch (_) {}
           }
         },
       );

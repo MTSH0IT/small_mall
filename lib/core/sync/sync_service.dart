@@ -485,7 +485,6 @@ class SyncService {
             'category_id': e.categoryId,
             'amount': e.amount,
             'notes': e.notes,
-            'payment_method': e.paymentMethod,
             'created_at': e.createdAt.toIso8601String(),
           }).toList();
           await client.from('expenses').upsert(payload);
@@ -809,7 +808,6 @@ class SyncService {
                   categoryId: json['category_id'] as String,
                   amount: (json['amount'] as num).toDouble(),
                   notes: Value(json['notes'] as String?),
-                  paymentMethod: Value(json['payment_method'] as String? ?? 'cash'),
                   createdAt: DateTime.parse(json['created_at'] as String),
                   syncedAt: Value(now),
                 ),

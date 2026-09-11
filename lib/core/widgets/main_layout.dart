@@ -16,55 +16,9 @@ class MainLayout extends StatefulWidget {
 class _MainLayoutState extends State<MainLayout> {
   final SyncService _syncService = getIt<SyncService>();
 
-  // Determine current active index based on route path
-  int _getSelectedIndex(BuildContext context) {
-    final String location = GoRouterState.of(context).uri.toString();
-    if (location.startsWith('/products')) return 1;
-    if (location.startsWith('/inventory')) return 2;
-    if (location.startsWith('/customers')) return 3;
-    if (location.startsWith('/suppliers')) return 4;
-    if (location.startsWith('/reports')) return 5;
-    if (location.startsWith('/invoices')) return 6;
-    if (location.startsWith('/expenses')) return 7;
-    if (location.startsWith('/settings')) return 8;
-    return 0; // default to pos
-  }
-
-  void _onItemTapped(int index, BuildContext context) {
-    switch (index) {
-      case 0:
-        context.go('/pos');
-        break;
-      case 1:
-        context.go('/products');
-        break;
-      case 2:
-        context.go('/inventory');
-        break;
-      case 3:
-        context.go('/customers');
-        break;
-      case 4:
-        context.go('/suppliers');
-        break;
-      case 5:
-        context.go('/reports');
-        break;
-      case 6:
-        context.go('/invoices');
-        break;
-      case 7:
-        context.go('/expenses');
-        break;
-      case 8:
-        context.go('/settings');
-        break;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final selectedIndex = _getSelectedIndex(context);
+    final location = GoRouterState.of(context).uri.toString();
     final theme = Theme.of(context);
 
     final navItems = [
@@ -72,46 +26,55 @@ class _MainLayoutState extends State<MainLayout> {
         icon: Icons.point_of_sale_outlined,
         activeIcon: Icons.point_of_sale,
         label: 'nav.pos'.tr(),
+        route: '/pos',
       ),
       _NavItem(
         icon: Icons.card_giftcard_outlined,
         activeIcon: Icons.card_giftcard,
         label: 'nav.products'.tr(),
+        route: '/products',
       ),
       _NavItem(
         icon: Icons.inventory_2_outlined,
         activeIcon: Icons.inventory_2,
         label: 'nav.inventory'.tr(),
-      ),
-      _NavItem(
-        icon: Icons.people_outline,
-        activeIcon: Icons.people,
-        label: 'nav.customers'.tr(),
-      ),
-      _NavItem(
-        icon: Icons.local_shipping_outlined,
-        activeIcon: Icons.local_shipping,
-        label: 'nav.suppliers'.tr(),
-      ),
-      _NavItem(
-        icon: Icons.bar_chart_outlined,
-        activeIcon: Icons.bar_chart,
-        label: 'nav.reports'.tr(),
-      ),
-      _NavItem(
-        icon: Icons.receipt_long_outlined,
-        activeIcon: Icons.receipt_long,
-        label: 'nav.invoices'.tr(),
+        route: '/inventory',
       ),
       _NavItem(
         icon: Icons.account_balance_wallet_outlined,
         activeIcon: Icons.account_balance_wallet,
         label: 'nav.expenses'.tr(),
+        route: '/expenses',
+      ),
+      _NavItem(
+        icon: Icons.people_outline,
+        activeIcon: Icons.people,
+        label: 'nav.customers'.tr(),
+        route: '/customers',
+      ),
+      _NavItem(
+        icon: Icons.local_shipping_outlined,
+        activeIcon: Icons.local_shipping,
+        label: 'nav.suppliers'.tr(),
+        route: '/suppliers',
+      ),
+      _NavItem(
+        icon: Icons.bar_chart_outlined,
+        activeIcon: Icons.bar_chart,
+        label: 'nav.reports'.tr(),
+        route: '/reports',
+      ),
+      _NavItem(
+        icon: Icons.receipt_long_outlined,
+        activeIcon: Icons.receipt_long,
+        label: 'nav.invoices'.tr(),
+        route: '/invoices',
       ),
       _NavItem(
         icon: Icons.settings_outlined,
         activeIcon: Icons.settings,
         label: 'nav.settings'.tr(),
+        route: '/settings',
       ),
     ];
 
@@ -192,14 +155,16 @@ class _MainLayoutState extends State<MainLayout> {
                     itemCount: navItems.length,
                     itemBuilder: (context, index) {
                       final item = navItems[index];
-                      final isSelected = index == selectedIndex;
+                      final isSelected = item.route == '/pos'
+                          ? (location.startsWith('/pos') || location == '/')
+                          : location.startsWith(item.route);
                       return Padding(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 12,
                           vertical: 4,
                         ),
                         child: InkWell(
-                          onTap: () => _onItemTapped(index, context),
+                          onTap: () => context.go(item.route),
                           borderRadius: BorderRadius.circular(10),
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 200),
@@ -365,8 +330,15 @@ class _MainLayoutState extends State<MainLayout> {
 }
 
 class _NavItem {
-  _NavItem({required this.icon, required this.activeIcon, required this.label});
+  _NavItem({
+    required this.icon,
+    required this.activeIcon,
+    required this.label,
+    required this.route,
+  });
+
   final IconData icon;
   final IconData activeIcon;
   final String label;
+  final String route;
 }

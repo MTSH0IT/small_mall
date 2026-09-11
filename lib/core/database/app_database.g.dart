@@ -6258,18 +6258,6 @@ class $ExpensesTable extends Expenses with TableInfo<$ExpensesTable, Expense> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _paymentMethodMeta = const VerificationMeta(
-    'paymentMethod',
-  );
-  @override
-  late final GeneratedColumn<String> paymentMethod = GeneratedColumn<String>(
-    'payment_method',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-    defaultValue: const Constant('cash'),
-  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -6298,7 +6286,6 @@ class $ExpensesTable extends Expenses with TableInfo<$ExpensesTable, Expense> {
     categoryId,
     amount,
     notes,
-    paymentMethod,
     createdAt,
     syncedAt,
   ];
@@ -6341,15 +6328,6 @@ class $ExpensesTable extends Expenses with TableInfo<$ExpensesTable, Expense> {
         notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
       );
     }
-    if (data.containsKey('payment_method')) {
-      context.handle(
-        _paymentMethodMeta,
-        paymentMethod.isAcceptableOrUnknown(
-          data['payment_method']!,
-          _paymentMethodMeta,
-        ),
-      );
-    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -6389,10 +6367,6 @@ class $ExpensesTable extends Expenses with TableInfo<$ExpensesTable, Expense> {
         DriftSqlType.string,
         data['${effectivePrefix}notes'],
       ),
-      paymentMethod: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}payment_method'],
-      )!,
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -6415,7 +6389,6 @@ class Expense extends DataClass implements Insertable<Expense> {
   final String categoryId;
   final double amount;
   final String? notes;
-  final String paymentMethod;
   final DateTime createdAt;
   final DateTime? syncedAt;
   const Expense({
@@ -6423,7 +6396,6 @@ class Expense extends DataClass implements Insertable<Expense> {
     required this.categoryId,
     required this.amount,
     this.notes,
-    required this.paymentMethod,
     required this.createdAt,
     this.syncedAt,
   });
@@ -6436,7 +6408,6 @@ class Expense extends DataClass implements Insertable<Expense> {
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
     }
-    map['payment_method'] = Variable<String>(paymentMethod);
     map['created_at'] = Variable<DateTime>(createdAt);
     if (!nullToAbsent || syncedAt != null) {
       map['synced_at'] = Variable<DateTime>(syncedAt);
@@ -6452,7 +6423,6 @@ class Expense extends DataClass implements Insertable<Expense> {
       notes: notes == null && nullToAbsent
           ? const Value.absent()
           : Value(notes),
-      paymentMethod: Value(paymentMethod),
       createdAt: Value(createdAt),
       syncedAt: syncedAt == null && nullToAbsent
           ? const Value.absent()
@@ -6470,7 +6440,6 @@ class Expense extends DataClass implements Insertable<Expense> {
       categoryId: serializer.fromJson<String>(json['categoryId']),
       amount: serializer.fromJson<double>(json['amount']),
       notes: serializer.fromJson<String?>(json['notes']),
-      paymentMethod: serializer.fromJson<String>(json['paymentMethod']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       syncedAt: serializer.fromJson<DateTime?>(json['syncedAt']),
     );
@@ -6483,7 +6452,6 @@ class Expense extends DataClass implements Insertable<Expense> {
       'categoryId': serializer.toJson<String>(categoryId),
       'amount': serializer.toJson<double>(amount),
       'notes': serializer.toJson<String?>(notes),
-      'paymentMethod': serializer.toJson<String>(paymentMethod),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'syncedAt': serializer.toJson<DateTime?>(syncedAt),
     };
@@ -6494,7 +6462,6 @@ class Expense extends DataClass implements Insertable<Expense> {
     String? categoryId,
     double? amount,
     Value<String?> notes = const Value.absent(),
-    String? paymentMethod,
     DateTime? createdAt,
     Value<DateTime?> syncedAt = const Value.absent(),
   }) => Expense(
@@ -6502,7 +6469,6 @@ class Expense extends DataClass implements Insertable<Expense> {
     categoryId: categoryId ?? this.categoryId,
     amount: amount ?? this.amount,
     notes: notes.present ? notes.value : this.notes,
-    paymentMethod: paymentMethod ?? this.paymentMethod,
     createdAt: createdAt ?? this.createdAt,
     syncedAt: syncedAt.present ? syncedAt.value : this.syncedAt,
   );
@@ -6514,9 +6480,6 @@ class Expense extends DataClass implements Insertable<Expense> {
           : this.categoryId,
       amount: data.amount.present ? data.amount.value : this.amount,
       notes: data.notes.present ? data.notes.value : this.notes,
-      paymentMethod: data.paymentMethod.present
-          ? data.paymentMethod.value
-          : this.paymentMethod,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       syncedAt: data.syncedAt.present ? data.syncedAt.value : this.syncedAt,
     );
@@ -6529,7 +6492,6 @@ class Expense extends DataClass implements Insertable<Expense> {
           ..write('categoryId: $categoryId, ')
           ..write('amount: $amount, ')
           ..write('notes: $notes, ')
-          ..write('paymentMethod: $paymentMethod, ')
           ..write('createdAt: $createdAt, ')
           ..write('syncedAt: $syncedAt')
           ..write(')'))
@@ -6537,15 +6499,8 @@ class Expense extends DataClass implements Insertable<Expense> {
   }
 
   @override
-  int get hashCode => Object.hash(
-    id,
-    categoryId,
-    amount,
-    notes,
-    paymentMethod,
-    createdAt,
-    syncedAt,
-  );
+  int get hashCode =>
+      Object.hash(id, categoryId, amount, notes, createdAt, syncedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -6554,7 +6509,6 @@ class Expense extends DataClass implements Insertable<Expense> {
           other.categoryId == this.categoryId &&
           other.amount == this.amount &&
           other.notes == this.notes &&
-          other.paymentMethod == this.paymentMethod &&
           other.createdAt == this.createdAt &&
           other.syncedAt == this.syncedAt);
 }
@@ -6564,7 +6518,6 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
   final Value<String> categoryId;
   final Value<double> amount;
   final Value<String?> notes;
-  final Value<String> paymentMethod;
   final Value<DateTime> createdAt;
   final Value<DateTime?> syncedAt;
   final Value<int> rowid;
@@ -6573,7 +6526,6 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
     this.categoryId = const Value.absent(),
     this.amount = const Value.absent(),
     this.notes = const Value.absent(),
-    this.paymentMethod = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.syncedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -6583,7 +6535,6 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
     required String categoryId,
     required double amount,
     this.notes = const Value.absent(),
-    this.paymentMethod = const Value.absent(),
     required DateTime createdAt,
     this.syncedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -6596,7 +6547,6 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
     Expression<String>? categoryId,
     Expression<double>? amount,
     Expression<String>? notes,
-    Expression<String>? paymentMethod,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? syncedAt,
     Expression<int>? rowid,
@@ -6606,7 +6556,6 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
       if (categoryId != null) 'category_id': categoryId,
       if (amount != null) 'amount': amount,
       if (notes != null) 'notes': notes,
-      if (paymentMethod != null) 'payment_method': paymentMethod,
       if (createdAt != null) 'created_at': createdAt,
       if (syncedAt != null) 'synced_at': syncedAt,
       if (rowid != null) 'rowid': rowid,
@@ -6618,7 +6567,6 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
     Value<String>? categoryId,
     Value<double>? amount,
     Value<String?>? notes,
-    Value<String>? paymentMethod,
     Value<DateTime>? createdAt,
     Value<DateTime?>? syncedAt,
     Value<int>? rowid,
@@ -6628,7 +6576,6 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
       categoryId: categoryId ?? this.categoryId,
       amount: amount ?? this.amount,
       notes: notes ?? this.notes,
-      paymentMethod: paymentMethod ?? this.paymentMethod,
       createdAt: createdAt ?? this.createdAt,
       syncedAt: syncedAt ?? this.syncedAt,
       rowid: rowid ?? this.rowid,
@@ -6650,9 +6597,6 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
     }
-    if (paymentMethod.present) {
-      map['payment_method'] = Variable<String>(paymentMethod.value);
-    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -6672,7 +6616,6 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
           ..write('categoryId: $categoryId, ')
           ..write('amount: $amount, ')
           ..write('notes: $notes, ')
-          ..write('paymentMethod: $paymentMethod, ')
           ..write('createdAt: $createdAt, ')
           ..write('syncedAt: $syncedAt, ')
           ..write('rowid: $rowid')
@@ -10038,7 +9981,6 @@ typedef $$ExpensesTableCreateCompanionBuilder =
       required String categoryId,
       required double amount,
       Value<String?> notes,
-      Value<String> paymentMethod,
       required DateTime createdAt,
       Value<DateTime?> syncedAt,
       Value<int> rowid,
@@ -10049,7 +9991,6 @@ typedef $$ExpensesTableUpdateCompanionBuilder =
       Value<String> categoryId,
       Value<double> amount,
       Value<String?> notes,
-      Value<String> paymentMethod,
       Value<DateTime> createdAt,
       Value<DateTime?> syncedAt,
       Value<int> rowid,
@@ -10081,11 +10022,6 @@ class $$ExpensesTableFilterComposer
 
   ColumnFilters<String> get notes => $composableBuilder(
     column: $table.notes,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get paymentMethod => $composableBuilder(
-    column: $table.paymentMethod,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -10129,11 +10065,6 @@ class $$ExpensesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get paymentMethod => $composableBuilder(
-    column: $table.paymentMethod,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -10167,11 +10098,6 @@ class $$ExpensesTableAnnotationComposer
 
   GeneratedColumn<String> get notes =>
       $composableBuilder(column: $table.notes, builder: (column) => column);
-
-  GeneratedColumn<String> get paymentMethod => $composableBuilder(
-    column: $table.paymentMethod,
-    builder: (column) => column,
-  );
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -10212,7 +10138,6 @@ class $$ExpensesTableTableManager
                 Value<String> categoryId = const Value.absent(),
                 Value<double> amount = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
-                Value<String> paymentMethod = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime?> syncedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -10221,7 +10146,6 @@ class $$ExpensesTableTableManager
                 categoryId: categoryId,
                 amount: amount,
                 notes: notes,
-                paymentMethod: paymentMethod,
                 createdAt: createdAt,
                 syncedAt: syncedAt,
                 rowid: rowid,
@@ -10232,7 +10156,6 @@ class $$ExpensesTableTableManager
                 required String categoryId,
                 required double amount,
                 Value<String?> notes = const Value.absent(),
-                Value<String> paymentMethod = const Value.absent(),
                 required DateTime createdAt,
                 Value<DateTime?> syncedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -10241,7 +10164,6 @@ class $$ExpensesTableTableManager
                 categoryId: categoryId,
                 amount: amount,
                 notes: notes,
-                paymentMethod: paymentMethod,
                 createdAt: createdAt,
                 syncedAt: syncedAt,
                 rowid: rowid,

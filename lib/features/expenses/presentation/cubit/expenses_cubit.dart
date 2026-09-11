@@ -134,7 +134,6 @@ class ExpensesCubit extends Cubit<ExpensesState> {
     required String categoryId,
     required double amount,
     String? notes,
-    String paymentMethod = 'cash',
     DateTime? createdAt,
   }) async {
     try {
@@ -142,7 +141,6 @@ class ExpensesCubit extends Cubit<ExpensesState> {
         categoryId: categoryId,
         amount: amount,
         notes: notes,
-        paymentMethod: paymentMethod,
         createdAt: createdAt,
       );
       await loadExpenses();
@@ -160,7 +158,6 @@ class ExpensesCubit extends Cubit<ExpensesState> {
     required String categoryId,
     required double amount,
     String? notes,
-    String paymentMethod = 'cash',
     DateTime? createdAt,
   }) async {
     try {
@@ -169,7 +166,6 @@ class ExpensesCubit extends Cubit<ExpensesState> {
         categoryId: categoryId,
         amount: amount,
         notes: notes,
-        paymentMethod: paymentMethod,
         createdAt: createdAt,
       );
       await loadExpenses();

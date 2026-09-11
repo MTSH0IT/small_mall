@@ -204,7 +204,6 @@ class ExpensesRepository {
     required String categoryId,
     required double amount,
     String? notes,
-    String paymentMethod = 'cash',
     DateTime? createdAt,
   }) async {
     _logger.info('Adding expense: $amount under category $categoryId', context: LogContext.expenses);
@@ -216,7 +215,6 @@ class ExpensesRepository {
       categoryId: categoryId,
       amount: amount,
       notes: Value(notes),
-      paymentMethod: Value(paymentMethod),
       createdAt: now,
     );
 
@@ -230,7 +228,6 @@ class ExpensesRepository {
       categoryId: categoryId,
       amount: amount,
       notes: notes,
-      paymentMethod: paymentMethod,
       createdAt: now,
     );
   }
@@ -240,7 +237,6 @@ class ExpensesRepository {
     required String categoryId,
     required double amount,
     String? notes,
-    String paymentMethod = 'cash',
     DateTime? createdAt,
   }) async {
     _logger.info('Updating expense: $id', context: LogContext.expenses);
@@ -250,7 +246,6 @@ class ExpensesRepository {
         categoryId: Value(categoryId),
         amount: Value(amount),
         notes: Value(notes),
-        paymentMethod: Value(paymentMethod),
         createdAt: createdAt != null ? Value(createdAt) : const Value.absent(),
         syncedAt: const Value(null),
       ),
