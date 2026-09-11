@@ -5,6 +5,7 @@ import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/di/injection.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/core/widgets/app_screen_scaffold.dart';
+import 'package:small_mall/core/widgets/app_searchable_dropdown.dart';
 import 'package:small_mall/core/widgets/app_toast.dart';
 import 'package:small_mall/core/widgets/entity_form_dialog.dart';
 import 'package:small_mall/core/widgets/split_pane_layout.dart';
@@ -201,7 +202,10 @@ class _POSScreenState extends State<POSScreen> {
                 (p.product.serialNumber != null && p.product.serialNumber.toString() == query) ||
                 (p.product.code?.toLowerCase().contains(query) ?? false) ||
                 (p.category?.name.toLowerCase().contains(query) ?? false);
-            final matchCategory = _selectedCategory == null || p.product.categoryId == _selectedCategory;
+            final matchCategory = _selectedCategory == null ||
+                (_selectedCategory == '__uncategorized__'
+                    ? p.product.categoryId == null
+                    : p.product.categoryId == _selectedCategory);
             return matchQuery && matchCategory;
           }).toList();
 
@@ -226,80 +230,134 @@ class _POSScreenState extends State<POSScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Search Bar
-                    TextField(
-                      controller: _searchController,
-                      focusNode: _searchFocusNode,
-                      decoration: InputDecoration(
-                        hintText: 'pos.search_products'.tr(),
-                        hintStyle: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
-                        prefixIcon: const Icon(Icons.search_rounded, color: AppColors.primary),
-                        suffixIcon: _searchQuery.isNotEmpty
-                            ? IconButton(
-                                icon: const Icon(Icons.clear_rounded, size: 18),
-                                onPressed: _clearSearch,
-                              )
-                            : null,
-                        filled: true,
-                        fillColor: AppColors.surfaceElevated,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(color: AppColors.border),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(color: AppColors.border),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
-                        ),
-                      ),
-                      onChanged: (value) {
-                        setState(() {
-                          _searchQuery = value;
-                        });
-                      },
-                      onSubmitted: (value) => _handleBarcodeOrSubmit(value, state, cubit),
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Modern Category Filter Strip
-                    SizedBox(
-                      height: 38,
-                      child: ListView(
-                        scrollDirection: Axis.horizontal,
-                        children: [
-                          // "All" Category Chip
-                          _buildCategoryChip(
-                            label: 'common.all'.tr(),
-                            count: state.products.length,
-                            isSelected: _selectedCategory == null,
-                            onTap: () => setState(() => _selectedCategory = null),
-                          ),
-                          const SizedBox(width: 8),
-                          // Specific Category Chips
-                          ...categories.map((cat) {
-                            final count = state.products
-                                .where((p) => p.product.categoryId == cat.id)
-                                .length;
-                            return Padding(
-                              padding: const EdgeInsets.only(left: 8.0),
-                              child: _buildCategoryChip(
-                                label: cat.name,
-                                count: count,
-                                isSelected: _selectedCategory == cat.id,
-                                onTap: () {
-                                  setState(() {
-                                    _selectedCategory = _selectedCategory == cat.id ? null : cat.id;
-                                  });
-                                },
+                    // Search & Category Filter Row
+                    Row(
+                      children: [
+                        // Search Bar
+                        Expanded(
+                          flex: 3,
+                          child: TextField(
+                            controller: _searchController,
+                            focusNode: _searchFocusNode,
+                            decoration: InputDecoration(
+                              hintText: 'pos.search_products'.tr(),
+                              hintStyle: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                              prefixIcon: const Icon(Icons.search_rounded, color: AppColors.primary),
+                              suffixIcon: _searchQuery.isNotEmpty
+                                  ? IconButton(
+                                      icon: const Icon(Icons.clear_rounded, size: 18),
+                                      onPressed: _clearSearch,
+                                    )
+                                  : null,
+                              filled: true,
+                              fillColor: AppColors.surfaceElevated,
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: const BorderSide(color: AppColors.border),
                               ),
-                            );
-                          }),
-                        ],
-                      ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: const BorderSide(color: AppColors.border),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+                              ),
+                            ),
+                            onChanged: (value) {
+                              setState(() {
+                                _searchQuery = value;
+                              });
+                            },
+                            onSubmitted: (value) => _handleBarcodeOrSubmit(value, state, cubit),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        // Category Filter Dropdown
+                        SizedBox(
+                          width: 220,
+                          child: AppSearchableDropdown<String?>(
+                            value: _selectedCategory,
+                            hint: 'inventory.all_categories'.tr(),
+                            borderRadius: 10,
+                            prefixIcon: const Icon(Icons.filter_list_rounded, size: 18, color: AppColors.primary),
+                            itemSearchText: (id) {
+                              if (id == null) return 'common.all'.tr();
+                              if (id == '__uncategorized__') return 'inventory.uncategorized'.tr();
+                              final c = categories.where((x) => x.id == id).firstOrNull;
+                              return c?.name ?? '';
+                            },
+                            items: [
+                              DropdownMenuItem<String?>(
+                                value: null,
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        'common.all'.tr(),
+                                        style: const TextStyle(fontSize: 13),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    Text(
+                                      '(${state.products.length})',
+                                      style: AppTheme.numericStyle(fontSize: 11, color: AppColors.textSecondary),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              ...categories.map((cat) {
+                                final count = state.products
+                                    .where((p) => p.product.categoryId == cat.id)
+                                    .length;
+                                return DropdownMenuItem<String?>(
+                                  value: cat.id,
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          cat.name,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(fontSize: 13),
+                                        ),
+                                      ),
+                                      Text(
+                                        '($count)',
+                                        style: AppTheme.numericStyle(fontSize: 11, color: AppColors.textSecondary),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }),
+                              if (state.products.any((p) => p.product.categoryId == null))
+                                DropdownMenuItem<String?>(
+                                  value: '__uncategorized__',
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          'inventory.uncategorized'.tr(),
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(fontSize: 13),
+                                        ),
+                                      ),
+                                      Text(
+                                        '(${state.products.where((p) => p.product.categoryId == null).length})',
+                                        style: AppTheme.numericStyle(fontSize: 11, color: AppColors.textSecondary),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                            ],
+                            onChanged: (val) {
+                              setState(() {
+                                _selectedCategory = val;
+                              });
+                            },
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 14),
 
@@ -558,69 +616,7 @@ class _POSScreenState extends State<POSScreen> {
     );
   }
 
-  Widget _buildCategoryChip({
-    required String label,
-    required int count,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : AppColors.surfaceElevated,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.border,
-            width: isSelected ? 1.5 : 1.0,
-          ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.2),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                color: isSelected ? Colors.white : AppColors.textPrimary,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                fontSize: 12.5,
-              ),
-            ),
-            const SizedBox(width: 5),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? Colors.white.withValues(alpha: 0.25)
-                    : AppColors.surface,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                '$count',
-                style: TextStyle(
-                  color: isSelected ? Colors.white : AppColors.textSecondary,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+
 
   void _showAddCustomerDialog(BuildContext context, POSCubit cubit) {
     final nameController = TextEditingController();

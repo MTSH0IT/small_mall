@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/utils/theme.dart';
+import 'package:small_mall/core/widgets/app_searchable_dropdown.dart';
 import 'package:small_mall/core/widgets/app_text_field.dart';
 import 'package:small_mall/core/widgets/empty_state_view.dart';
 import 'package:small_mall/core/widgets/primary_button.dart';
@@ -78,15 +79,23 @@ class _RecordPurchasePanelState extends State<RecordPurchasePanel> {
           Row(
             children: [
               Expanded(
-                child: DropdownButtonFormField<ProductWithDetails>(
+                child: AppSearchableDropdown<ProductWithDetails>(
                   key: ValueKey('${widget.selectedSupplier.id}_${_purchaseItems.length}'),
-                  hint: Text('suppliers.select_product_to_add'.tr()),
-                  decoration: InputDecoration(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 10),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
+                  hint: 'suppliers.select_product_to_add'.tr(),
+                  prefixIcon: const Icon(
+                    Icons.inventory_2_outlined,
+                    color: AppColors.primary,
+                    size: 18,
                   ),
+                  itemSearchText: (p) => '${p.product.name} ${p.product.code ?? ''}',
                   items: widget.availableProducts.map((p) {
-                    return DropdownMenuItem(value: p, child: Text(p.product.name));
+                    return DropdownMenuItem<ProductWithDetails>(
+                      value: p,
+                      child: Text(
+                        p.product.name,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    );
                   }).toList(),
                   onChanged: (prod) {
                     if (prod != null) {

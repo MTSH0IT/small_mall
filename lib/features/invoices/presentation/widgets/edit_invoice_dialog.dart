@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/di/injection.dart';
 import 'package:small_mall/core/utils/theme.dart';
+import 'package:small_mall/core/widgets/app_searchable_dropdown.dart';
 import 'package:small_mall/core/widgets/app_toast.dart';
 import 'package:small_mall/features/invoices/presentation/cubit/invoices_cubit.dart';
 import 'package:small_mall/features/pos/data/pos_repository.dart';
@@ -228,21 +229,17 @@ class _EditInvoiceDialogState extends State<EditInvoiceDialog> {
                           // Customer Dropdown
                           Expanded(
                             flex: 3,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('invoices.customer'.tr(), style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                                const SizedBox(height: 6),
-                                if (_isLoadingCustomers)
-                                  const Center(child: LinearProgressIndicator())
-                                else
-                                  DropdownButtonFormField<String?>(
-                                    initialValue: _selectedCustomerId,
-                                    isExpanded: true,
-                                    decoration: InputDecoration(
-                                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                                    ),
+                            child: _isLoadingCustomers
+                                ? const Center(child: LinearProgressIndicator())
+                                : AppSearchableDropdown<String?>(
+                                    label: 'invoices.customer'.tr(),
+                                    value: _selectedCustomerId,
+                                    prefixIcon: const Icon(Icons.person_outline, size: 18, color: AppColors.textSecondary),
+                                    itemSearchText: (id) {
+                                      if (id == null) return 'pos.walk_in_customer'.tr();
+                                      final c = _customers.where((x) => x.id == id).firstOrNull;
+                                      return c?.name ?? '';
+                                    },
                                     items: [
                                       DropdownMenuItem<String?>(
                                         value: null,
@@ -262,39 +259,28 @@ class _EditInvoiceDialogState extends State<EditInvoiceDialog> {
                                       });
                                     },
                                   ),
-                              ],
-                            ),
                           ),
                           const SizedBox(width: 12),
                           // Payment Method
                           Expanded(
                             flex: 2,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('invoices.payment_method'.tr(), style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                                const SizedBox(height: 6),
-                                DropdownButtonFormField<String>(
-                                  initialValue: _selectedPaymentType,
-                                  isExpanded: true,
-                                  decoration: InputDecoration(
-                                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                                  ),
-                                  items: [
-                                    DropdownMenuItem(value: 'cash', child: Text('pos.cash'.tr())),
-                                    DropdownMenuItem(value: 'debt', child: Text('pos.debt'.tr())),
-                                  ],
-                                  onChanged: (val) {
-                                    if (val == null) return;
-                                    if (val == 'debt' && _selectedCustomerId == null) {
-                                      AppToast.warning(context, message: 'pos.select_customer_first'.tr());
-                                      return;
-                                    }
-                                    setState(() => _selectedPaymentType = val);
-                                  },
-                                ),
+                            child: AppSearchableDropdown<String>(
+                              label: 'invoices.payment_method'.tr(),
+                              value: _selectedPaymentType,
+                              isSearchable: false,
+                              prefixIcon: const Icon(Icons.payment_outlined, size: 18, color: AppColors.textSecondary),
+                              items: [
+                                DropdownMenuItem(value: 'cash', child: Text('pos.cash'.tr())),
+                                DropdownMenuItem(value: 'debt', child: Text('pos.debt'.tr())),
                               ],
+                              onChanged: (val) {
+                                if (val == null) return;
+                                if (val == 'debt' && _selectedCustomerId == null) {
+                                  AppToast.warning(context, message: 'pos.select_customer_first'.tr());
+                                  return;
+                                }
+                                setState(() => _selectedPaymentType = val);
+                              },
                             ),
                           ),
                         ],

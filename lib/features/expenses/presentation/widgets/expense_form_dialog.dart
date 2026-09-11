@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/utils/theme.dart';
+import 'package:small_mall/core/widgets/app_searchable_dropdown.dart';
 import 'package:small_mall/core/widgets/app_text_field.dart';
 import 'package:small_mall/core/widgets/primary_button.dart';
 
@@ -158,13 +159,15 @@ class _ExpenseFormDialogState extends State<ExpenseFormDialog> {
               const SizedBox(height: 20),
 
               // Category Selector
-              DropdownButtonFormField<String>(
-                initialValue: _selectedCategoryId,
-                decoration: InputDecoration(
-                  labelText: 'expenses.category'.tr(),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                ),
+              AppSearchableDropdown<String>(
+                label: 'expenses.category'.tr(),
+                value: _selectedCategoryId,
+                hint: 'expenses.category'.tr(),
+                prefixIcon: const Icon(Icons.category_outlined, size: 18, color: AppColors.textSecondary),
+                itemSearchText: (catId) {
+                  final cat = widget.categories.where((c) => c.id == catId).firstOrNull;
+                  return cat?.name ?? '';
+                },
                 items: widget.categories.map((cat) {
                   return DropdownMenuItem<String>(
                     value: cat.id,

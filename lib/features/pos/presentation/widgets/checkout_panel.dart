@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/utils/theme.dart';
+import 'package:small_mall/core/widgets/app_searchable_dropdown.dart';
 import 'package:small_mall/core/widgets/primary_button.dart';
 import 'package:small_mall/features/pos/presentation/cubit/pos_state.dart';
 
@@ -255,39 +256,23 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
               Row(
                 children: [
                   Expanded(
-                    child: DropdownButtonFormField<Customer?>(
+                    child: AppSearchableDropdown<Customer?>(
                       key: ValueKey(state.selectedCustomer?.id),
-                      initialValue: state.selectedCustomer,
-                      isExpanded: true,
-                      hint: Text('pos.select_customer'.tr(), overflow: TextOverflow.ellipsis),
-                      decoration: InputDecoration(
-                        filled: true,
-                        fillColor: hasNoCustomerOnDebt
-                            ? AppColors.danger.withValues(alpha: 0.05)
-                            : AppColors.surface,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(
-                            color: hasNoCustomerOnDebt ? AppColors.danger : AppColors.border,
-                          ),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(
-                            color: hasNoCustomerOnDebt ? AppColors.danger : AppColors.border,
-                          ),
-                        ),
-                        prefixIcon: Icon(
-                          state.selectedCustomer == null ? Icons.person_outline : Icons.person,
-                          color: state.selectedCustomer == null
-                              ? AppColors.textSecondary
-                              : AppColors.primary,
-                          size: 18,
-                        ),
+                      value: state.selectedCustomer,
+                      hint: 'pos.select_customer'.tr(),
+                      fillColor: hasNoCustomerOnDebt
+                          ? AppColors.danger.withValues(alpha: 0.05)
+                          : AppColors.surface,
+                      borderColor: hasNoCustomerOnDebt ? AppColors.danger : AppColors.border,
+                      prefixIcon: Icon(
+                        state.selectedCustomer == null ? Icons.person_outline : Icons.person,
+                        color: state.selectedCustomer == null
+                            ? AppColors.textSecondary
+                            : AppColors.primary,
+                        size: 18,
                       ),
+                      itemSearchText: (c) => c == null ? 'pos.walk_in_customer'.tr() : '${c.name} ${c.phone ?? ''}',
                       items: [
-                        // Walk-in Customer option
                         DropdownMenuItem<Customer?>(
                           value: null,
                           child: Text(
@@ -300,7 +285,6 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        // Registered Customers list
                         ...state.customers.map((c) {
                           return DropdownMenuItem<Customer?>(
                             value: c.customer,

@@ -5,6 +5,7 @@ import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/di/injection.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/core/widgets/app_screen_scaffold.dart';
+import 'package:small_mall/core/widgets/app_searchable_dropdown.dart';
 import 'package:small_mall/core/widgets/app_text_field.dart';
 import 'package:small_mall/core/widgets/app_toast.dart';
 import 'package:small_mall/core/widgets/loading_indicator.dart';
@@ -74,8 +75,11 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 children: [
                   // Search and Actions Bar
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
+                      // Product Search
                       Expanded(
+                        flex: 3,
                         child: AppTextField(
                           label: 'common.search'.tr(),
                           hint: 'common.search'.tr(),
@@ -103,8 +107,104 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         ),
                       ),
                       const SizedBox(width: 16),
+                      // Category Filter Dropdown
+                      if (state is InventoryLoaded)
+                        Expanded(
+                          flex: 2,
+                          child: AppSearchableDropdown<String?>(
+                            label: 'inventory.category'.tr(),
+                            value: _selectedCategoryId,
+                            hint: 'inventory.all_categories'.tr(),
+                            prefixIcon: const Icon(
+                              Icons.filter_list_rounded,
+                              size: 18,
+                              color: AppColors.primary,
+                            ),
+                            itemSearchText: (id) {
+                              if (id == null) return 'inventory.all_categories'.tr();
+                              if (id == '__uncategorized__') return 'inventory.uncategorized'.tr();
+                              final c = state.categories.where((x) => x.id == id).firstOrNull;
+                              return c?.name ?? '';
+                            },
+                            items: [
+                              DropdownMenuItem<String?>(
+                                value: null,
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        'inventory.all_categories'.tr(),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    Text(
+                                      '(${state.products.length})',
+                                      style: AppTheme.numericStyle(
+                                        fontSize: 12,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              ...state.categories.map((cat) {
+                                final count = state.products
+                                    .where((p) => p.product.categoryId == cat.id)
+                                    .length;
+                                return DropdownMenuItem<String?>(
+                                  value: cat.id,
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          cat.name,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      Text(
+                                        '($count)',
+                                        style: AppTheme.numericStyle(
+                                          fontSize: 12,
+                                          color: AppColors.textSecondary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }),
+                              if (state.products.any((p) => p.product.categoryId == null))
+                                DropdownMenuItem<String?>(
+                                  value: '__uncategorized__',
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          'inventory.uncategorized'.tr(),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      Text(
+                                        '(${state.products.where((p) => p.product.categoryId == null).length})',
+                                        style: AppTheme.numericStyle(
+                                          fontSize: 12,
+                                          color: AppColors.textSecondary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                            ],
+                            onChanged: (val) {
+                              setState(() {
+                                _selectedCategoryId = val;
+                              });
+                            },
+                          ),
+                        ),
+                      const SizedBox(width: 16),
+                      // Action buttons
                       Padding(
-                        padding: const EdgeInsets.only(top: 22.0),
+                        padding: const EdgeInsets.only(bottom: 2.0),
                         child: Row(
                           children: [
                             OutlinedButton.icon(
@@ -149,68 +249,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
                       ),
                     ],
                   ),
-                  // Modern Category Filter Chips Strip
-                  if (state is InventoryLoaded &&
-                      (state.categories.isNotEmpty ||
-                          state.products.any((p) => p.product.categoryId == null))) ...[
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      height: 38,
-                      child: ListView(
-                        scrollDirection: Axis.horizontal,
-                        children: [
-                          // "All" / "كل الأصناف" Chip
-                          _buildCategoryChip(
-                            label: 'inventory.all_categories'.tr(),
-                            count: state.products.length,
-                            isSelected: _selectedCategoryId == null,
-                            onTap: () => setState(() => _selectedCategoryId = null),
-                          ),
-                          // Specific Category Chips
-                          ...state.categories.map((cat) {
-                            final count = state.products
-                                .where((p) => p.product.categoryId == cat.id)
-                                .length;
-                            return Padding(
-                              padding: const EdgeInsetsDirectional.only(start: 8.0),
-                              child: _buildCategoryChip(
-                                label: cat.name,
-                                count: count,
-                                isSelected: _selectedCategoryId == cat.id,
-                                onTap: () {
-                                  setState(() {
-                                    _selectedCategoryId =
-                                        _selectedCategoryId == cat.id ? null : cat.id;
-                                  });
-                                },
-                              ),
-                            );
-                          }),
-                          // Uncategorized products chip (if any exist)
-                          if (state.products.any((p) => p.product.categoryId == null)) ...[
-                            Padding(
-                              padding: const EdgeInsetsDirectional.only(start: 8.0),
-                              child: _buildCategoryChip(
-                                label: 'inventory.uncategorized'.tr(),
-                                count: state.products
-                                    .where((p) => p.product.categoryId == null)
-                                    .length,
-                                isSelected: _selectedCategoryId == '__uncategorized__',
-                                onTap: () {
-                                  setState(() {
-                                    _selectedCategoryId =
-                                        _selectedCategoryId == '__uncategorized__'
-                                            ? null
-                                            : '__uncategorized__';
-                                  });
-                                },
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ],
                   const SizedBox(height: 20),
                   // Table or List
                   Expanded(child: _buildBody(context, cubit, state)),
@@ -252,69 +290,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
     return const SizedBox();
   }
 
-  Widget _buildCategoryChip({
-    required String label,
-    required int count,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : AppColors.surfaceElevated,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.border,
-            width: isSelected ? 1.5 : 1.0,
-          ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.2),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                color: isSelected ? Colors.white : AppColors.textPrimary,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                fontSize: 12.5,
-              ),
-            ),
-            const SizedBox(width: 6),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? Colors.white.withValues(alpha: 0.25)
-                    : AppColors.surface,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                '$count',
-                style: TextStyle(
-                  color: isSelected ? Colors.white : AppColors.textSecondary,
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+
 
   void _showAddCategoryDialog(BuildContext context, InventoryCubit cubit) {
     final addController = TextEditingController();
@@ -1072,19 +1048,23 @@ class _ProductsScreenState extends State<ProductsScreen> {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    DropdownButtonFormField<String>(
-                      initialValue: categories.any((c) => c.id == selectedCatId)
+                    AppSearchableDropdown<String>(
+                      label: 'inventory.category'.tr(),
+                      value: categories.any((c) => c.id == selectedCatId)
                           ? selectedCatId
                           : null,
-                      hint: Text('inventory.category'.tr()),
-                      decoration: InputDecoration(
-                        labelText: 'inventory.category'.tr(),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(6),
-                        ),
+                      hint: 'inventory.category'.tr(),
+                      prefixIcon: const Icon(
+                        Icons.category_outlined,
+                        size: 18,
+                        color: AppColors.textSecondary,
                       ),
+                      itemSearchText: (id) {
+                        final cat = categories.where((c) => c.id == id).firstOrNull;
+                        return cat?.name ?? '';
+                      },
                       items: categories.map((c) {
-                        return DropdownMenuItem(
+                        return DropdownMenuItem<String>(
                           value: c.id,
                           child: Text(c.name),
                         );
