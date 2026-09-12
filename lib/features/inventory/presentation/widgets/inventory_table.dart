@@ -11,13 +11,15 @@ class InventoryTable extends StatelessWidget {
     required this.products,
     required this.searchQuery,
     required this.filterLowStockOnly,
-    required this.onAdjustStock,
+    required this.onViewHistory,
+    this.onAdjustStock,
   });
 
   final List<ProductWithDetails> products;
   final String searchQuery;
   final bool filterLowStockOnly;
-  final ValueChanged<ProductWithDetails> onAdjustStock;
+  final ValueChanged<ProductWithDetails> onViewHistory;
+  final ValueChanged<ProductWithDetails>? onAdjustStock;
 
   @override
   Widget build(BuildContext context) {
@@ -45,17 +47,30 @@ class InventoryTable extends StatelessWidget {
           cellBuilder: (item) => Text(item.category?.name ?? '-'),
         ),
         AppTableColumn<ProductWithDetails>(
-          title: 'inventory.alert_quantity'.tr(),
+          title: 'inventory.initial_stock_short'.tr(),
           cellBuilder: (item) => Text(
-            item.product.minStockAlert.toStringAsFixed(0),
-            style: AppTheme.numericStyle(),
+            item.initialStock.toStringAsFixed(0),
+            style: AppTheme.numericStyle(
+              color: const Color(0xFF2563EB),
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
         AppTableColumn<ProductWithDetails>(
           title: 'inventory.current_stock'.tr(),
           cellBuilder: (item) => Text(
             item.currentStock.toStringAsFixed(0),
-            style: AppTheme.numericStyle(fontWeight: FontWeight.bold),
+            style: AppTheme.numericStyle(
+              fontWeight: FontWeight.bold,
+              color: item.isLowStock ? AppColors.danger : AppColors.success,
+            ),
+          ),
+        ),
+        AppTableColumn<ProductWithDetails>(
+          title: 'inventory.alert_quantity'.tr(),
+          cellBuilder: (item) => Text(
+            item.product.minStockAlert.toStringAsFixed(0),
+            style: AppTheme.numericStyle(),
           ),
         ),
         AppTableColumn<ProductWithDetails>(
@@ -67,15 +82,19 @@ class InventoryTable extends StatelessWidget {
           ),
         ),
         AppTableColumn<ProductWithDetails>(
-          title: 'inventory.adjust_stock'.tr(),
-          cellBuilder: (item) => OutlinedButton.icon(
-            onPressed: () => onAdjustStock(item),
-            icon: const Icon(Icons.swap_vert, size: 16, color: AppColors.primary),
+          title: 'inventory.operations'.tr(),
+          cellBuilder: (item) => ElevatedButton.icon(
+            onPressed: () => onViewHistory(item),
+            icon: const Icon(Icons.manage_history_rounded, size: 16),
             label: Text(
-              'common.edit'.tr(),
-              style: const TextStyle(color: AppColors.primary, fontSize: 12),
+              'inventory.operations'.tr(),
+              style: const TextStyle(fontSize: 12),
             ),
-            style: OutlinedButton.styleFrom(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+              foregroundColor: AppColors.primary,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
             ),
           ),

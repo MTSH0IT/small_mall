@@ -6,17 +6,19 @@ import 'package:small_mall/core/sync/sync_service.dart';
 import 'package:uuid/uuid.dart';
 
 class ProductWithDetails {
-
   ProductWithDetails({
     required this.product,
     this.category,
     required this.prices,
     required this.currentStock,
+    this.initialStock = 0.0,
   });
+
   final Product product;
   final Category? category;
   final List<ProductPrice> prices;
   final double currentStock;
+  final double initialStock;
 
   bool get isLowStock => product.minStockAlert > 0 && currentStock <= product.minStockAlert;
 
@@ -27,6 +29,28 @@ class ProductWithDetails {
 
   @override
   int get hashCode => product.id.hashCode;
+}
+
+class ProductStockOperation {
+  const ProductStockOperation({
+    required this.id,
+    required this.type,
+    required this.quantity,
+    required this.createdAt,
+    this.referenceNumber,
+    this.partyName,
+    this.unitPrice,
+    required this.runningBalance,
+  });
+
+  final String id;
+  final String type; // 'initial', 'sale', 'purchase', 'return', 'adjustment'
+  final double quantity;
+  final DateTime createdAt;
+  final String? referenceNumber;
+  final String? partyName;
+  final double? unitPrice;
+  final double runningBalance;
 }
 
 class InventoryRepository {
@@ -113,6 +137,7 @@ class InventoryRepository {
     final categories = await getCategories();
     final allPrices = await _db.select(_db.productPrices).get();
     final stockBalances = await _db.getAllStockBalances();
+    final initialStocks = await _db.getAllInitialStocks();
 
     final categoryMap = {for (var c in categories) c.id: c};
 
@@ -120,12 +145,14 @@ class InventoryRepository {
       final category = prod.categoryId != null ? categoryMap[prod.categoryId] : null;
       final prices = allPrices.where((p) => p.productId == prod.id).toList();
       final currentStock = stockBalances[prod.id] ?? 0.0;
+      final initialStock = initialStocks[prod.id] ?? 0.0;
 
       return ProductWithDetails(
         product: prod,
         category: category,
         prices: prices,
         currentStock: currentStock,
+        initialStock: initialStock,
       );
     }).toList();
   }
@@ -297,5 +324,138 @@ class InventoryRepository {
 
     _sync.updatePendingCount();
     _sync.sync();
+  }
+
+  Future<List<ProductStockOperation>> getProductOperations(String productId) async {
+    _logger.debug('Fetching operations for product: $productId', context: LogContext.inventory);
+
+    final movements = await (_db.select(_db.stockMovements)
+          ..where((t) => t.productId.equals(productId))
+          ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
+        .get();
+
+    if (movements.isEmpty) {
+      return [];
+    }
+
+    final invoiceIds = <String>{};
+    final purchaseIds = <String>{};
+
+    for (final m in movements) {
+      if (m.referenceId == null || m.referenceId == 'initial_stock') continue;
+      if (m.type == 'sale' || m.type == 'return') {
+        invoiceIds.add(m.referenceId!);
+      } else if (m.type == 'purchase') {
+        purchaseIds.add(m.referenceId!);
+      }
+    }
+
+    final Map<String, Invoice> invoiceMap = {};
+    final Map<String, InvoiceItem> invoiceItemMap = {};
+    final Map<String, Customer> customerMap = {};
+
+    if (invoiceIds.isNotEmpty) {
+      final invList = await (_db.select(_db.invoices)..where((t) => t.id.isIn(invoiceIds))).get();
+      for (final inv in invList) {
+        invoiceMap[inv.id] = inv;
+      }
+
+      final items = await (_db.select(_db.invoiceItems)
+            ..where((t) => t.productId.equals(productId) & t.invoiceId.isIn(invoiceIds)))
+          .get();
+      for (final item in items) {
+        invoiceItemMap[item.invoiceId] = item;
+      }
+
+      final customerIds = invList.map((i) => i.customerId).whereType<String>().toSet();
+      if (customerIds.isNotEmpty) {
+        final custList = await (_db.select(_db.customers)..where((t) => t.id.isIn(customerIds))).get();
+        for (final c in custList) {
+          customerMap[c.id] = c;
+        }
+      }
+    }
+
+    final Map<String, PurchaseInvoice> purchaseMap = {};
+    final Map<String, PurchaseItem> purchaseItemMap = {};
+    final Map<String, Supplier> supplierMap = {};
+
+    if (purchaseIds.isNotEmpty) {
+      final purchList = await (_db.select(_db.purchaseInvoices)..where((t) => t.id.isIn(purchaseIds))).get();
+      for (final p in purchList) {
+        purchaseMap[p.id] = p;
+      }
+
+      final pItems = await (_db.select(_db.purchaseItems)
+            ..where((t) => t.productId.equals(productId) & t.purchaseInvoiceId.isIn(purchaseIds)))
+          .get();
+      for (final item in pItems) {
+        purchaseItemMap[item.purchaseInvoiceId] = item;
+      }
+
+      final supplierIds = purchList.map((p) => p.supplierId).toSet();
+      if (supplierIds.isNotEmpty) {
+        final suppList = await (_db.select(_db.suppliers)..where((t) => t.id.isIn(supplierIds))).get();
+        for (final s in suppList) {
+          supplierMap[s.id] = s;
+        }
+      }
+    }
+
+    double runningBalance = 0.0;
+    final List<ProductStockOperation> operations = [];
+
+    for (final m in movements) {
+      runningBalance += m.quantity;
+      final isInitial = m.referenceId == 'initial_stock';
+      final effectiveType = isInitial ? 'initial' : m.type;
+
+      String? refNumber;
+      String? party;
+      double? unitPrice;
+
+      if (isInitial) {
+        party = 'المخزون الافتتاحي';
+      } else if (m.type == 'sale' || m.type == 'return') {
+        final inv = invoiceMap[m.referenceId];
+        if (inv != null) {
+          refNumber = inv.serialNumber != null
+              ? '#${inv.serialNumber}'
+              : (inv.id.length >= 8 ? inv.id.substring(0, 8) : inv.id);
+          if (inv.customerId != null) {
+            party = customerMap[inv.customerId]?.name;
+          }
+        }
+        final item = invoiceItemMap[m.referenceId];
+        if (item != null) {
+          unitPrice = item.priceUsed;
+        }
+      } else if (m.type == 'purchase') {
+        final purch = purchaseMap[m.referenceId];
+        if (purch != null) {
+          refNumber = purch.id.length >= 8 ? purch.id.substring(0, 8) : purch.id;
+          party = supplierMap[purch.supplierId]?.name;
+        }
+        final item = purchaseItemMap[m.referenceId];
+        if (item != null) {
+          unitPrice = item.unitCost;
+        }
+      } else if (m.type == 'adjustment') {
+        party = m.referenceId;
+      }
+
+      operations.add(ProductStockOperation(
+        id: m.id,
+        type: effectiveType,
+        quantity: m.quantity,
+        createdAt: m.createdAt,
+        referenceNumber: refNumber,
+        partyName: party,
+        unitPrice: unitPrice,
+        runningBalance: runningBalance,
+      ));
+    }
+
+    return operations.reversed.toList();
   }
 }

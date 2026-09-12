@@ -12,6 +12,7 @@ import 'package:small_mall/features/inventory/data/inventory_repository.dart';
 import 'package:small_mall/features/inventory/presentation/cubit/inventory_cubit.dart';
 import 'package:small_mall/features/inventory/presentation/cubit/inventory_state.dart';
 import 'package:small_mall/features/inventory/presentation/widgets/inventory_table.dart';
+import 'package:small_mall/features/inventory/presentation/widgets/product_operations_dialog.dart';
 
 class InventoryScreen extends StatefulWidget {
   const InventoryScreen({super.key});
@@ -107,11 +108,22 @@ class _InventoryScreenState extends State<InventoryScreen> {
         products: state.products,
         searchQuery: _searchQuery,
         filterLowStockOnly: _filterLowStockOnly,
+        onViewHistory: (item) => _showOperationsDialog(context, cubit, item),
         onAdjustStock: (item) => _showAdjustStockDialog(context, cubit, item),
       );
     }
 
     return const SizedBox();
+  }
+
+  void _showOperationsDialog(BuildContext context, InventoryCubit cubit, ProductWithDetails item) {
+    showDialog(
+      context: context,
+      builder: (_) => ProductOperationsDialog(
+        productDetails: item,
+        cubit: cubit,
+      ),
+    );
   }
 
   void _showAdjustStockDialog(BuildContext context, InventoryCubit cubit, ProductWithDetails item) {
@@ -133,27 +145,29 @@ class _InventoryScreenState extends State<InventoryScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    RadioGroup<String>(
-                      groupValue: direction,
-                      onChanged: (val) {
-                        setStateDialog(() => direction = val!);
-                      },
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: RadioListTile<String>(
-                              title: Text('(+) ${'inventory.stock_in'.tr()}'),
-                              value: 'add',
-                            ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: RadioListTile<String>(
+                            title: Text('(+) ${'inventory.stock_in'.tr()}'),
+                            value: 'add',
+                            groupValue: direction,
+                            onChanged: (val) {
+                              if (val != null) setStateDialog(() => direction = val);
+                            },
                           ),
-                          Expanded(
-                            child: RadioListTile<String>(
-                              title: Text('(-) ${'inventory.stock_out'.tr()}'),
-                              value: 'subtract',
-                            ),
+                        ),
+                        Expanded(
+                          child: RadioListTile<String>(
+                            title: Text('(-) ${'inventory.stock_out'.tr()}'),
+                            value: 'subtract',
+                            groupValue: direction,
+                            onChanged: (val) {
+                              if (val != null) setStateDialog(() => direction = val);
+                            },
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 12),
                     AppTextField(

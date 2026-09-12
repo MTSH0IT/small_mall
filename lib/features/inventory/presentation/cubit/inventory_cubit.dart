@@ -148,4 +148,8 @@ class InventoryCubit extends Cubit<InventoryState> {
       }
     }
   }
+
+  Future<List<ProductStockOperation>> getProductOperations(String productId) {
+    return _repository.getProductOperations(productId);
+  }
 }

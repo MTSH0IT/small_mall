@@ -14,6 +14,7 @@ import 'package:small_mall/features/inventory/data/inventory_repository.dart';
 import 'package:small_mall/features/inventory/presentation/cubit/inventory_cubit.dart';
 import 'package:small_mall/features/inventory/presentation/cubit/inventory_state.dart';
 import 'package:small_mall/features/inventory/presentation/widgets/products_table.dart';
+import 'package:small_mall/features/inventory/presentation/widgets/product_operations_dialog.dart';
 
 class ProductsScreen extends StatefulWidget {
   const ProductsScreen({super.key});
@@ -334,6 +335,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
         searchQuery: _searchQuery,
         selectedCategoryId: _selectedCategoryId,
         onResetFilters: _clearFilters,
+        onViewHistory: (item) => _showOperationsDialog(context, cubit, item),
         onEditProduct: (item) => _showProductFormDialog(
           context,
           cubit,
@@ -346,6 +348,20 @@ class _ProductsScreenState extends State<ProductsScreen> {
     }
 
     return const SizedBox();
+  }
+
+  void _showOperationsDialog(
+    BuildContext context,
+    InventoryCubit cubit,
+    ProductWithDetails item,
+  ) {
+    showDialog(
+      context: context,
+      builder: (_) => ProductOperationsDialog(
+        productDetails: item,
+        cubit: cubit,
+      ),
+    );
   }
 
 

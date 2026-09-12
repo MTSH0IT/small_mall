@@ -16,6 +16,7 @@ class ProductsTable extends StatelessWidget {
     this.selectedCategoryId,
     required this.onEditProduct,
     required this.onDeleteProduct,
+    this.onViewHistory,
     this.onResetFilters,
   });
 
@@ -24,6 +25,7 @@ class ProductsTable extends StatelessWidget {
   final String? selectedCategoryId;
   final ValueChanged<ProductWithDetails> onEditProduct;
   final ValueChanged<ProductWithDetails> onDeleteProduct;
+  final ValueChanged<ProductWithDetails>? onViewHistory;
   final VoidCallback? onResetFilters;
 
   @override
@@ -157,6 +159,16 @@ class ProductsTable extends StatelessWidget {
           },
         ),
         AppTableColumn<ProductWithDetails>(
+          title: 'inventory.initial_stock_short'.tr(),
+          cellBuilder: (item) => Text(
+            item.initialStock.toStringAsFixed(0),
+            style: AppTheme.numericStyle(
+              color: const Color(0xFF2563EB),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        AppTableColumn<ProductWithDetails>(
           title: 'inventory.current_stock'.tr(),
           cellBuilder: (item) => Text(
             item.currentStock.toStringAsFixed(0),
@@ -171,12 +183,20 @@ class ProductsTable extends StatelessWidget {
           cellBuilder: (item) => Row(
             mainAxisSize: MainAxisSize.min,
             children: [
+              if (onViewHistory != null)
+                IconButton(
+                  icon: const Icon(Icons.manage_history_rounded, color: AppColors.primary),
+                  tooltip: 'inventory.operations_history'.tr(),
+                  onPressed: () => onViewHistory!(item),
+                ),
               IconButton(
                 icon: const Icon(Icons.edit_outlined, color: AppColors.primary),
+                tooltip: 'common.edit'.tr(),
                 onPressed: () => onEditProduct(item),
               ),
               IconButton(
                 icon: const Icon(Icons.delete_outline, color: AppColors.danger),
+                tooltip: 'common.delete'.tr(),
                 onPressed: () => onDeleteProduct(item),
               ),
             ],

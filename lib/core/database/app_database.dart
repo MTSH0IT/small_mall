@@ -344,6 +344,32 @@ class AppDatabase extends _$AppDatabase {
     };
   }
 
+  /// Fast SQL aggregation for all product initial stocks
+  Future<Map<String, double>> getAllInitialStocks() async {
+    final qtySum = stockMovements.quantity.sum();
+    final query = selectOnly(stockMovements)
+      ..addColumns([stockMovements.productId, qtySum])
+      ..where(stockMovements.referenceId.equals('initial_stock'))
+      ..groupBy([stockMovements.productId]);
+    final rows = await query.get();
+    return {
+      for (final row in rows)
+        if (row.read(stockMovements.productId) != null)
+          row.read(stockMovements.productId)!: row.read(qtySum) ?? 0.0,
+    };
+  }
+
+  /// Fast SQL aggregation for a single product's initial stock
+  Future<double> getProductInitialStock(String prodId) async {
+    final qtySum = stockMovements.quantity.sum();
+    final query = selectOnly(stockMovements)
+      ..addColumns([qtySum])
+      ..where(stockMovements.productId.equals(prodId) &
+          stockMovements.referenceId.equals('initial_stock'));
+    final row = await query.getSingleOrNull();
+    return row?.read(qtySum) ?? 0.0;
+  }
+
   /// Fast SQL aggregation for a single product's stock balance
   Future<double> getProductStock(String prodId) async {
     final qtySum = stockMovements.quantity.sum();
