@@ -123,29 +123,27 @@ class _ProductOperationsDialogState extends State<ProductOperationsDialog> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: RadioListTile<String>(
-                            title: Text('(+) ${'inventory.stock_in'.tr()}', style: const TextStyle(fontSize: 13)),
-                            value: 'add',
-                            groupValue: direction,
-                            onChanged: (val) {
-                              if (val != null) setStateDialog(() => direction = val);
-                            },
+                    RadioGroup<String>(
+                      groupValue: direction,
+                      onChanged: (val) {
+                        if (val != null) setStateDialog(() => direction = val);
+                      },
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: RadioListTile<String>(
+                              title: Text('(+) ${'inventory.stock_in'.tr()}', style: const TextStyle(fontSize: 13)),
+                              value: 'add',
+                            ),
                           ),
-                        ),
-                        Expanded(
-                          child: RadioListTile<String>(
-                            title: Text('(-) ${'inventory.stock_out'.tr()}', style: const TextStyle(fontSize: 13)),
-                            value: 'subtract',
-                            groupValue: direction,
-                            onChanged: (val) {
-                              if (val != null) setStateDialog(() => direction = val);
-                            },
+                          Expanded(
+                            child: RadioListTile<String>(
+                              title: Text('(-) ${'inventory.stock_out'.tr()}', style: const TextStyle(fontSize: 13)),
+                              value: 'subtract',
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 12),
                     AppTextField(

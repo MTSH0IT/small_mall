@@ -145,29 +145,27 @@ class _InventoryScreenState extends State<InventoryScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: RadioListTile<String>(
-                            title: Text('(+) ${'inventory.stock_in'.tr()}'),
-                            value: 'add',
-                            groupValue: direction,
-                            onChanged: (val) {
-                              if (val != null) setStateDialog(() => direction = val);
-                            },
+                    RadioGroup<String>(
+                      groupValue: direction,
+                      onChanged: (val) {
+                        if (val != null) setStateDialog(() => direction = val);
+                      },
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: RadioListTile<String>(
+                              title: Text('(+) ${'inventory.stock_in'.tr()}'),
+                              value: 'add',
+                            ),
                           ),
-                        ),
-                        Expanded(
-                          child: RadioListTile<String>(
-                            title: Text('(-) ${'inventory.stock_out'.tr()}'),
-                            value: 'subtract',
-                            groupValue: direction,
-                            onChanged: (val) {
-                              if (val != null) setStateDialog(() => direction = val);
-                            },
+                          Expanded(
+                            child: RadioListTile<String>(
+                              title: Text('(-) ${'inventory.stock_out'.tr()}'),
+                              value: 'subtract',
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 12),
                     AppTextField(

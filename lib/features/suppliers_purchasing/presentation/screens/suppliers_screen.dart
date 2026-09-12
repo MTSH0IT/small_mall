@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/di/injection.dart';
-import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/core/widgets/app_screen_scaffold.dart';
 import 'package:small_mall/core/widgets/app_toast.dart';
 import 'package:small_mall/core/widgets/empty_state_view.dart';
@@ -15,7 +14,7 @@ import 'package:small_mall/features/inventory/data/inventory_repository.dart';
 import 'package:small_mall/features/suppliers_purchasing/data/suppliers_purchasing_repository.dart';
 import 'package:small_mall/features/suppliers_purchasing/presentation/cubit/suppliers_purchasing_cubit.dart';
 import 'package:small_mall/features/suppliers_purchasing/presentation/cubit/suppliers_purchasing_state.dart';
-import 'package:small_mall/features/suppliers_purchasing/presentation/widgets/record_purchase_panel.dart';
+import 'package:small_mall/features/suppliers_purchasing/presentation/widgets/supplier_operations_panel.dart';
 import 'package:small_mall/features/suppliers_purchasing/presentation/widgets/suppliers_list.dart';
 
 class SuppliersScreen extends StatefulWidget {
@@ -98,7 +97,7 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
                   ],
                 ),
               ),
-              rightChild: _buildRecordPurchasePanel(context, cubit, state),
+              rightChild: _buildRightPanel(context, cubit, state),
             ),
           );
         },
@@ -127,7 +126,7 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
     return const SizedBox();
   }
 
-  Widget _buildRecordPurchasePanel(BuildContext context, SuppliersPurchasingCubit cubit, SuppliersPurchasingState state) {
+  Widget _buildRightPanel(BuildContext context, SuppliersPurchasingCubit cubit, SuppliersPurchasingState state) {
     if (_selectedSupplier == null) {
       return Center(
         child: EmptyStateView(
@@ -138,48 +137,20 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
       );
     }
 
-    final supplier = _selectedSupplier!;
-    final theme = Theme.of(context);
+    // Resolve up-to-date supplier if updated in cubit state
+    Supplier supplier = _selectedSupplier!;
+    if (state is SuppliersPurchasingLoaded) {
+      final updated = state.suppliers.where((s) => s.supplier.id == supplier.id).toList();
+      if (updated.isNotEmpty) {
+        supplier = updated.first.supplier;
+      }
+    }
 
-    return Column(
-      children: [
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
-          child: Row(
-            children: [
-              Text(
-                supplier.name,
-                style: theme.textTheme.titleLarge?.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(width: 8),
-              InkWell(
-                onTap: () => _showEditSupplierDialog(context, cubit, supplier),
-                child: const Icon(Icons.edit, size: 18, color: AppColors.primary),
-              ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: RecordPurchasePanel(
-            selectedSupplier: supplier,
-            availableProducts: _availableProducts,
-            onConfirmPurchase: (items, totalAmount) async {
-              await cubit.recordPurchase(
-                supplierId: supplier.id,
-                totalAmount: totalAmount,
-                items: items,
-              );
-              if (context.mounted) {
-                AppToast.success(context, message: 'suppliers.purchase_recorded'.tr());
-              }
-            },
-          ),
-        ),
-      ],
+    return SupplierOperationsPanel(
+      key: ValueKey(supplier.id),
+      supplier: supplier,
+      availableProducts: _availableProducts,
+      onEditSupplier: () => _showEditSupplierDialog(context, cubit, supplier),
     );
   }
 

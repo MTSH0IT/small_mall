@@ -13,8 +13,8 @@ import 'package:small_mall/core/widgets/primary_button.dart';
 import 'package:small_mall/features/inventory/data/inventory_repository.dart';
 import 'package:small_mall/features/inventory/presentation/cubit/inventory_cubit.dart';
 import 'package:small_mall/features/inventory/presentation/cubit/inventory_state.dart';
-import 'package:small_mall/features/inventory/presentation/widgets/products_table.dart';
 import 'package:small_mall/features/inventory/presentation/widgets/product_operations_dialog.dart';
+import 'package:small_mall/features/inventory/presentation/widgets/products_table.dart';
 
 class ProductsScreen extends StatefulWidget {
   const ProductsScreen({super.key});

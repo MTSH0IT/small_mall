@@ -53,9 +53,19 @@ class SuppliersList extends StatelessWidget {
 
           return ListTile(
             selected: isSelected,
-            selectedTileColor: AppColors.primary.withValues(alpha: 0.05),
+            selectedTileColor: AppColors.primary.withValues(alpha: 0.08),
+            leading: CircleAvatar(
+              backgroundColor: isSelected
+                  ? AppColors.primary
+                  : AppColors.primary.withValues(alpha: 0.1),
+              foregroundColor: isSelected ? Colors.white : AppColors.primary,
+              child: const Icon(Icons.local_shipping_outlined, size: 20),
+            ),
             title: Text(item.supplier.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Text(item.supplier.phone ?? 'common.no_phone'.tr()),
+            subtitle: Text(
+              '${item.supplier.phone ?? 'common.no_phone'.tr()} • ${item.invoicesCount} ${'suppliers.invoices_count'.tr()}',
+              style: const TextStyle(fontSize: 12),
+            ),
             trailing: PriceTagChip(
               label: 'suppliers.purchases_amount'.tr(
                 namedArgs: {'amount': item.totalPurchasesAmount.toStringAsFixed(1)},

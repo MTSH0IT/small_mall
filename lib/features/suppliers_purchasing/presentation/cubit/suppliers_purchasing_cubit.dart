@@ -72,4 +72,12 @@ class SuppliersPurchasingCubit extends Cubit<SuppliersPurchasingState> {
       }
     }
   }
+
+  Future<List<PurchaseInvoiceWithDetails>> getSupplierInvoices(String supplierId) {
+    return _repository.getSupplierInvoices(supplierId);
+  }
+
+  Future<PurchaseInvoiceWithDetails?> getPurchaseInvoiceDetails(String invoiceId) {
+    return _repository.getPurchaseInvoiceDetails(invoiceId);
+  }
 }
