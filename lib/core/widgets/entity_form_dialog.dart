@@ -59,6 +59,7 @@ class _EntityFormDialogState extends State<EntityFormDialog> {
             AppTextField(
               label: widget.notesLabel ?? 'common.notes'.tr(),
               controller: widget.notesController,
+              maxLines: 3,
             ),
           ],
         ),

@@ -15,6 +15,7 @@ class CheckoutPanel extends StatefulWidget {
     required this.onPaymentTypeChanged,
     required this.onCustomerChanged,
     required this.onAddCustomerPressed,
+    this.onEditCustomerPressed,
     required this.onCheckoutPressed,
   });
 
@@ -24,6 +25,7 @@ class CheckoutPanel extends StatefulWidget {
   final ValueChanged<String> onPaymentTypeChanged;
   final ValueChanged<Customer?> onCustomerChanged;
   final VoidCallback onAddCustomerPressed;
+  final void Function(Customer)? onEditCustomerPressed;
   final VoidCallback? onCheckoutPressed;
 
   @override
@@ -271,7 +273,41 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                             : AppColors.primary,
                         size: 18,
                       ),
-                      itemSearchText: (c) => c == null ? 'pos.walk_in_customer'.tr() : '${c.name} ${c.phone ?? ''}',
+                      itemSearchText: (c) {
+                        if (c == null) return 'pos.walk_in_customer'.tr();
+                        final phone = c.phone ?? '';
+                        final notes = c.notes ?? '';
+                        return '${c.name} $phone $notes';
+                      },
+                      searchMatchFn: (item, searchValue) {
+                        if (item.value == null) {
+                          final q = searchValue.trim().toLowerCase();
+                          return q.isEmpty || 'pos.walk_in_customer'.tr().toLowerCase().contains(q);
+                        }
+                        final c = item.value!;
+                        final rawQuery = searchValue.trim().toLowerCase();
+                        if (rawQuery.isEmpty) return true;
+                        final normalizedQuery = rawQuery
+                            .replaceAll('٠', '0')
+                            .replaceAll('١', '1')
+                            .replaceAll('٢', '2')
+                            .replaceAll('٣', '3')
+                            .replaceAll('٤', '4')
+                            .replaceAll('٥', '5')
+                            .replaceAll('٦', '6')
+                            .replaceAll('٧', '7')
+                            .replaceAll('٨', '8')
+                            .replaceAll('٩', '9');
+
+                        final nameMatch = c.name.toLowerCase().contains(rawQuery) ||
+                            c.name.toLowerCase().contains(normalizedQuery);
+                        final phoneMatch = c.phone != null &&
+                            (c.phone!.toLowerCase().contains(rawQuery) ||
+                                c.phone!.toLowerCase().contains(normalizedQuery));
+                        final notesMatch = c.notes != null &&
+                            c.notes!.toLowerCase().contains(rawQuery);
+                        return nameMatch || phoneMatch || notesMatch;
+                      },
                       items: [
                         DropdownMenuItem<Customer?>(
                           value: null,
@@ -286,20 +322,60 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                           ),
                         ),
                         ...state.customers.map((c) {
+                          final hasPhone = c.customer.phone != null &&
+                              c.customer.phone!.trim().isNotEmpty;
                           return DropdownMenuItem<Customer?>(
                             value: c.customer,
                             child: Row(
                               children: [
                                 Expanded(
-                                  child: Text(
-                                    c.customer.name,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(fontSize: 13),
+                                  child: Row(
+                                    children: [
+                                      Flexible(
+                                        child: Text(
+                                          c.customer.name,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                      if (hasPhone) ...[
+                                        const SizedBox(width: 6),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 5,
+                                            vertical: 1,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.primary.withValues(alpha: 0.08),
+                                            borderRadius: BorderRadius.circular(4),
+                                            border: Border.all(
+                                              color: AppColors.primary.withValues(alpha: 0.2),
+                                              width: 0.8,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            c.customer.phone!.trim(),
+                                            style: AppTheme.numericStyle(
+                                              fontSize: 11,
+                                              color: AppColors.primary,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ],
                                   ),
                                 ),
-                                if (c.totalDebt > 0)
+                                if (c.totalDebt > 0) ...[
+                                  const SizedBox(width: 6),
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 5,
+                                      vertical: 1,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: AppColors.accent.withValues(alpha: 0.15),
                                       borderRadius: BorderRadius.circular(4),
@@ -313,6 +389,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                                       ),
                                     ),
                                   ),
+                                ],
                               ],
                             ),
                           );
@@ -322,18 +399,67 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  IconButton(
-                    tooltip: 'customers.add_customer'.tr(),
-                    icon: const Icon(Icons.person_add_alt_1_outlined, color: AppColors.primary),
-                    style: IconButton.styleFrom(
-                      backgroundColor: AppColors.surface,
-                      side: const BorderSide(color: AppColors.border),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  if (state.selectedCustomer != null && widget.onEditCustomerPressed != null)
+                    IconButton(
+                      tooltip: 'customers.edit_customer'.tr(),
+                      icon: const Icon(Icons.edit_outlined, color: AppColors.primary),
+                      style: IconButton.styleFrom(
+                        backgroundColor: AppColors.surface,
+                        side: const BorderSide(color: AppColors.border),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      onPressed: () => widget.onEditCustomerPressed!(state.selectedCustomer!),
+                    )
+                  else
+                    IconButton(
+                      tooltip: 'customers.add_customer'.tr(),
+                      icon: const Icon(Icons.person_add_alt_1_outlined, color: AppColors.primary),
+                      style: IconButton.styleFrom(
+                        backgroundColor: AppColors.surface,
+                        side: const BorderSide(color: AppColors.border),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      onPressed: widget.onAddCustomerPressed,
                     ),
-                    onPressed: widget.onAddCustomerPressed,
-                  ),
                 ],
               ),
+              if (state.selectedCustomer?.notes != null &&
+                  state.selectedCustomer!.notes!.trim().isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Padding(
+                        padding: EdgeInsets.only(top: 1.5),
+                        child: Icon(
+                          Icons.sticky_note_2_outlined,
+                          size: 14,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          state.selectedCustomer!.notes!.trim(),
+                          style: const TextStyle(
+                            fontSize: 11.5,
+                            color: AppColors.textPrimary,
+                            height: 1.35,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               if (hasNoCustomerOnDebt) ...[
                 const SizedBox(height: 4),
                 Text(

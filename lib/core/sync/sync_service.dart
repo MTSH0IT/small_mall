@@ -219,7 +219,11 @@ class SyncService {
       try {
         final unsynced = await (_db.select(_db.categories)..where((t) => t.syncedAt.isNull())).get();
         if (unsynced.isNotEmpty) {
-          final payload = unsynced.map((c) => {'id': c.id, 'name': c.name}).toList();
+          final payload = unsynced.map((c) => {
+            'id': c.id,
+            'name': c.name,
+            'serial_number': c.serialNumber,
+          }).toList();
           await client.from('categories').upsert(payload);
           final now = DateTime.now();
           final ids = unsynced.map((c) => c.id).toList();
@@ -606,6 +610,7 @@ class SyncService {
                 CategoriesCompanion.insert(
                   id: json['id'] as String,
                   name: json['name'] as String,
+                  serialNumber: Value(json['serial_number'] as int?),
                   syncedAt: Value(now),
                 ),
               );

@@ -124,7 +124,40 @@ class _ProductsScreenState extends State<ProductsScreen> {
                               if (id == null) return 'inventory.all_categories'.tr();
                               if (id == '__uncategorized__') return 'inventory.uncategorized'.tr();
                               final c = state.categories.where((x) => x.id == id).firstOrNull;
-                              return c?.name ?? '';
+                              if (c == null) return '';
+                              final serial = c.serialNumber != null ? ' #${c.serialNumber} ${c.serialNumber}' : '';
+                              return '${c.name}$serial';
+                            },
+                            searchMatchFn: (item, searchValue) {
+                              final rawQuery = searchValue.trim().toLowerCase();
+                              if (rawQuery.isEmpty) return true;
+                              final normalizedQuery = rawQuery
+                                  .replaceAll('٠', '0')
+                                  .replaceAll('١', '1')
+                                  .replaceAll('٢', '2')
+                                  .replaceAll('٣', '3')
+                                  .replaceAll('٤', '4')
+                                  .replaceAll('٥', '5')
+                                  .replaceAll('٦', '6')
+                                  .replaceAll('٧', '7')
+                                  .replaceAll('٨', '8')
+                                  .replaceAll('٩', '9');
+                              if (item.value == null) {
+                                return 'inventory.all_categories'.tr().toLowerCase().contains(rawQuery);
+                              }
+                              if (item.value == '__uncategorized__') {
+                                return 'inventory.uncategorized'.tr().toLowerCase().contains(rawQuery);
+                              }
+                              final cat = state.categories.where((c) => c.id == item.value).firstOrNull;
+                              if (cat == null) return false;
+                              final nameMatch = cat.name.toLowerCase().contains(rawQuery) ||
+                                  cat.name.toLowerCase().contains(normalizedQuery);
+                              final serialMatch = cat.serialNumber != null &&
+                                  ('#${cat.serialNumber}' == normalizedQuery ||
+                                      cat.serialNumber.toString() == normalizedQuery ||
+                                      cat.serialNumber.toString().contains(normalizedQuery) ||
+                                      '#${cat.serialNumber}'.contains(normalizedQuery));
+                              return nameMatch || serialMatch;
                             },
                             items: [
                               DropdownMenuItem<String?>(
@@ -155,6 +188,31 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                   value: cat.id,
                                   child: Row(
                                     children: [
+                                      if (cat.serialNumber != null) ...[
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 5,
+                                            vertical: 1.5,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.primary.withValues(alpha: 0.08),
+                                            borderRadius: BorderRadius.circular(4),
+                                            border: Border.all(
+                                              color: AppColors.primary.withValues(alpha: 0.25),
+                                              width: 0.8,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            '#${cat.serialNumber}',
+                                            style: AppTheme.numericStyle(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                              color: AppColors.primary,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 6),
+                                      ],
                                       Expanded(
                                         child: Text(
                                           cat.name,
@@ -472,11 +530,13 @@ class _ProductsScreenState extends State<ProductsScreen> {
                           final allCategories = state is InventoryLoaded
                               ? state.categories
                               : <Category>[];
+                          final q = searchQuery.toLowerCase();
                           final filtered = allCategories.where((c) {
                             if (searchQuery.isEmpty) return true;
-                            return c.name
-                                .toLowerCase()
-                                .contains(searchQuery.toLowerCase());
+                            final matchName = c.name.toLowerCase().contains(q);
+                            final matchSerial = c.serialNumber != null &&
+                                ('#${c.serialNumber}' == q || c.serialNumber.toString() == q);
+                            return matchName || matchSerial;
                           }).toList();
 
                           final titleText = searchQuery.isEmpty
@@ -506,11 +566,13 @@ class _ProductsScreenState extends State<ProductsScreen> {
                             }
 
                             final allCategories = state.categories;
+                            final q = searchQuery.toLowerCase();
                             final filteredCategories = allCategories.where((c) {
                               if (searchQuery.isEmpty) return true;
-                              return c.name
-                                  .toLowerCase()
-                                  .contains(searchQuery.toLowerCase());
+                              final matchName = c.name.toLowerCase().contains(q);
+                              final matchSerial = c.serialNumber != null &&
+                                  ('#${c.serialNumber}' == q || c.serialNumber.toString() == q);
+                              return matchName || matchSerial;
                             }).toList();
 
                             if (allCategories.isEmpty) {
@@ -595,7 +657,32 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                             color: AppColors.primary,
                                           ),
                                         ),
-                                        const SizedBox(width: 10),
+                                        const SizedBox(width: 8),
+                                        if (cat.serialNumber != null) ...[
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 6,
+                                              vertical: 2,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: AppColors.primary.withValues(alpha: 0.08),
+                                              borderRadius: BorderRadius.circular(4),
+                                              border: Border.all(
+                                                color: AppColors.primary.withValues(alpha: 0.25),
+                                                width: 0.8,
+                                              ),
+                                            ),
+                                            child: Text(
+                                              '#${cat.serialNumber}',
+                                              style: AppTheme.numericStyle(
+                                                fontSize: 10.5,
+                                                fontWeight: FontWeight.bold,
+                                                color: AppColors.primary,
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                        ],
                                         Expanded(
                                           child: Text(
                                             cat.name,
@@ -1048,7 +1135,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    AppSearchableDropdown<String>(
+                    AppSearchableDropdown<String?>(
                       label: 'inventory.category'.tr(),
                       value: categories.any((c) => c.id == selectedCatId)
                           ? selectedCatId
@@ -1060,15 +1147,91 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         color: AppColors.textSecondary,
                       ),
                       itemSearchText: (id) {
+                        if (id == null) return 'inventory.uncategorized'.tr();
                         final cat = categories.where((c) => c.id == id).firstOrNull;
-                        return cat?.name ?? '';
+                        if (cat == null) return '';
+                        final serial = cat.serialNumber != null ? ' #${cat.serialNumber} ${cat.serialNumber}' : '';
+                        return '${cat.name}$serial';
                       },
-                      items: categories.map((c) {
-                        return DropdownMenuItem<String>(
-                          value: c.id,
-                          child: Text(c.name),
-                        );
-                      }).toList(),
+                      searchMatchFn: (item, searchValue) {
+                        if (item.value == null) {
+                          final q = searchValue.trim().toLowerCase();
+                          return q.isEmpty || 'inventory.uncategorized'.tr().toLowerCase().contains(q);
+                        }
+                        final cat = categories.where((c) => c.id == item.value).firstOrNull;
+                        if (cat == null) return false;
+                        final rawQuery = searchValue.trim().toLowerCase();
+                        if (rawQuery.isEmpty) return true;
+                        final normalizedQuery = rawQuery
+                            .replaceAll('٠', '0')
+                            .replaceAll('١', '1')
+                            .replaceAll('٢', '2')
+                            .replaceAll('٣', '3')
+                            .replaceAll('٤', '4')
+                            .replaceAll('٥', '5')
+                            .replaceAll('٦', '6')
+                            .replaceAll('٧', '7')
+                            .replaceAll('٨', '8')
+                            .replaceAll('٩', '9');
+
+                        final nameMatch = cat.name.toLowerCase().contains(rawQuery) ||
+                            cat.name.toLowerCase().contains(normalizedQuery);
+                        final serialMatch = cat.serialNumber != null &&
+                            ('#${cat.serialNumber}' == normalizedQuery ||
+                                cat.serialNumber.toString() == normalizedQuery ||
+                                cat.serialNumber.toString().contains(normalizedQuery) ||
+                                '#${cat.serialNumber}'.contains(normalizedQuery));
+                        return nameMatch || serialMatch;
+                      },
+                      items: [
+                        DropdownMenuItem<String?>(
+                          value: null,
+                          child: Text(
+                            'inventory.uncategorized'.tr(),
+                            style: const TextStyle(color: AppColors.textSecondary),
+                          ),
+                        ),
+                        ...categories.map((c) {
+                          return DropdownMenuItem<String?>(
+                            value: c.id,
+                            child: Row(
+                              children: [
+                                if (c.serialNumber != null) ...[
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary.withValues(alpha: 0.08),
+                                      borderRadius: BorderRadius.circular(4),
+                                      border: Border.all(
+                                        color: AppColors.primary.withValues(alpha: 0.25),
+                                        width: 0.8,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      '#${c.serialNumber}',
+                                      style: AppTheme.numericStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.primary,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                ],
+                                Expanded(
+                                  child: Text(
+                                    c.name,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }),
+                      ],
                       onChanged: (val) {
                         selectedCatId = val;
                       },

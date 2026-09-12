@@ -27,6 +27,17 @@ class $CategoriesTable extends Categories
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _serialNumberMeta = const VerificationMeta(
+    'serialNumber',
+  );
+  @override
+  late final GeneratedColumn<int> serialNumber = GeneratedColumn<int>(
+    'serial_number',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _syncedAtMeta = const VerificationMeta(
     'syncedAt',
   );
@@ -39,7 +50,7 @@ class $CategoriesTable extends Categories
     requiredDuringInsert: false,
   );
   @override
-  List<GeneratedColumn> get $columns => [id, name, syncedAt];
+  List<GeneratedColumn> get $columns => [id, serialNumber, name, syncedAt];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -56,6 +67,15 @@ class $CategoriesTable extends Categories
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
     } else if (isInserting) {
       context.missing(_idMeta);
+    }
+    if (data.containsKey('serial_number')) {
+      context.handle(
+        _serialNumberMeta,
+        serialNumber.isAcceptableOrUnknown(
+          data['serial_number']!,
+          _serialNumberMeta,
+        ),
+      );
     }
     if (data.containsKey('name')) {
       context.handle(
@@ -84,6 +104,10 @@ class $CategoriesTable extends Categories
         DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
+      serialNumber: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}serial_number'],
+      ),
       name: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}name'],
@@ -103,13 +127,17 @@ class $CategoriesTable extends Categories
 
 class Category extends DataClass implements Insertable<Category> {
   final String id;
+  final int? serialNumber;
   final String name;
   final DateTime? syncedAt;
-  const Category({required this.id, required this.name, this.syncedAt});
+  const Category({required this.id, required this.name, this.syncedAt, this.serialNumber});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
+    if (!nullToAbsent || serialNumber != null) {
+      map['serial_number'] = Variable<int>(serialNumber);
+    }
     map['name'] = Variable<String>(name);
     if (!nullToAbsent || syncedAt != null) {
       map['synced_at'] = Variable<DateTime>(syncedAt);
@@ -120,6 +148,9 @@ class Category extends DataClass implements Insertable<Category> {
   CategoriesCompanion toCompanion(bool nullToAbsent) {
     return CategoriesCompanion(
       id: Value(id),
+      serialNumber: serialNumber == null && nullToAbsent
+          ? const Value.absent()
+          : Value(serialNumber),
       name: Value(name),
       syncedAt: syncedAt == null && nullToAbsent
           ? const Value.absent()
@@ -134,6 +165,7 @@ class Category extends DataClass implements Insertable<Category> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Category(
       id: serializer.fromJson<String>(json['id']),
+      serialNumber: serializer.fromJson<int?>(json['serialNumber']),
       name: serializer.fromJson<String>(json['name']),
       syncedAt: serializer.fromJson<DateTime?>(json['syncedAt']),
     );
@@ -143,6 +175,7 @@ class Category extends DataClass implements Insertable<Category> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
+      'serialNumber': serializer.toJson<int?>(serialNumber),
       'name': serializer.toJson<String>(name),
       'syncedAt': serializer.toJson<DateTime?>(syncedAt),
     };
@@ -150,16 +183,21 @@ class Category extends DataClass implements Insertable<Category> {
 
   Category copyWith({
     String? id,
+    Value<int?> serialNumber = const Value.absent(),
     String? name,
     Value<DateTime?> syncedAt = const Value.absent(),
   }) => Category(
     id: id ?? this.id,
+    serialNumber: serialNumber.present ? serialNumber.value : this.serialNumber,
     name: name ?? this.name,
     syncedAt: syncedAt.present ? syncedAt.value : this.syncedAt,
   );
   Category copyWithCompanion(CategoriesCompanion data) {
     return Category(
       id: data.id.present ? data.id.value : this.id,
+      serialNumber: data.serialNumber.present
+          ? data.serialNumber.value
+          : this.serialNumber,
       name: data.name.present ? data.name.value : this.name,
       syncedAt: data.syncedAt.present ? data.syncedAt.value : this.syncedAt,
     );
@@ -169,6 +207,7 @@ class Category extends DataClass implements Insertable<Category> {
   String toString() {
     return (StringBuffer('Category(')
           ..write('id: $id, ')
+          ..write('serialNumber: $serialNumber, ')
           ..write('name: $name, ')
           ..write('syncedAt: $syncedAt')
           ..write(')'))
@@ -176,29 +215,33 @@ class Category extends DataClass implements Insertable<Category> {
   }
 
   @override
-  int get hashCode => Object.hash(id, name, syncedAt);
+  int get hashCode => Object.hash(id, serialNumber, name, syncedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Category &&
           other.id == this.id &&
+          other.serialNumber == this.serialNumber &&
           other.name == this.name &&
           other.syncedAt == this.syncedAt);
 }
 
 class CategoriesCompanion extends UpdateCompanion<Category> {
   final Value<String> id;
+  final Value<int?> serialNumber;
   final Value<String> name;
   final Value<DateTime?> syncedAt;
   final Value<int> rowid;
   const CategoriesCompanion({
     this.id = const Value.absent(),
+    this.serialNumber = const Value.absent(),
     this.name = const Value.absent(),
     this.syncedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   CategoriesCompanion.insert({
     required String id,
+    this.serialNumber = const Value.absent(),
     required String name,
     this.syncedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -206,12 +249,14 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
        name = Value(name);
   static Insertable<Category> custom({
     Expression<String>? id,
+    Expression<int>? serialNumber,
     Expression<String>? name,
     Expression<DateTime>? syncedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
+      if (serialNumber != null) 'serial_number': serialNumber,
       if (name != null) 'name': name,
       if (syncedAt != null) 'synced_at': syncedAt,
       if (rowid != null) 'rowid': rowid,
@@ -220,12 +265,14 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
 
   CategoriesCompanion copyWith({
     Value<String>? id,
+    Value<int?>? serialNumber,
     Value<String>? name,
     Value<DateTime?>? syncedAt,
     Value<int>? rowid,
   }) {
     return CategoriesCompanion(
       id: id ?? this.id,
+      serialNumber: serialNumber ?? this.serialNumber,
       name: name ?? this.name,
       syncedAt: syncedAt ?? this.syncedAt,
       rowid: rowid ?? this.rowid,
@@ -237,6 +284,9 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
     final map = <String, Expression>{};
     if (id.present) {
       map['id'] = Variable<String>(id.value);
+    }
+    if (serialNumber.present) {
+      map['serial_number'] = Variable<int>(serialNumber.value);
     }
     if (name.present) {
       map['name'] = Variable<String>(name.value);
@@ -254,6 +304,7 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
   String toString() {
     return (StringBuffer('CategoriesCompanion(')
           ..write('id: $id, ')
+          ..write('serialNumber: $serialNumber, ')
           ..write('name: $name, ')
           ..write('syncedAt: $syncedAt, ')
           ..write('rowid: $rowid')

@@ -38,57 +38,122 @@ class CustomerDetailsPanel extends StatelessWidget {
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: AppColors.border),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        Text(
-                          customerData.customer.name,
-                          style: theme.textTheme.displaySmall?.copyWith(
-                            color: AppColors.primary,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  customerData.customer.name,
+                                  style: theme.textTheme.displaySmall?.copyWith(
+                                    color: AppColors.primary,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              InkWell(
+                                onTap: onEditCustomer,
+                                borderRadius: BorderRadius.circular(6),
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary.withValues(alpha: 0.08),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: const Icon(Icons.edit, size: 16, color: AppColors.primary),
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        InkWell(
-                          onTap: onEditCustomer,
-                          child: const Icon(Icons.edit, size: 18, color: AppColors.primary),
+                          const SizedBox(height: 6),
+                          if (customerData.customer.phone != null && customerData.customer.phone!.trim().isNotEmpty) ...[
+                            Row(
+                              children: [
+                                const Icon(Icons.phone, size: 16, color: AppColors.textSecondary),
+                                const SizedBox(width: 6),
+                                Text(customerData.customer.phone!.trim(), style: AppTheme.numericStyle()),
+                              ],
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text('${'customers.balance'.tr()}:', style: theme.textTheme.labelSmall),
+                        const SizedBox(height: 4),
+                        Text(
+                          customerData.totalDebt.toStringAsFixed(2),
+                          style: AppTheme.numericStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: customerData.totalDebt > 0 ? AppColors.accent : AppColors.success,
+                          ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 6),
-                    if (customerData.customer.phone != null) ...[
-                      Row(
-                        children: [
-                          const Icon(Icons.phone, size: 16, color: AppColors.textSecondary),
-                          const SizedBox(width: 6),
-                          Text(customerData.customer.phone!, style: AppTheme.numericStyle()),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                    ],
-                    if (customerData.customer.notes != null)
-                      Text('${'common.notes'.tr()}: ${customerData.customer.notes!}', style: theme.textTheme.bodyMedium),
                   ],
                 ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text('${'customers.balance'.tr()}:', style: theme.textTheme.labelSmall),
-                    const SizedBox(height: 4),
-                    Text(
-                      customerData.totalDebt.toStringAsFixed(2),
-                      style: AppTheme.numericStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: customerData.totalDebt > 0 ? AppColors.accent : AppColors.success,
-                      ),
+                if (customerData.customer.notes != null && customerData.customer.notes!.trim().isNotEmpty) ...[
+                  const SizedBox(height: 14),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppColors.border),
                     ),
-                  ],
-                ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Icon(Icons.sticky_note_2_outlined, size: 18, color: AppColors.primary),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'common.notes'.tr(),
+                                style: const TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                customerData.customer.notes!.trim(),
+                                style: const TextStyle(
+                                  fontSize: 13.5,
+                                  color: AppColors.textPrimary,
+                                  height: 1.45,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

@@ -9,6 +9,7 @@ part 'app_database.g.dart';
 
 class Categories extends Table {
   TextColumn get id => text()();
+  IntColumn get serialNumber => integer().nullable()();
   TextColumn get name => text()();
   DateTimeColumn get syncedAt => dateTime().nullable()();
 
@@ -221,7 +222,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -288,8 +289,29 @@ class AppDatabase extends _$AppDatabase {
               await customStatement('ALTER TABLE expenses DROP COLUMN payment_method;');
             } catch (_) {}
           }
+          if (from < 8) {
+            await m.addColumn(categories, categories.serialNumber);
+            // Backfill serial numbers for existing categories
+            final existingCategories = await (select(categories)).get();
+            for (int i = 0; i < existingCategories.length; i++) {
+              final cat = existingCategories[i];
+              if (cat.serialNumber == null) {
+                await (update(categories)..where((t) => t.id.equals(cat.id)))
+                    .write(CategoriesCompanion(serialNumber: Value(i + 1)));
+              }
+            }
+          }
         },
       );
+
+  /// Get the next available category serial number
+  Future<int> getNextCategorySerialNumber() async {
+    final maxExp = categories.serialNumber.max();
+    final query = selectOnly(categories)..addColumns([maxExp]);
+    final row = await query.getSingleOrNull();
+    final currentMax = row?.read(maxExp) ?? 0;
+    return currentMax + 1;
+  }
 
   /// Get the next available product serial number
   Future<int> getNextProductSerialNumber() async {

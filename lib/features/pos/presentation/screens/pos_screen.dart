@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -386,7 +387,40 @@ class _POSScreenState extends State<POSScreen> {
                               if (id == null) return 'common.all'.tr();
                               if (id == '__uncategorized__') return 'inventory.uncategorized'.tr();
                               final c = categories.where((x) => x.id == id).firstOrNull;
-                              return c?.name ?? '';
+                              if (c == null) return '';
+                              final serial = c.serialNumber != null ? ' #${c.serialNumber} ${c.serialNumber}' : '';
+                              return '${c.name}$serial';
+                            },
+                            searchMatchFn: (item, searchValue) {
+                              final rawQuery = searchValue.trim().toLowerCase();
+                              if (rawQuery.isEmpty) return true;
+                              final normalizedQuery = rawQuery
+                                  .replaceAll('٠', '0')
+                                  .replaceAll('١', '1')
+                                  .replaceAll('٢', '2')
+                                  .replaceAll('٣', '3')
+                                  .replaceAll('٤', '4')
+                                  .replaceAll('٥', '5')
+                                  .replaceAll('٦', '6')
+                                  .replaceAll('٧', '7')
+                                  .replaceAll('٨', '8')
+                                  .replaceAll('٩', '9');
+                              if (item.value == null) {
+                                return 'common.all'.tr().toLowerCase().contains(rawQuery);
+                              }
+                              if (item.value == '__uncategorized__') {
+                                return 'inventory.uncategorized'.tr().toLowerCase().contains(rawQuery);
+                              }
+                              final cat = categories.where((c) => c.id == item.value).firstOrNull;
+                              if (cat == null) return false;
+                              final nameMatch = cat.name.toLowerCase().contains(rawQuery) ||
+                                  cat.name.toLowerCase().contains(normalizedQuery);
+                              final serialMatch = cat.serialNumber != null &&
+                                  ('#${cat.serialNumber}' == normalizedQuery ||
+                                      cat.serialNumber.toString() == normalizedQuery ||
+                                      cat.serialNumber.toString().contains(normalizedQuery) ||
+                                      '#${cat.serialNumber}'.contains(normalizedQuery));
+                              return nameMatch || serialMatch;
                             },
                             items: [
                               DropdownMenuItem<String?>(
@@ -415,6 +449,28 @@ class _POSScreenState extends State<POSScreen> {
                                   value: cat.id,
                                   child: Row(
                                     children: [
+                                      if (cat.serialNumber != null) ...[
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.primary.withValues(alpha: 0.08),
+                                            borderRadius: BorderRadius.circular(4),
+                                            border: Border.all(
+                                              color: AppColors.primary.withValues(alpha: 0.25),
+                                              width: 0.8,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            '#${cat.serialNumber}',
+                                            style: AppTheme.numericStyle(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                              color: AppColors.primary,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 6),
+                                      ],
                                       Expanded(
                                         child: Text(
                                           cat.name,
@@ -734,6 +790,7 @@ class _POSScreenState extends State<POSScreen> {
                       onPaymentTypeChanged: (type) => cubit.setPaymentType(type),
                       onCustomerChanged: (cust) => cubit.selectCustomer(cust),
                       onAddCustomerPressed: () => _showAddCustomerDialog(context, cubit),
+                      onEditCustomerPressed: (cust) => _showEditCustomerDialog(context, cubit, cust),
                       onCheckoutPressed: state.cart.isEmpty ? null : cubit.checkout,
                     ),
                   ],
@@ -770,6 +827,41 @@ class _POSScreenState extends State<POSScreen> {
           );
           await cubit.loadPOSData();
           cubit.selectCustomer(customer);
+        },
+      ),
+    );
+  }
+
+  void _showEditCustomerDialog(BuildContext context, POSCubit cubit, Customer customer) {
+    final nameController = TextEditingController(text: customer.name);
+    final phoneController = TextEditingController(text: customer.phone ?? '');
+    final notesController = TextEditingController(text: customer.notes ?? '');
+
+    showDialog(
+      context: context,
+      builder: (_) => EntityFormDialog(
+        title: 'customers.edit_customer'.tr(),
+        saveLabel: 'common.save'.tr(),
+        nameController: nameController,
+        phoneController: phoneController,
+        notesController: notesController,
+        onSave: () async {
+          final repo = getIt<CustomersDebtsRepository>();
+          final phone = phoneController.text.trim().isNotEmpty ? phoneController.text.trim() : null;
+          final notes = notesController.text.trim().isNotEmpty ? notesController.text.trim() : null;
+          await repo.updateCustomer(
+            id: customer.id,
+            name: nameController.text.trim(),
+            phone: phone,
+            notes: notes,
+          );
+          await cubit.loadPOSData();
+          final updatedCustomer = customer.copyWith(
+            name: nameController.text.trim(),
+            phone: Value(phone),
+            notes: Value(notes),
+          );
+          cubit.selectCustomer(updatedCustomer);
         },
       ),
     );

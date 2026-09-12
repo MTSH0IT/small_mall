@@ -41,13 +41,23 @@ class InventoryRepository {
 
   Future<List<Category>> getCategories() async {
     _logger.debug('Fetching categories', context: LogContext.inventory);
-    return _db.select(_db.categories).get();
+    return (_db.select(_db.categories)
+          ..orderBy([
+            (t) => OrderingTerm.asc(t.serialNumber),
+            (t) => OrderingTerm.asc(t.name),
+          ]))
+        .get();
   }
 
   Future<Category> addCategory(String name) async {
     _logger.info('Adding category: $name', context: LogContext.inventory);
     final id = _uuid.v4();
-    final category = Category(id: id, name: name);
+    final serialNumber = await _db.getNextCategorySerialNumber();
+    final category = Category(
+      id: id,
+      name: name,
+      serialNumber: serialNumber,
+    );
     await _db.into(_db.categories).insert(category);
 
     _sync.updatePendingCount();

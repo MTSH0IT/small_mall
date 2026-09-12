@@ -39,8 +39,14 @@ class CustomersDebtsCubit extends Cubit<CustomersDebtsState> {
     required String? notes,
   }) async {
     try {
-      await _repository.addCustomer(name: name, phone: phone, notes: notes);
-      await loadCustomers();
+      final newCustomer = await _repository.addCustomer(name: name, phone: phone, notes: notes);
+      final list = await _repository.getCustomers();
+      final debts = await _repository.getCustomerDebts(newCustomer.id);
+      emit(CustomersDebtsLoaded(
+        customers: list,
+        selectedCustomerId: newCustomer.id,
+        selectedCustomerDebts: debts,
+      ));
     } catch (e) {
       if (state is CustomersDebtsLoaded) {
         emit((state as CustomersDebtsLoaded).copyWith(errorMessage: e.toString()));
@@ -58,7 +64,13 @@ class CustomersDebtsCubit extends Cubit<CustomersDebtsState> {
   }) async {
     try {
       await _repository.updateCustomer(id: id, name: name, phone: phone, notes: notes);
-      await loadCustomers();
+      final list = await _repository.getCustomers();
+      final debts = await _repository.getCustomerDebts(id);
+      emit(CustomersDebtsLoaded(
+        customers: list,
+        selectedCustomerId: id,
+        selectedCustomerDebts: debts,
+      ));
     } catch (e) {
       if (state is CustomersDebtsLoaded) {
         emit((state as CustomersDebtsLoaded).copyWith(errorMessage: e.toString()));
