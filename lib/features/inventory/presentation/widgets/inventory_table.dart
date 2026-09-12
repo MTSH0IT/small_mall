@@ -1,7 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:small_mall/core/utils/theme.dart';
-import 'package:small_mall/core/widgets/empty_state_view.dart';
+import 'package:small_mall/core/widgets/app_table.dart';
 import 'package:small_mall/core/widgets/price_tag_chip.dart';
 import 'package:small_mall/features/inventory/data/inventory_repository.dart';
 
@@ -27,61 +27,60 @@ class InventoryTable extends StatelessWidget {
       return matchQuery && matchFilter;
     }).toList();
 
-    if (filtered.isEmpty) {
-      return Center(
-        child: EmptyStateView(
-          icon: Icons.inventory_outlined,
-          title: 'inventory.title'.tr(),
-          description: 'inventory.no_matching_products'.tr(),
+    return AppTable<ProductWithDetails>(
+      items: filtered,
+      emptyTitle: 'inventory.title'.tr(),
+      emptyDescription: 'inventory.no_matching_products'.tr(),
+      emptyIcon: Icons.inventory_outlined,
+      columns: [
+        AppTableColumn<ProductWithDetails>(
+          title: 'inventory.product_name'.tr(),
+          cellBuilder: (item) => Text(
+            item.product.name,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
         ),
-      );
-    }
-
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surfaceElevated,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: SingleChildScrollView(
-        child: DataTable(
-          columns: [
-            DataColumn(label: Text('inventory.product_name'.tr())),
-            DataColumn(label: Text('inventory.category'.tr())),
-            DataColumn(label: Text('inventory.alert_quantity'.tr())),
-            DataColumn(label: Text('inventory.current_stock'.tr())),
-            DataColumn(label: Text('common.status'.tr())),
-            DataColumn(label: Text('inventory.adjust_stock'.tr())),
-          ],
-          rows: filtered.map((item) {
-            return DataRow(
-              cells: [
-                DataCell(Text(item.product.name, style: const TextStyle(fontWeight: FontWeight.bold))),
-                DataCell(Text(item.category?.name ?? '-')),
-                DataCell(Text(item.product.minStockAlert.toStringAsFixed(0), style: AppTheme.numericStyle())),
-                DataCell(Text(item.currentStock.toStringAsFixed(0), style: AppTheme.numericStyle(fontWeight: FontWeight.bold))),
-                DataCell(
-                  PriceTagChip(
-                    label: item.isLowStock ? 'inventory.low_stock'.tr() : 'inventory.in_stock'.tr(),
-                    backgroundColor: item.isLowStock ? AppColors.danger : AppColors.success,
-                    cutSize: 6,
-                  ),
-                ),
-                DataCell(
-                  OutlinedButton.icon(
-                    onPressed: () => onAdjustStock(item),
-                    icon: const Icon(Icons.swap_vert, size: 16, color: AppColors.primary),
-                    label: Text('common.edit'.tr(), style: const TextStyle(color: AppColors.primary, fontSize: 12)),
-                    style: OutlinedButton.styleFrom(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                    ),
-                  ),
-                ),
-              ],
-            );
-          }).toList(),
+        AppTableColumn<ProductWithDetails>(
+          title: 'inventory.category'.tr(),
+          cellBuilder: (item) => Text(item.category?.name ?? '-'),
         ),
-      ),
+        AppTableColumn<ProductWithDetails>(
+          title: 'inventory.alert_quantity'.tr(),
+          cellBuilder: (item) => Text(
+            item.product.minStockAlert.toStringAsFixed(0),
+            style: AppTheme.numericStyle(),
+          ),
+        ),
+        AppTableColumn<ProductWithDetails>(
+          title: 'inventory.current_stock'.tr(),
+          cellBuilder: (item) => Text(
+            item.currentStock.toStringAsFixed(0),
+            style: AppTheme.numericStyle(fontWeight: FontWeight.bold),
+          ),
+        ),
+        AppTableColumn<ProductWithDetails>(
+          title: 'common.status'.tr(),
+          cellBuilder: (item) => PriceTagChip(
+            label: item.isLowStock ? 'inventory.low_stock'.tr() : 'inventory.in_stock'.tr(),
+            backgroundColor: item.isLowStock ? AppColors.danger : AppColors.success,
+            cutSize: 6,
+          ),
+        ),
+        AppTableColumn<ProductWithDetails>(
+          title: 'inventory.adjust_stock'.tr(),
+          cellBuilder: (item) => OutlinedButton.icon(
+            onPressed: () => onAdjustStock(item),
+            icon: const Icon(Icons.swap_vert, size: 16, color: AppColors.primary),
+            label: Text(
+              'common.edit'.tr(),
+              style: const TextStyle(color: AppColors.primary, fontSize: 12),
+            ),
+            style: OutlinedButton.styleFrom(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

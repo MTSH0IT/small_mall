@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/utils/price_helper.dart';
 import 'package:small_mall/core/utils/theme.dart';
+import 'package:small_mall/core/widgets/app_table.dart';
 import 'package:small_mall/core/widgets/empty_state_view.dart';
 import 'package:small_mall/core/widgets/price_tag_chip.dart';
 import 'package:small_mall/features/inventory/data/inventory_repository.dart';
@@ -56,178 +57,132 @@ class ProductsTable extends StatelessWidget {
       );
     }
 
-    if (filtered.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceElevated,
-                shape: BoxShape.circle,
-                border: Border.all(color: AppColors.border),
-              ),
-              child: const Icon(
-                Icons.search_off_rounded,
-                size: 40,
-                color: AppColors.textSecondary,
+    return AppTable<ProductWithDetails>(
+      items: filtered,
+      emptyTitle: 'inventory.no_matching_products'.tr(),
+      emptyIcon: Icons.search_off_rounded,
+      onResetFilters: onResetFilters,
+      columns: [
+        AppTableColumn<ProductWithDetails>(
+          title: 'inventory.product_id'.tr(),
+          cellBuilder: (item) => Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(
+                color: AppColors.primary.withValues(alpha: 0.25),
+                width: 0.8,
               ),
             ),
-            const SizedBox(height: 14),
-            Text(
-              'inventory.no_matching_products'.tr(),
-              style: const TextStyle(
-                fontSize: 16,
+            child: Text(
+              '#${item.product.serialNumber ?? '-'}',
+              style: AppTheme.numericStyle(
                 fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
+                color: AppColors.primary,
+                fontSize: 12.5,
               ),
             ),
-            if (onResetFilters != null) ...[
-              const SizedBox(height: 16),
-              OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+        AppTableColumn<ProductWithDetails>(
+          title: 'inventory.product_name'.tr(),
+          cellBuilder: (item) => Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                item.product.name,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              if (item.product.code != null && item.product.code!.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 2.0),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.qr_code_2_rounded,
+                        size: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                      const SizedBox(width: 3),
+                      Text(
+                        item.product.code!,
+                        style: AppTheme.numericStyle(
+                          fontSize: 11,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                icon: const Icon(Icons.filter_alt_off_outlined, size: 16),
-                label: Text('pos.clear_filters'.tr()),
-                onPressed: onResetFilters,
-              ),
             ],
-          ],
+          ),
         ),
-      );
-    }
-
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surfaceElevated,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: SingleChildScrollView(
-        child: DataTable(
-          columns: [
-            DataColumn(label: Text('inventory.product_id'.tr())),
-            DataColumn(label: Text('inventory.product_name'.tr())),
-            DataColumn(label: Text('inventory.category'.tr())),
-            DataColumn(label: Text('inventory.cost_price'.tr())),
-            DataColumn(label: Text('inventory.selling_prices'.tr())),
-            DataColumn(label: Text('inventory.current_stock'.tr())),
-            DataColumn(label: Text('common.actions'.tr())),
-          ],
-          rows: filtered.map((item) {
+        AppTableColumn<ProductWithDetails>(
+          title: 'inventory.category'.tr(),
+          cellBuilder: (item) => Text(item.category?.name ?? '-'),
+        ),
+        AppTableColumn<ProductWithDetails>(
+          title: 'inventory.cost_price'.tr(),
+          cellBuilder: (item) => Text(
+            item.product.costPrice.toStringAsFixed(2),
+            style: AppTheme.numericStyle(),
+          ),
+        ),
+        AppTableColumn<ProductWithDetails>(
+          title: 'inventory.selling_prices'.tr(),
+          cellBuilder: (item) {
             final retail = item.prices.firstWhere((p) => p.priceLabel == 'retail',
                 orElse: () => ProductPrice(id: '', productId: '', priceLabel: 'retail', priceValue: 0.0));
             final wholesale = item.prices.firstWhere((p) => p.priceLabel == 'wholesale',
                 orElse: () => ProductPrice(id: '', productId: '', priceLabel: 'wholesale', priceValue: 0.0));
 
-            return DataRow(
-              cells: [
-                DataCell(
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(
-                        color: AppColors.primary.withValues(alpha: 0.25),
-                        width: 0.8,
-                      ),
-                    ),
-                    child: Text(
-                      '#${item.product.serialNumber ?? '-'}',
-                      style: AppTheme.numericStyle(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
-                        fontSize: 12.5,
-                      ),
-                    ),
-                  ),
+            return Wrap(
+              spacing: 8,
+              children: [
+                PriceTagChip(
+                  label: '${'retail'.priceLabelText}: ${retail.priceValue.toStringAsFixed(1)}',
+                  backgroundColor: 'retail'.priceLabelColor,
+                  cutSize: 6,
                 ),
-                DataCell(
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        item.product.name,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      if (item.product.code != null && item.product.code!.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 2.0),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.qr_code_2_rounded,
-                                size: 12,
-                                color: AppColors.textSecondary,
-                              ),
-                              const SizedBox(width: 3),
-                              Text(
-                                item.product.code!,
-                                style: AppTheme.numericStyle(
-                                  fontSize: 11,
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                DataCell(Text(item.category?.name ?? '-')),
-                DataCell(Text(item.product.costPrice.toStringAsFixed(2), style: AppTheme.numericStyle())),
-                DataCell(
-                  Wrap(
-                    spacing: 8,
-                    children: [
-                      PriceTagChip(
-                        label: '${'retail'.priceLabelText}: ${retail.priceValue.toStringAsFixed(1)}',
-                        backgroundColor: 'retail'.priceLabelColor,
-                        cutSize: 6,
-                      ),
-                      PriceTagChip(
-                        label: '${'wholesale'.priceLabelText}: ${wholesale.priceValue.toStringAsFixed(1)}',
-                        backgroundColor: 'wholesale'.priceLabelColor,
-                        cutSize: 6,
-                      ),
-                    ],
-                  ),
-                ),
-                DataCell(
-                  Text(
-                    item.currentStock.toStringAsFixed(0),
-                    style: AppTheme.numericStyle(
-                      color: item.isLowStock ? AppColors.danger : AppColors.success,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                DataCell(
-                  Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.edit_outlined, color: AppColors.primary),
-                        onPressed: () => onEditProduct(item),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete_outline, color: AppColors.danger),
-                        onPressed: () => onDeleteProduct(item),
-                      ),
-                    ],
-                  ),
+                PriceTagChip(
+                  label: '${'wholesale'.priceLabelText}: ${wholesale.priceValue.toStringAsFixed(1)}',
+                  backgroundColor: 'wholesale'.priceLabelColor,
+                  cutSize: 6,
                 ),
               ],
             );
-          }).toList(),
+          },
         ),
-      ),
+        AppTableColumn<ProductWithDetails>(
+          title: 'inventory.current_stock'.tr(),
+          cellBuilder: (item) => Text(
+            item.currentStock.toStringAsFixed(0),
+            style: AppTheme.numericStyle(
+              color: item.isLowStock ? AppColors.danger : AppColors.success,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        AppTableColumn<ProductWithDetails>(
+          title: 'common.actions'.tr(),
+          cellBuilder: (item) => Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.edit_outlined, color: AppColors.primary),
+                onPressed: () => onEditProduct(item),
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete_outline, color: AppColors.danger),
+                onPressed: () => onDeleteProduct(item),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
