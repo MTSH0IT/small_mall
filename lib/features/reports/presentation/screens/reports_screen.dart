@@ -6,7 +6,6 @@ import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/core/widgets/app_screen_scaffold.dart';
 import 'package:small_mall/core/widgets/app_toast.dart';
 import 'package:small_mall/core/widgets/card_container.dart';
-import 'package:small_mall/core/widgets/empty_state_view.dart';
 import 'package:small_mall/core/widgets/loading_indicator.dart';
 import 'package:small_mall/core/widgets/stat_card.dart';
 import 'package:small_mall/features/reports/data/reports_repository.dart';
@@ -293,74 +292,14 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 ),
                 const SizedBox(width: 24),
 
-                // Right: Sales vs Purchases & Best Sellers
+                // Right: Sales vs Purchases Comparison
                 Expanded(
                   flex: 3,
-                  child: Column(
-                    children: [
-                      // Sales vs Purchases Chart
-                      CardContainer(
-                        title: 'reports.comparison_chart'.tr(),
-                        child: SalesPurchasesComparisonChart(
-                          summary: state.purchasesSalesSummary,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Top Selling Products
-                      CardContainer(
-                        title: 'reports.top_selling'.tr(),
-                        child: state.bestSellers.isEmpty
-                            ? Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 16.0),
-                                child: EmptyStateView(
-                                  icon: Icons.leaderboard_outlined,
-                                  title: 'reports.top_selling'.tr(),
-                                  description: 'reports.no_sales_data'.tr(),
-                                ),
-                              )
-                            : ListView.separated(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                itemCount: state.bestSellers.length,
-                                separatorBuilder: (_, _) => const Divider(height: 1, color: AppColors.border),
-                                itemBuilder: (context, index) {
-                                  final item = state.bestSellers[index];
-                                  return ListTile(
-                                    dense: true,
-                                    leading: Container(
-                                      width: 24,
-                                      height: 24,
-                                      decoration: const BoxDecoration(
-                                        color: AppColors.primary,
-                                        shape: BoxShape.circle,
-                                      ),
-                                      alignment: Alignment.center,
-                                      child: Text(
-                                        '${index + 1}',
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ),
-                                    title: Text(item.product.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-                                    subtitle: Text(
-                                      '${'common.quantity'.tr()}: ${item.totalQuantity.toStringAsFixed(0)}',
-                                    ),
-                                    trailing: Text(
-                                      item.totalRevenue.toStringAsFixed(2),
-                                      style: AppTheme.numericStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: AppColors.primary,
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                      ),
-                    ],
+                  child: CardContainer(
+                    title: 'reports.comparison_chart'.tr(),
+                    child: SalesPurchasesComparisonChart(
+                      summary: state.purchasesSalesSummary,
+                    ),
                   ),
                 ),
               ],

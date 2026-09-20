@@ -664,12 +664,13 @@ class ReportsRepository {
 
     double totalSales = 0.0;
     for (final sale in sales) {
-      if (sale.type == 'sale') {
+      if (sale.type == 'sale' && sale.paymentType != 'debt') {
         totalSales += sale.totalAmount;
       } else if (sale.type == 'return') {
         totalSales -= sale.totalAmount;
       }
     }
+    if (totalSales < 0) totalSales = 0.0;
 
     // Purchases
     final purchases = await (_db.select(_db.purchaseInvoices)
