@@ -14,12 +14,14 @@ class CustomerDetailsPanel extends StatelessWidget {
     required this.debts,
     required this.onRecordPayment,
     required this.onEditCustomer,
+    required this.onDeleteCustomer,
   });
 
   final CustomerWithDebts customerData;
   final List<DebtWithPayments>? debts;
   final ValueChanged<DebtWithPayments> onRecordPayment;
   final VoidCallback onEditCustomer;
+  final VoidCallback onDeleteCustomer;
 
   @override
   Widget build(BuildContext context) {
@@ -60,16 +62,35 @@ class CustomerDetailsPanel extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(width: 8),
-                              InkWell(
-                                onTap: onEditCustomer,
-                                borderRadius: BorderRadius.circular(6),
-                                child: Container(
-                                  padding: const EdgeInsets.all(4),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.primary.withValues(alpha: 0.08),
-                                    borderRadius: BorderRadius.circular(6),
+                              Tooltip(
+                                message: 'customers.edit_customer'.tr(),
+                                child: InkWell(
+                                  onTap: onEditCustomer,
+                                  borderRadius: BorderRadius.circular(6),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary.withValues(alpha: 0.08),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: const Icon(Icons.edit, size: 16, color: AppColors.primary),
                                   ),
-                                  child: const Icon(Icons.edit, size: 16, color: AppColors.primary),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Tooltip(
+                                message: 'customers.delete_customer'.tr(),
+                                child: InkWell(
+                                  onTap: onDeleteCustomer,
+                                  borderRadius: BorderRadius.circular(6),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.danger.withValues(alpha: 0.08),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: const Icon(Icons.delete_outline, size: 16, color: AppColors.danger),
+                                  ),
                                 ),
                               ),
                             ],

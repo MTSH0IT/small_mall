@@ -339,7 +339,7 @@ class InvoicesRepository {
         type: UnifiedTransactionType.debtPayment,
         createdAt: dp.paidAt,
         totalAmount: dp.amountPaid,
-        partyName: customerName ?? 'invoices.customer'.tr(),
+        partyName: customerName ?? 'common.deleted_customer'.tr(),
         notes: debt != null ? '${'customers.remaining_debt'.tr()}: ${debt.remainingAmount.toStringAsFixed(2)}' : null,
         rawDebtPayment: dp,
       );

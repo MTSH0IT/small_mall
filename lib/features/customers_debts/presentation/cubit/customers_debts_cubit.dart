@@ -103,4 +103,27 @@ class CustomersDebtsCubit extends Cubit<CustomersDebtsState> {
       }
     }
   }
+
+  Future<Map<String, dynamic>> checkCanDeleteCustomer(String id) {
+    return _repository.checkCanDeleteCustomer(id);
+  }
+
+  Future<void> deleteCustomer(String id) async {
+    try {
+      await _repository.deleteCustomer(id);
+      final list = await _repository.getCustomers();
+      emit(CustomersDebtsLoaded(
+        customers: list,
+        selectedCustomerId: null,
+        selectedCustomerDebts: null,
+      ));
+    } catch (e) {
+      if (state is CustomersDebtsLoaded) {
+        emit((state as CustomersDebtsLoaded).copyWith(errorMessage: e.toString()));
+      } else {
+        emit(CustomersDebtsError(e.toString()));
+      }
+      rethrow;
+    }
+  }
 }

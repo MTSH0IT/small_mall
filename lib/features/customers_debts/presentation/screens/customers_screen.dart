@@ -126,6 +126,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
         debts: debts,
         onRecordPayment: (debtData) => _showRecordPaymentDialog(context, cubit, customerData.customer.id, debtData),
         onEditCustomer: () => _showEditCustomerDialog(context, cubit, customerData.customer),
+        onDeleteCustomer: () => _showDeleteCustomerDialog(context, cubit, customerData),
       );
     }
 
@@ -238,6 +239,120 @@ class _CustomersScreenState extends State<CustomersScreen> {
           ],
         );
       },
+    );
+  }
+
+  Future<void> _showDeleteCustomerDialog(
+    BuildContext context,
+    CustomersDebtsCubit cubit,
+    CustomerWithDebts customerData,
+  ) async {
+    final check = await cubit.checkCanDeleteCustomer(customerData.customer.id);
+    if (!context.mounted) return;
+
+    final canDelete = check['canDelete'] == true;
+
+    if (!canDelete) {
+      final reason = check['reason'] as String? ?? 'customers.cannot_delete_customer_has_debt'.tr();
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.danger.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.warning_amber_rounded, color: AppColors.danger, size: 24),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'customers.delete_customer_confirm_title'.tr(),
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            reason,
+            style: const TextStyle(fontSize: 14, height: 1.5),
+          ),
+          actions: [
+            PrimaryButton(
+              label: 'common.close'.tr(),
+              onPressed: () => Navigator.pop(ctx),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    final invoicesCount = check['invoicesCount'] as int? ?? 0;
+    final paymentsCount = check['paymentsCount'] as int? ?? 0;
+    final message = (invoicesCount > 0 || paymentsCount > 0)
+        ? 'customers.delete_customer_confirm_msg_with_invoices'.tr(namedArgs: {
+            'name': customerData.customer.name,
+            'count': invoicesCount.toString(),
+            'paymentsCount': paymentsCount.toString(),
+          })
+        : 'customers.delete_customer_confirm_msg'.tr(namedArgs: {
+            'name': customerData.customer.name,
+          });
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.danger.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.delete_outline, color: AppColors.danger, size: 24),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'customers.delete_customer_confirm_title'.tr(),
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          message,
+          style: const TextStyle(fontSize: 14, height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('common.cancel'.tr(), style: const TextStyle(color: AppColors.textSecondary)),
+          ),
+          PrimaryButton(
+            label: 'common.delete'.tr(),
+            backgroundColor: AppColors.danger,
+            onPressed: () async {
+              Navigator.pop(ctx);
+              try {
+                await cubit.deleteCustomer(customerData.customer.id);
+                if (!context.mounted) return;
+                AppToast.success(context, message: 'customers.customer_deleted'.tr());
+              } catch (e) {
+                if (!context.mounted) return;
+                AppToast.error(context, message: e.toString());
+              }
+            },
+          ),
+        ],
+      ),
     );
   }
 }

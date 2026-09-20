@@ -80,4 +80,22 @@ class SuppliersPurchasingCubit extends Cubit<SuppliersPurchasingState> {
   Future<PurchaseInvoiceWithDetails?> getPurchaseInvoiceDetails(String invoiceId) {
     return _repository.getPurchaseInvoiceDetails(invoiceId);
   }
+
+  Future<Map<String, dynamic>> checkCanDeleteSupplier(String id) {
+    return _repository.checkCanDeleteSupplier(id);
+  }
+
+  Future<void> deleteSupplier(String id) async {
+    try {
+      await _repository.deleteSupplier(id);
+      await loadSuppliers();
+    } catch (e) {
+      if (state is SuppliersPurchasingLoaded) {
+        emit((state as SuppliersPurchasingLoaded).copyWith(errorMessage: e.toString()));
+      } else {
+        emit(SuppliersPurchasingError(e.toString()));
+      }
+      rethrow;
+    }
+  }
 }

@@ -20,11 +20,13 @@ class SupplierOperationsPanel extends StatefulWidget {
     required this.supplier,
     required this.availableProducts,
     required this.onEditSupplier,
+    required this.onDeleteSupplier,
   });
 
   final Supplier supplier;
   final List<ProductWithDetails> availableProducts;
   final VoidCallback onEditSupplier;
+  final VoidCallback onDeleteSupplier;
 
   @override
   State<SupplierOperationsPanel> createState() => _SupplierOperationsPanelState();
@@ -145,6 +147,14 @@ class _SupplierOperationsPanelState extends State<SupplierOperationsPanel> {
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
                       onPressed: widget.onEditSupplier,
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.danger),
+                      tooltip: 'suppliers.delete_supplier'.tr(),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      onPressed: widget.onDeleteSupplier,
                     ),
                   ],
                 ),

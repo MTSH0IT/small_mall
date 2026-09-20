@@ -33,6 +33,7 @@
     "currency": "ر.س",
     "no_phone": "بدون هاتف",
     "deleted_product": "منتج محذوف",
+    "deleted_customer": "عميل سابق (محذوف)",
     "numeric_only": "يرجى إدخال أرقام فقط"
   },
   "nav": {
@@ -282,12 +283,23 @@
     "partial": "سداد جزئي",
     "payment_exceeds_debt": "المبلغ يتعدى قيمة الدين المتبقي!",
     "no_debts": "لا توجد معاملات ديون سابقة لهذا العميل",
-    "debt_free": "حساب العميل سليم وبدون مستحقات ديون"
+    "debt_free": "حساب العميل سليم وبدون مستحقات ديون",
+    "delete_customer": "حذف العميل",
+    "customer_deleted": "تم حذف العميل بنجاح",
+    "delete_customer_confirm_title": "تأكيد حذف العميل",
+    "delete_customer_confirm_msg": "هل أنت متأكد من حذف العميل \"{name}\"؟ لا يمكن التراجع عن هذا الإجراء.",
+    "delete_customer_confirm_msg_with_invoices": "هل أنت متأكد من حذف العميل \"{name}\"؟\n\nتنبيه مالي: سيتم حذف بيانات العميل مع الحفاظ التام على سجل عمليات السداد ({paymentsCount} سند قبض) والفواتير السابقة ({count} فاتورة) في الحسابات لضمان دقة التقارير وصندوق النقدية.",
+    "cannot_delete_customer_has_debt": "لا يمكن حذف العميل لوجود رصيد مديونية مستحق عليه بمبلغ {amount} ر.س. يرجى تسوية وسداد المديونية أولاً."
   },
   "suppliers": {
     "title": "الموردون والمشتريات",
     "add_supplier": "إضافة مورد جديد",
     "edit_supplier": "تعديل بيانات المورد",
+    "delete_supplier": "حذف المورد",
+    "supplier_deleted": "تم حذف المورد بنجاح",
+    "delete_supplier_confirm_title": "تأكيد حذف المورد",
+    "delete_supplier_confirm_msg": "هل أنت متأكد من حذف المورد \"{name}\"؟ لا يمكن التراجع عن هذا الإجراء.",
+    "delete_supplier_confirm_msg_with_invoices": "تنبيه: هذا المورد مرتبط بـ {count} فاتورة مشتريات.\nسيتم حذف بيانات المورد من قائمة الموردين مع الاحتفاظ بسجل فواتير المشتريات التاريخية في النظام.\n\nهل أنت متأكد من المتابعة؟",
     "supplier_name": "اسم المورد",
     "phone_number": "رقم الهاتف",
     "record_purchase": "تسجيل فاتورة شراء",

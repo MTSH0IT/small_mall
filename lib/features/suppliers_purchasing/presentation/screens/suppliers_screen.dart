@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/di/injection.dart';
+import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/core/widgets/app_screen_scaffold.dart';
 import 'package:small_mall/core/widgets/app_toast.dart';
 import 'package:small_mall/core/widgets/empty_state_view.dart';
 import 'package:small_mall/core/widgets/entity_form_dialog.dart';
 import 'package:small_mall/core/widgets/loading_indicator.dart';
+import 'package:small_mall/core/widgets/primary_button.dart';
 import 'package:small_mall/core/widgets/search_bar_with_action.dart';
 import 'package:small_mall/core/widgets/split_pane_layout.dart';
 import 'package:small_mall/features/inventory/data/inventory_repository.dart';
@@ -151,6 +153,7 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
       supplier: supplier,
       availableProducts: _availableProducts,
       onEditSupplier: () => _showEditSupplierDialog(context, cubit, supplier),
+      onDeleteSupplier: () => _showDeleteSupplierDialog(context, cubit, supplier),
     );
   }
 
@@ -203,6 +206,79 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
             notes: notesController.text.isNotEmpty ? notesController.text : null,
           );
         },
+      ),
+    );
+  }
+
+  Future<void> _showDeleteSupplierDialog(
+    BuildContext context,
+    SuppliersPurchasingCubit cubit,
+    Supplier supplier,
+  ) async {
+    final check = await cubit.checkCanDeleteSupplier(supplier.id);
+    if (!context.mounted) return;
+
+    final invoicesCount = check['invoicesCount'] as int? ?? 0;
+    final message = invoicesCount > 0
+        ? 'suppliers.delete_supplier_confirm_msg_with_invoices'.tr(namedArgs: {
+            'name': supplier.name,
+            'count': invoicesCount.toString(),
+          })
+        : 'suppliers.delete_supplier_confirm_msg'.tr(namedArgs: {
+            'name': supplier.name,
+          });
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.danger.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.delete_outline, color: AppColors.danger, size: 24),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'suppliers.delete_supplier_confirm_title'.tr(),
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          message,
+          style: const TextStyle(fontSize: 14, height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('common.cancel'.tr(), style: const TextStyle(color: AppColors.textSecondary)),
+          ),
+          PrimaryButton(
+            label: 'common.delete'.tr(),
+            backgroundColor: AppColors.danger,
+            onPressed: () async {
+              Navigator.pop(ctx);
+              try {
+                await cubit.deleteSupplier(supplier.id);
+                if (!context.mounted) return;
+                setState(() {
+                  _selectedSupplier = null;
+                });
+                AppToast.success(context, message: 'suppliers.supplier_deleted'.tr());
+              } catch (e) {
+                if (!context.mounted) return;
+                AppToast.error(context, message: e.toString());
+              }
+            },
+          ),
+        ],
       ),
     );
   }

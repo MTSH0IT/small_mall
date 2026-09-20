@@ -33,6 +33,7 @@
     "currency": "SAR",
     "no_phone": "No phone",
     "deleted_product": "Deleted Product",
+    "deleted_customer": "Former Customer",
     "numeric_only": "Please enter numbers only"
   },
   "nav": {
@@ -282,12 +283,23 @@
     "partial": "Partial Payment",
     "payment_exceeds_debt": "Amount exceeds remaining debt!",
     "no_debts": "No debt transactions found for this customer",
-    "debt_free": "Customer has a clear balance with no outstanding debts"
+    "debt_free": "Customer has a clear balance with no outstanding debts",
+    "delete_customer": "Delete Customer",
+    "customer_deleted": "Customer deleted successfully",
+    "delete_customer_confirm_title": "Confirm Delete Customer",
+    "delete_customer_confirm_msg": "Are you sure you want to delete customer \"{name}\"? This action cannot be undone.",
+    "delete_customer_confirm_msg_with_invoices": "Are you sure you want to delete customer \"{name}\"?\n\nFinancial Notice: The customer profile will be deleted while all payment receipts ({paymentsCount} receipts) and past invoices ({count} invoices) remain fully preserved in financial records to maintain accounting integrity.",
+    "cannot_delete_customer_has_debt": "Cannot delete customer because of an active debt balance of {amount} SAR. Please settle the debt first."
   },
   "suppliers": {
     "title": "Suppliers & Purchasing",
     "add_supplier": "Add New Supplier",
     "edit_supplier": "Edit Supplier",
+    "delete_supplier": "Delete Supplier",
+    "supplier_deleted": "Supplier deleted successfully",
+    "delete_supplier_confirm_title": "Confirm Delete Supplier",
+    "delete_supplier_confirm_msg": "Are you sure you want to delete supplier \"{name}\"? This action cannot be undone.",
+    "delete_supplier_confirm_msg_with_invoices": "Warning: This supplier is linked to {count} purchase invoice(s). The supplier will be deleted from the list, while historical purchase invoices will remain in the system.\n\nAre you sure you want to proceed?",
     "supplier_name": "Supplier Name",
     "phone_number": "Phone Number",
     "record_purchase": "Record Purchase Invoice",

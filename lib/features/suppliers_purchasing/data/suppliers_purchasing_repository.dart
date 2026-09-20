@@ -126,6 +126,37 @@ class SuppliersPurchasingRepository {
     _sync.sync();
   }
 
+  Future<Map<String, dynamic>> checkCanDeleteSupplier(String id) async {
+    final purchaseInvoices = await (_db.select(_db.purchaseInvoices)..where((t) => t.supplierId.equals(id))).get();
+    return {
+      'canDelete': true,
+      'invoicesCount': purchaseInvoices.length,
+    };
+  }
+
+  Future<void> deleteSupplier(String id) async {
+    _logger.info('Deleting supplier: $id', context: LogContext.inventory);
+    final now = DateTime.now();
+
+    await _db.transaction(() async {
+      // 1. Record supplier deletion for sync
+      await _db.into(_db.deletedRecords).insert(
+        DeletedRecordsCompanion.insert(
+          id: _uuid.v4(),
+          targetTable: 'suppliers',
+          recordId: id,
+          createdAt: now,
+        ),
+      );
+
+      // 2. Delete supplier
+      await (_db.delete(_db.suppliers)..where((t) => t.id.equals(id))).go();
+    });
+
+    _sync.updatePendingCount();
+    _sync.sync();
+  }
+
   // --- Purchases ---
 
   Future<void> recordPurchase({
