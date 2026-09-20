@@ -339,14 +339,14 @@ class _ProductOperationsDialogState extends State<ProductOperationsDialog> {
                     const SizedBox(width: 10),
                     _buildKpiCard(
                       title: 'inventory.total_purchases_qty'.tr(),
-                      value: '+${_totalPurchases.toStringAsFixed(0)}',
+                      value: _totalPurchases.toStringAsFixed(0),
                       icon: Icons.local_shipping_outlined,
                       color: const Color(0xFF7C3AED), // Purple
                     ),
                     const SizedBox(width: 10),
                     _buildKpiCard(
                       title: 'inventory.total_sales_qty'.tr(),
-                      value: '-${_totalSales.toStringAsFixed(0)}',
+                      value: _totalSales.toStringAsFixed(0),
                       icon: Icons.shopping_cart_outlined,
                       color: const Color(0xFFD97706), // Amber / Orange
                     ),
@@ -425,6 +425,42 @@ class _ProductOperationsDialogState extends State<ProductOperationsDialog> {
                             AppTableColumn<ProductStockOperation>(
                               title: 'common.quantity'.tr(),
                               cellBuilder: (op) {
+                                if (op.type == 'sale') {
+                                  return Text(
+                                    op.quantity.abs().toStringAsFixed(0),
+                                    style: AppTheme.numericStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: const Color(0xFFD97706),
+                                    ),
+                                  );
+                                }
+                                if (op.type == 'purchase') {
+                                  return Text(
+                                    op.quantity.abs().toStringAsFixed(0),
+                                    style: AppTheme.numericStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: const Color(0xFF7C3AED),
+                                    ),
+                                  );
+                                }
+                                if (op.type == 'initial') {
+                                  return Text(
+                                    op.quantity.abs().toStringAsFixed(0),
+                                    style: AppTheme.numericStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: const Color(0xFF2563EB),
+                                    ),
+                                  );
+                                }
+                                if (op.type == 'return') {
+                                  return Text(
+                                    op.quantity.abs().toStringAsFixed(0),
+                                    style: AppTheme.numericStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.pink,
+                                    ),
+                                  );
+                                }
                                 final isPositive = op.quantity > 0;
                                 final isZero = op.quantity == 0;
                                 final color = isZero
