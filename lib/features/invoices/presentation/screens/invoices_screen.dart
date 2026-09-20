@@ -8,11 +8,11 @@ import 'package:small_mall/core/widgets/app_toast.dart';
 import 'package:small_mall/core/widgets/empty_state_view.dart';
 import 'package:small_mall/core/widgets/loading_indicator.dart';
 import 'package:small_mall/core/widgets/split_pane_layout.dart';
+import 'package:small_mall/features/invoices/data/invoices_repository.dart';
 import 'package:small_mall/features/invoices/presentation/cubit/invoices_cubit.dart';
 import 'package:small_mall/features/invoices/presentation/cubit/invoices_state.dart';
 import 'package:small_mall/features/invoices/presentation/widgets/invoice_detail_panel.dart';
 import 'package:small_mall/features/invoices/presentation/widgets/invoice_list.dart';
-import 'package:small_mall/features/pos/data/pos_repository.dart';
 
 class InvoicesScreen extends StatefulWidget {
   const InvoicesScreen({super.key});
@@ -33,7 +33,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
   @override
   Widget build(BuildContext context) {
     return BlocProvider<InvoicesCubit>(
-      create: (context) => InvoicesCubit(getIt<POSRepository>())..loadInvoices(),
+      create: (context) => InvoicesCubit(getIt<InvoicesRepository>())..loadInvoices(),
       child: BlocConsumer<InvoicesCubit, InvoicesState>(
         listener: (context, state) {
           if (state is InvoicesError) {
@@ -66,22 +66,18 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
         children: [
           // 1. Search Bar
           _buildSearchBar(cubit),
-          const SizedBox(height: 10),
-
-          // 2. Date Filter Chips
-          _buildDateFilterChips(context, cubit, state),
-          const SizedBox(height: 8),
-
-          // 3. Type Filter Chips
-          _buildTypeFilterChips(cubit, state),
           const SizedBox(height: 12),
 
-          // 4. Summary Cards (Sales & Returns)
+          // 2. Dropdown Filters (Operation Type & Duration)
+          _buildDropdownFilters(context, cubit, state),
+          const SizedBox(height: 12),
+
+          // 3. Dynamic Summary Cards
           if (state is InvoicesLoaded) _buildSummaryCards(state),
           const SizedBox(height: 12),
 
-          // 5. Invoices List
-          Expanded(child: _buildInvoiceList(cubit, state)),
+          // 4. Transactions List
+          Expanded(child: _buildTransactionsList(cubit, state)),
         ],
       ),
     );
@@ -128,148 +124,319 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
     );
   }
 
-  Widget _buildDateFilterChips(BuildContext context, InvoicesCubit cubit, InvoicesState state) {
-    final currentDateFilter = state is InvoicesLoaded ? state.dateFilter : 'all';
+  Widget _buildDropdownFilters(BuildContext context, InvoicesCubit cubit, InvoicesState state) {
+    final currentType = state is InvoicesLoaded ? state.typeFilter : 'all';
+    final currentDate = state is InvoicesLoaded ? state.dateFilter : 'all';
     final customRange = state is InvoicesLoaded ? state.customDateRange : null;
 
-    final filters = [
+    final typeOptions = [
+      {'key': 'all', 'label': 'invoices.all_types'.tr(), 'icon': Icons.layers_outlined, 'color': AppColors.primary},
+      {'key': 'sale', 'label': 'invoices.sale'.tr(), 'icon': Icons.point_of_sale, 'color': AppColors.success},
+      {'key': 'debt_invoice', 'label': 'invoices.debt_invoice'.tr(), 'icon': Icons.request_quote, 'color': AppColors.warning},
+      {'key': 'debt_payment', 'label': 'invoices.debt_payment'.tr(), 'icon': Icons.payments, 'color': const Color(0xFF7C3AED)},
+      {'key': 'return', 'label': 'invoices.return'.tr(), 'icon': Icons.replay, 'color': AppColors.danger},
+      {'key': 'purchase', 'label': 'invoices.purchase'.tr(), 'icon': Icons.local_shipping, 'color': const Color(0xFF2563EB)},
+      {'key': 'expense', 'label': 'invoices.expense'.tr(), 'icon': Icons.account_balance_wallet, 'color': const Color(0xFFEA580C)},
+      {'key': 'adjustment', 'label': 'invoices.adjustment'.tr(), 'icon': Icons.tune, 'color': const Color(0xFF0D9488)},
+    ];
+
+    final dateOptions = [
       {'key': 'all', 'label': 'invoices.filter_all'.tr()},
       {'key': 'today', 'label': 'invoices.filter_today'.tr()},
       {'key': 'yesterday', 'label': 'invoices.filter_yesterday'.tr()},
       {'key': 'this_week', 'label': 'invoices.filter_this_week'.tr()},
       {'key': 'this_month', 'label': 'invoices.filter_this_month'.tr()},
+      {'key': 'custom', 'label': 'invoices.filter_custom_date'.tr()},
     ];
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              ...filters.map((f) {
-                final isSelected = currentDateFilter == f['key'];
-                return Padding(
-                  padding: const EdgeInsets.only(left: 6),
-                  child: ChoiceChip(
-                    label: Text(f['label']!),
-                    selected: isSelected,
-                    onSelected: (_) => cubit.setDateFilter(f['key']!),
-                    selectedColor: AppColors.primary,
-                    visualDensity: VisualDensity.compact,
-                    labelStyle: TextStyle(
-                      fontSize: 12,
-                      color: isSelected ? Colors.white : AppColors.textPrimary,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                    ),
+        Row(
+          children: [
+            // 1. Operation Type Dropdown
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceElevated,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    isExpanded: true,
+                    value: currentType,
+                    icon: const Icon(Icons.arrow_drop_down, color: AppColors.textSecondary, size: 20),
+                    borderRadius: BorderRadius.circular(10),
+                    items: typeOptions.map((opt) {
+                      final isSelected = opt['key'] == currentType;
+                      final color = opt['color'] as Color;
+                      final icon = opt['icon'] as IconData;
+
+                      return DropdownMenuItem<String>(
+                        value: opt['key'] as String,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(icon, size: 16, color: color),
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Text(
+                                opt['label'] as String,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                  color: isSelected ? color : AppColors.textPrimary,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (val) {
+                      if (val != null) cubit.setTypeFilter(val);
+                    },
                   ),
-                );
-              }),
-              // Custom Date Chip
-              Padding(
-                padding: const EdgeInsets.only(left: 6),
-                child: ActionChip(
-                  avatar: const Icon(Icons.calendar_month, size: 14),
-                  label: Text(
-                    currentDateFilter == 'custom' && customRange != null
-                        ? '${DateFormat('MM/dd').format(customRange.start)} - ${DateFormat('MM/dd').format(customRange.end)}'
-                        : 'invoices.filter_custom_date'.tr(),
-                  ),
-                  backgroundColor: currentDateFilter == 'custom'
-                      ? AppColors.primary.withValues(alpha: 0.15)
-                      : AppColors.surfaceElevated,
-                  visualDensity: VisualDensity.compact,
-                  labelStyle: TextStyle(
-                    fontSize: 12,
-                    color: currentDateFilter == 'custom' ? AppColors.primary : AppColors.textPrimary,
-                    fontWeight: currentDateFilter == 'custom' ? FontWeight.bold : FontWeight.normal,
-                  ),
-                  onPressed: () async {
-                    final picked = await showDateRangePicker(
-                      context: context,
-                      firstDate: DateTime(2020),
-                      lastDate: DateTime.now().add(const Duration(days: 365)),
-                      initialDateRange: customRange ??
-                          DateTimeRange(
-                            start: DateTime.now().subtract(const Duration(days: 7)),
-                            end: DateTime.now(),
-                          ),
-                    );
-                    if (picked != null) {
-                      cubit.setDateFilter('custom', range: picked);
-                    }
-                  },
                 ),
               ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
+            ),
+            const SizedBox(width: 10),
 
-  Widget _buildTypeFilterChips(InvoicesCubit cubit, InvoicesState state) {
-    final currentFilter = state is InvoicesLoaded ? state.typeFilter : 'all';
+            // 2. Duration / Date Filter Dropdown
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceElevated,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    isExpanded: true,
+                    value: currentDate,
+                    icon: const Icon(Icons.calendar_today, color: AppColors.textSecondary, size: 16),
+                    borderRadius: BorderRadius.circular(10),
+                    items: dateOptions.map((opt) {
+                      final isSelected = opt['key'] == currentDate;
+                      return DropdownMenuItem<String>(
+                        value: opt['key'] as String,
+                        child: Text(
+                          opt['label'] as String,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            color: isSelected ? AppColors.primary : AppColors.textPrimary,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (val) async {
+                      if (val == null) return;
+                      if (val == 'custom') {
+                        final picked = await showDateRangePicker(
+                          context: context,
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime.now().add(const Duration(days: 365)),
+                          initialDateRange: customRange ??
+                              DateTimeRange(
+                                start: DateTime.now().subtract(const Duration(days: 7)),
+                                end: DateTime.now(),
+                              ),
+                        );
+                        if (picked != null) {
+                          cubit.setDateFilter('custom', range: picked);
+                        }
+                      } else {
+                        cubit.setDateFilter(val);
+                      }
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
 
-    return Row(
-      children: [
-        ChoiceChip(
-          label: Text('common.all'.tr()),
-          selected: currentFilter == 'all',
-          onSelected: (_) => cubit.setTypeFilter('all'),
-          selectedColor: AppColors.primary,
-          visualDensity: VisualDensity.compact,
-          labelStyle: TextStyle(
-            fontSize: 12,
-            color: currentFilter == 'all' ? Colors.white : AppColors.textPrimary,
+        // Custom Date Range indicator if active
+        if (currentDate == 'custom' && customRange != null) ...[
+          const SizedBox(height: 6),
+          InkWell(
+            onTap: () async {
+              final picked = await showDateRangePicker(
+                context: context,
+                firstDate: DateTime(2020),
+                lastDate: DateTime.now().add(const Duration(days: 365)),
+                initialDateRange: customRange,
+              );
+              if (picked != null) {
+                cubit.setDateFilter('custom', range: picked);
+              }
+            },
+            borderRadius: BorderRadius.circular(6),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.edit_calendar, size: 14, color: AppColors.primary),
+                  const SizedBox(width: 6),
+                  Text(
+                    '${DateFormat('yyyy-MM-dd').format(customRange.start)} - ${DateFormat('yyyy-MM-dd').format(customRange.end)}',
+                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary),
+                  ),
+                ],
+              ),
+            ),
           ),
-        ),
-        const SizedBox(width: 8),
-        ChoiceChip(
-          label: Text('invoices.sale'.tr()),
-          selected: currentFilter == 'sale',
-          onSelected: (_) => cubit.setTypeFilter('sale'),
-          selectedColor: AppColors.success,
-          visualDensity: VisualDensity.compact,
-          labelStyle: TextStyle(
-            fontSize: 12,
-            color: currentFilter == 'sale' ? Colors.white : AppColors.textPrimary,
-          ),
-        ),
-        const SizedBox(width: 8),
-        ChoiceChip(
-          label: Text('invoices.return'.tr()),
-          selected: currentFilter == 'return',
-          onSelected: (_) => cubit.setTypeFilter('return'),
-          selectedColor: AppColors.danger,
-          visualDensity: VisualDensity.compact,
-          labelStyle: TextStyle(
-            fontSize: 12,
-            color: currentFilter == 'return' ? Colors.white : AppColors.textPrimary,
-          ),
-        ),
+        ],
       ],
     );
   }
 
   Widget _buildSummaryCards(InvoicesLoaded loaded) {
+    final type = loaded.typeFilter;
+
+    // When a specific filter is chosen, show focused metrics
+    if (type == 'sale') {
+      return Row(
+        children: [
+          Expanded(
+            child: _buildMiniStat(
+              'invoices.summary_sales'.tr(),
+              '${loaded.salesCount}',
+              loaded.totalSalesAmount.toStringAsFixed(2),
+              AppColors.success,
+            ),
+          ),
+        ],
+      );
+    }
+
+    if (type == 'debt_invoice' || type == 'debt') {
+      return Row(
+        children: [
+          Expanded(
+            child: _buildMiniStat(
+              'invoices.debt_invoice'.tr(),
+              '${loaded.debtInvoicesCount}',
+              loaded.totalDebtInvoicesAmount.toStringAsFixed(2),
+              AppColors.warning,
+            ),
+          ),
+        ],
+      );
+    }
+
+    if (type == 'return') {
+      return Row(
+        children: [
+          Expanded(
+            child: _buildMiniStat(
+              'invoices.return'.tr(),
+              '${loaded.returnsCount}',
+              loaded.totalReturnsAmount.toStringAsFixed(2),
+              AppColors.danger,
+            ),
+          ),
+        ],
+      );
+    }
+
+    if (type == 'purchase') {
+      return Row(
+        children: [
+          Expanded(
+            child: _buildMiniStat(
+              'invoices.summary_purchases'.tr(),
+              '${loaded.purchasesCount}',
+              loaded.totalPurchasesAmount.toStringAsFixed(2),
+              const Color(0xFF2563EB),
+            ),
+          ),
+        ],
+      );
+    }
+
+    if (type == 'expense') {
+      return Row(
+        children: [
+          Expanded(
+            child: _buildMiniStat(
+              'invoices.summary_expenses'.tr(),
+              '${loaded.expensesCount}',
+              loaded.totalExpensesAmount.toStringAsFixed(2),
+              const Color(0xFFEA580C),
+            ),
+          ),
+        ],
+      );
+    }
+
+    if (type == 'debt_payment') {
+      return Row(
+        children: [
+          Expanded(
+            child: _buildMiniStat(
+              'invoices.summary_debt_payments'.tr(),
+              '${loaded.debtPaymentsCount}',
+              loaded.totalDebtPaymentsAmount.toStringAsFixed(2),
+              const Color(0xFF7C3AED),
+            ),
+          ),
+        ],
+      );
+    }
+
+    if (type == 'adjustment') {
+      return Row(
+        children: [
+          Expanded(
+            child: _buildMiniStat(
+              'invoices.adjustment'.tr(),
+              '${loaded.adjustmentsCount}',
+              '${loaded.adjustmentsCount} ${'inventory.adjustments'.tr()}',
+              const Color(0xFF0D9488),
+            ),
+          ),
+        ],
+      );
+    }
+
+    // Default 'all': 3 key metrics (Sales, Purchases, Expenses)
     return Row(
       children: [
         Expanded(
           child: _buildMiniStat(
-            'invoices.sale'.tr(),
+            'invoices.summary_sales'.tr(),
             '${loaded.salesCount}',
             loaded.totalSalesAmount.toStringAsFixed(2),
             AppColors.success,
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 6),
         Expanded(
           child: _buildMiniStat(
-            'invoices.return'.tr(),
-            '${loaded.returnsCount}',
-            loaded.totalReturnsAmount.toStringAsFixed(2),
-            AppColors.danger,
+            'invoices.summary_purchases'.tr(),
+            '${loaded.purchasesCount}',
+            loaded.totalPurchasesAmount.toStringAsFixed(2),
+            const Color(0xFF2563EB),
+          ),
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: _buildMiniStat(
+            'invoices.summary_expenses'.tr(),
+            '${loaded.expensesCount}',
+            loaded.totalExpensesAmount.toStringAsFixed(2),
+            const Color(0xFFEA580C),
           ),
         ),
       ],
@@ -293,7 +460,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(count, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-              Text(amount, style: AppTheme.numericStyle(fontSize: 12, fontWeight: FontWeight.bold, color: color)),
+              Text(amount, style: AppTheme.numericStyle(fontSize: 11, fontWeight: FontWeight.bold, color: color)),
             ],
           ),
         ],
@@ -301,16 +468,16 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
     );
   }
 
-  Widget _buildInvoiceList(InvoicesCubit cubit, InvoicesState state) {
+  Widget _buildTransactionsList(InvoicesCubit cubit, InvoicesState state) {
     if (state is InvoicesLoading) {
       return LoadingIndicator(message: 'common.loading'.tr());
     }
 
     if (state is InvoicesLoaded) {
       return InvoiceList(
-        invoices: state.filteredInvoices,
-        selectedInvoiceId: state.selectedInvoiceId,
-        onSelectInvoice: (id) => cubit.selectInvoice(id),
+        transactions: state.filteredTransactions,
+        selectedTransactionId: state.selectedTransactionId,
+        onSelectTransaction: (id) => cubit.selectTransaction(id),
       );
     }
 
@@ -319,9 +486,9 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
 
   Widget _buildRightPane(BuildContext context, InvoicesState state) {
     if (state is InvoicesLoaded) {
-      final selected = state.selectedInvoice;
+      final selected = state.selectedTransaction;
       if (selected != null) {
-        return InvoiceDetailPanel(invoiceData: selected);
+        return InvoiceDetailPanel(transaction: selected);
       }
       return Center(
         child: EmptyStateView(

@@ -2,24 +2,63 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/core/widgets/empty_state_view.dart';
-import 'package:small_mall/features/pos/data/pos_repository.dart';
+import 'package:small_mall/features/invoices/data/invoices_repository.dart';
 
 class InvoiceList extends StatelessWidget {
   const InvoiceList({
     super.key,
-    required this.invoices,
-    required this.selectedInvoiceId,
-    required this.onSelectInvoice,
+    required this.transactions,
+    required this.selectedTransactionId,
+    required this.onSelectTransaction,
   });
-  final List<InvoiceWithDetails> invoices;
-  final String? selectedInvoiceId;
-  final ValueChanged<String> onSelectInvoice;
+
+  final List<UnifiedTransactionRecord> transactions;
+  final String? selectedTransactionId;
+  final ValueChanged<String> onSelectTransaction;
+
+  Color _getTypeColor(UnifiedTransactionType type) {
+    switch (type) {
+      case UnifiedTransactionType.sale:
+        return AppColors.success;
+      case UnifiedTransactionType.returnSale:
+        return AppColors.danger;
+      case UnifiedTransactionType.purchase:
+        return const Color(0xFF2563EB);
+      case UnifiedTransactionType.expense:
+        return const Color(0xFFEA580C);
+      case UnifiedTransactionType.debtPayment:
+        return const Color(0xFF7C3AED);
+      case UnifiedTransactionType.debtInvoice:
+        return AppColors.warning;
+      case UnifiedTransactionType.adjustment:
+        return const Color(0xFF0D9488);
+    }
+  }
+
+  IconData _getTypeIcon(UnifiedTransactionType type) {
+    switch (type) {
+      case UnifiedTransactionType.sale:
+        return Icons.point_of_sale;
+      case UnifiedTransactionType.returnSale:
+        return Icons.replay;
+      case UnifiedTransactionType.purchase:
+        return Icons.local_shipping;
+      case UnifiedTransactionType.expense:
+        return Icons.account_balance_wallet;
+      case UnifiedTransactionType.debtPayment:
+        return Icons.payments;
+      case UnifiedTransactionType.debtInvoice:
+        return Icons.request_quote;
+      case UnifiedTransactionType.adjustment:
+        return Icons.tune;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final labelSmall = Theme.of(context).textTheme.labelSmall;
 
-    if (invoices.isEmpty) {
+    if (transactions.isEmpty) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
@@ -33,17 +72,34 @@ class InvoiceList extends StatelessWidget {
 
     return ListView.separated(
       padding: const EdgeInsets.all(12),
-      itemCount: invoices.length,
+      itemCount: transactions.length,
       separatorBuilder: (_, _) => const Divider(color: AppColors.border),
       itemBuilder: (context, index) {
-        final inv = invoices[index];
-        final isSelected = inv.invoice.id == selectedInvoiceId;
-        final isReturn = inv.invoice.type == 'return';
-        final isDebt = inv.invoice.paymentType == 'debt';
-        final dateStr = DateFormat('yyyy-MM-dd HH:mm').format(inv.invoice.createdAt);
-        final serialText = inv.invoice.serialNumber != null
-            ? '#${inv.invoice.serialNumber}'
-            : '#${inv.invoice.id.substring(0, 8)}';
+        final item = transactions[index];
+        final isSelected = item.id == selectedTransactionId;
+        final typeColor = _getTypeColor(item.type);
+        final typeIcon = _getTypeIcon(item.type);
+        final dateStr = DateFormat('yyyy-MM-dd HH:mm').format(item.createdAt);
+        final globalText = item.globalSerialNumber != null
+            ? '#${item.globalSerialNumber}'
+            : (item.serialNumber != null ? '#${item.serialNumber}' : '#${item.id.substring(0, 8)}');
+        final typeSerialText = item.serialNumber != null
+            ? '${item.typeLabel} #${item.serialNumber}'
+            : item.typeLabel;
+
+        // Party label fallback
+        String partyLabel = item.partyName ?? '';
+        if (partyLabel.isEmpty) {
+          if (item.isSale || item.isReturn || item.isDebtInvoice) {
+            partyLabel = 'pos.walk_in_customer'.tr();
+          } else if (item.isPurchase) {
+            partyLabel = 'invoices.supplier'.tr();
+          } else if (item.isExpense) {
+            partyLabel = 'invoices.expense_category'.tr();
+          } else if (item.isAdjustment) {
+            partyLabel = 'invoices.adjustment'.tr();
+          }
+        }
 
         return Card(
           elevation: isSelected ? 2 : 0,
@@ -54,7 +110,7 @@ class InvoiceList extends StatelessWidget {
           ),
           child: InkWell(
             borderRadius: BorderRadius.circular(8),
-            onTap: () => onSelectInvoice(inv.invoice.id),
+            onTap: () => onSelectTransaction(item.id),
             child: Padding(
               padding: const EdgeInsets.all(12),
               child: Row(
@@ -62,14 +118,12 @@ class InvoiceList extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: isReturn
-                          ? AppColors.danger.withValues(alpha: 0.1)
-                          : AppColors.success.withValues(alpha: 0.1),
+                      color: typeColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(
-                      isReturn ? Icons.replay : Icons.receipt_long,
-                      color: isReturn ? AppColors.danger : AppColors.success,
+                      typeIcon,
+                      color: typeColor,
                       size: 20,
                     ),
                   ),
@@ -83,14 +137,16 @@ class InvoiceList extends StatelessWidget {
                           children: [
                             Row(
                               children: [
+                                // Global Serial Number Badge
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                   decoration: BoxDecoration(
-                                    color: AppColors.primary.withValues(alpha: 0.1),
+                                    color: AppColors.primary.withValues(alpha: 0.12),
                                     borderRadius: BorderRadius.circular(4),
+                                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.25)),
                                   ),
                                   child: Text(
-                                    serialText,
+                                    globalText,
                                     style: const TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 12,
@@ -98,7 +154,24 @@ class InvoiceList extends StatelessWidget {
                                     ),
                                   ),
                                 ),
-                                if (isDebt) ...[
+                                const SizedBox(width: 6),
+                                // Department / Type Serial Number Badge
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: typeColor.withValues(alpha: 0.12),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    typeSerialText,
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: typeColor,
+                                    ),
+                                  ),
+                                ),
+                                if (item.paymentType == 'debt') ...[
                                   const SizedBox(width: 6),
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
@@ -119,10 +192,12 @@ class InvoiceList extends StatelessWidget {
                               ],
                             ),
                             Text(
-                              inv.invoice.totalAmount.toStringAsFixed(2),
+                              item.isReturn
+                                  ? '-${item.totalAmount.toStringAsFixed(2)}'
+                                  : item.totalAmount.toStringAsFixed(2),
                               style: AppTheme.numericStyle(
                                 fontWeight: FontWeight.bold,
-                                color: isReturn ? AppColors.danger : AppColors.primary,
+                                color: typeColor,
                               ),
                             ),
                           ],
@@ -131,9 +206,12 @@ class InvoiceList extends StatelessWidget {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              inv.customerName ?? 'pos.walk_in_customer'.tr(),
-                              style: labelSmall?.copyWith(fontWeight: FontWeight.w500),
+                            Expanded(
+                              child: Text(
+                                partyLabel,
+                                style: labelSmall?.copyWith(fontWeight: FontWeight.w500),
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                             Text(dateStr, style: labelSmall),
                           ],

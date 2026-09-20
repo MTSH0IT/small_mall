@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:small_mall/features/invoices/data/invoices_repository.dart';
 import 'package:small_mall/features/invoices/presentation/cubit/invoices_state.dart';
-import 'package:small_mall/features/pos/data/pos_repository.dart';
 
 class InvoicesCubit extends Cubit<InvoicesState> {
-  InvoicesCubit(this._posRepository) : super(InvoicesInitial());
-  final POSRepository _posRepository;
+  InvoicesCubit(this._invoicesRepository) : super(InvoicesInitial());
+  final InvoicesRepository _invoicesRepository;
 
   Future<void> loadInvoices({String? preserveSelectedId}) async {
     final currentState = state;
@@ -13,16 +13,16 @@ class InvoicesCubit extends Cubit<InvoicesState> {
       emit(InvoicesLoading());
     }
     try {
-      final invoices = await _posRepository.getAllInvoices();
+      final transactions = await _invoicesRepository.getAllTransactions();
       if (currentState is InvoicesLoaded) {
         emit(currentState.copyWith(
-          invoices: invoices,
-          selectedInvoiceId: preserveSelectedId ?? currentState.selectedInvoiceId,
+          transactions: transactions,
+          selectedTransactionId: preserveSelectedId ?? currentState.selectedTransactionId,
         ));
       } else {
         emit(InvoicesLoaded(
-          invoices: invoices,
-          selectedInvoiceId: preserveSelectedId,
+          transactions: transactions,
+          selectedTransactionId: preserveSelectedId,
         ));
       }
     } catch (e) {
@@ -30,11 +30,14 @@ class InvoicesCubit extends Cubit<InvoicesState> {
     }
   }
 
-  void selectInvoice(String? invoiceId) {
+  void selectTransaction(String? transactionId) {
     if (state is! InvoicesLoaded) return;
     final loaded = state as InvoicesLoaded;
-    emit(loaded.copyWith(selectedInvoiceId: invoiceId));
+    emit(loaded.copyWith(selectedTransactionId: transactionId));
   }
+
+  // Alias for backward compatibility
+  void selectInvoice(String? invoiceId) => selectTransaction(invoiceId);
 
   void setTypeFilter(String filter) {
     if (state is! InvoicesLoaded) return;
@@ -58,17 +61,20 @@ class InvoicesCubit extends Cubit<InvoicesState> {
     emit(loaded.copyWith(searchQuery: query));
   }
 
+  Future<Map<String, dynamic>> checkCanDelete(String invoiceId) =>
+      _invoicesRepository.canDeleteInvoice(invoiceId);
+
   Future<bool> deleteInvoice(String invoiceId) async {
     try {
-      await _posRepository.deleteInvoice(invoiceId);
+      await _invoicesRepository.deleteInvoice(invoiceId);
       if (state is InvoicesLoaded) {
         final loaded = state as InvoicesLoaded;
-        final remaining = loaded.invoices.where((i) => i.invoice.id != invoiceId).toList();
-        final newSelectedId = loaded.selectedInvoiceId == invoiceId ? null : loaded.selectedInvoiceId;
+        final remaining = loaded.transactions.where((t) => t.id != invoiceId).toList();
+        final newSelectedId = loaded.selectedTransactionId == invoiceId ? null : loaded.selectedTransactionId;
         emit(loaded.copyWith(
-          invoices: remaining,
-          selectedInvoiceId: newSelectedId,
-          clearSelectedInvoice: newSelectedId == null,
+          transactions: remaining,
+          selectedTransactionId: newSelectedId,
+          clearSelectedTransaction: newSelectedId == null,
         ));
       }
       return true;
@@ -85,7 +91,7 @@ class InvoicesCubit extends Cubit<InvoicesState> {
     required List<Map<String, dynamic>> items,
   }) async {
     try {
-      await _posRepository.updateInvoice(
+      await _invoicesRepository.updateInvoice(
         invoiceId: invoiceId,
         customerId: customerId,
         paymentType: paymentType,
@@ -96,9 +102,5 @@ class InvoicesCubit extends Cubit<InvoicesState> {
     } catch (e) {
       rethrow;
     }
-  }
-
-  Future<Map<String, dynamic>> checkCanDelete(String invoiceId) async {
-    return _posRepository.canDeleteInvoice(invoiceId);
   }
 }

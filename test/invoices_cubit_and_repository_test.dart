@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:small_mall/core/database/app_database.dart';
+import 'package:small_mall/features/invoices/data/invoices_repository.dart';
 import 'package:small_mall/features/invoices/presentation/cubit/invoices_state.dart';
 import 'package:small_mall/features/pos/data/pos_repository.dart';
 
@@ -156,6 +157,140 @@ void main() {
 
       expect(combined.filteredInvoices.length, 1);
       expect(combined.filteredInvoices.first.invoice.serialNumber, 1);
+    });
+  });
+
+  group('UnifiedTransactionRecord & Multi-Type Filters Tests', () {
+    final now = DateTime.now();
+    final sampleTransactions = [
+      UnifiedTransactionRecord(
+        id: 'sale-1',
+        globalSerialNumber: 1,
+        serialNumber: 101,
+        type: UnifiedTransactionType.sale,
+        createdAt: now,
+        totalAmount: 300.0,
+        partyName: 'عميل 1',
+      ),
+      UnifiedTransactionRecord(
+        id: 'return-1',
+        globalSerialNumber: 2,
+        serialNumber: 102,
+        type: UnifiedTransactionType.returnSale,
+        createdAt: now,
+        totalAmount: 50.0,
+        partyName: 'عميل 1',
+      ),
+      UnifiedTransactionRecord(
+        id: 'purchase-1',
+        globalSerialNumber: 3,
+        serialNumber: 103,
+        type: UnifiedTransactionType.purchase,
+        createdAt: now,
+        totalAmount: 800.0,
+        partyName: 'مورد الهدايا',
+      ),
+      UnifiedTransactionRecord(
+        id: 'expense-1',
+        globalSerialNumber: 4,
+        serialNumber: 104,
+        type: UnifiedTransactionType.expense,
+        createdAt: now,
+        totalAmount: 150.0,
+        partyName: 'فواتير الكهرباء',
+      ),
+      UnifiedTransactionRecord(
+        id: 'debt-1',
+        globalSerialNumber: 5,
+        serialNumber: 105,
+        type: UnifiedTransactionType.debtPayment,
+        createdAt: now,
+        totalAmount: 200.0,
+        partyName: 'عميل آجل',
+      ),
+      UnifiedTransactionRecord(
+        id: 'adj-1',
+        globalSerialNumber: 6,
+        serialNumber: 106,
+        type: UnifiedTransactionType.adjustment,
+        createdAt: now,
+        totalAmount: 40.0,
+        partyName: 'عطر فاخر',
+        notes: 'تالف أثناء النقل',
+      ),
+      UnifiedTransactionRecord(
+        id: 'debt-inv-1',
+        globalSerialNumber: 7,
+        serialNumber: 107,
+        type: UnifiedTransactionType.debtInvoice,
+        createdAt: now,
+        totalAmount: 450.0,
+        partyName: 'عميل آجل 2',
+        paymentType: 'debt',
+      ),
+    ];
+
+    test('calculates multi-type statistics accurately', () {
+      final state = InvoicesLoaded(transactions: sampleTransactions);
+
+      expect(state.filteredTransactions.length, 7);
+      expect(state.salesCount, 2);
+      expect(state.debtInvoicesCount, 1);
+      expect(state.returnsCount, 1);
+      expect(state.purchasesCount, 1);
+      expect(state.expensesCount, 1);
+      expect(state.debtPaymentsCount, 1);
+      expect(state.adjustmentsCount, 1);
+
+      expect(state.totalSalesAmount, 750.0);
+      expect(state.totalDebtInvoicesAmount, 450.0);
+      expect(state.totalReturnsAmount, 50.0);
+      expect(state.totalPurchasesAmount, 800.0);
+      expect(state.totalExpensesAmount, 150.0);
+      expect(state.totalDebtPaymentsAmount, 200.0);
+    });
+
+    test('filters correctly by operation type', () {
+      final debtInvoiceState = InvoicesLoaded(transactions: sampleTransactions, typeFilter: 'debt_invoice');
+      expect(debtInvoiceState.filteredTransactions.length, 1);
+      expect(debtInvoiceState.filteredTransactions.first.partyName, 'عميل آجل 2');
+      expect(debtInvoiceState.totalDebtInvoicesAmount, 450.0);
+
+      final purchaseState = InvoicesLoaded(transactions: sampleTransactions, typeFilter: 'purchase');
+      expect(purchaseState.filteredTransactions.length, 1);
+      expect(purchaseState.filteredTransactions.first.partyName, 'مورد الهدايا');
+
+      final expenseState = InvoicesLoaded(transactions: sampleTransactions, typeFilter: 'expense');
+      expect(expenseState.filteredTransactions.length, 1);
+      expect(expenseState.filteredTransactions.first.partyName, 'فواتير الكهرباء');
+
+      final debtState = InvoicesLoaded(transactions: sampleTransactions, typeFilter: 'debt_payment');
+      expect(debtState.filteredTransactions.length, 1);
+      expect(debtState.filteredTransactions.first.partyName, 'عميل آجل');
+
+      final adjState = InvoicesLoaded(transactions: sampleTransactions, typeFilter: 'adjustment');
+      expect(adjState.filteredTransactions.length, 1);
+      expect(adjState.filteredTransactions.first.notes, 'تالف أثناء النقل');
+    });
+
+    test('searches by party name and notes across multiple operation types', () {
+      final partySearch = InvoicesLoaded(transactions: sampleTransactions, searchQuery: 'كهرباء');
+      expect(partySearch.filteredTransactions.length, 1);
+      expect(partySearch.filteredTransactions.first.type, UnifiedTransactionType.expense);
+
+      final notesSearch = InvoicesLoaded(transactions: sampleTransactions, searchQuery: 'تالف');
+      expect(notesSearch.filteredTransactions.length, 1);
+      expect(notesSearch.filteredTransactions.first.type, UnifiedTransactionType.adjustment);
+    });
+
+    test('searches by global serial number and department serial number', () {
+      final searchGlobal = InvoicesLoaded(transactions: sampleTransactions, searchQuery: '#1');
+      expect(searchGlobal.filteredTransactions.length, 1);
+      expect(searchGlobal.filteredTransactions.first.id, 'sale-1');
+
+      final searchSpecific = InvoicesLoaded(transactions: sampleTransactions, searchQuery: '103');
+      expect(searchSpecific.filteredTransactions.length, 1);
+      expect(searchSpecific.filteredTransactions.first.id, 'purchase-1');
     });
   });
 }

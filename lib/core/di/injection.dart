@@ -5,6 +5,7 @@ import 'package:small_mall/core/sync/sync_service.dart';
 import 'package:small_mall/features/customers_debts/data/customers_debts_repository.dart';
 import 'package:small_mall/features/expenses/data/expenses_repository.dart';
 import 'package:small_mall/features/inventory/data/inventory_repository.dart';
+import 'package:small_mall/features/invoices/data/invoices_repository.dart';
 import 'package:small_mall/features/pos/data/pos_repository.dart';
 import 'package:small_mall/features/reports/data/reports_repository.dart';
 import 'package:small_mall/features/suppliers_purchasing/data/suppliers_purchasing_repository.dart';
@@ -27,6 +28,7 @@ Future<void> setupDependencyInjection() async {
   // Repositories
   getIt.registerLazySingleton<InventoryRepository>(() => InventoryRepository(database, syncService, logger));
   getIt.registerLazySingleton<POSRepository>(() => POSRepository(database, syncService, logger));
+  getIt.registerLazySingleton<InvoicesRepository>(() => InvoicesRepository(database, getIt<POSRepository>(), logger));
   getIt.registerLazySingleton<CustomersDebtsRepository>(() => CustomersDebtsRepository(database, syncService, logger));
   getIt.registerLazySingleton<SuppliersPurchasingRepository>(() => SuppliersPurchasingRepository(database, syncService, logger));
   getIt.registerLazySingleton<ExpensesRepository>(() => ExpensesRepository(database, syncService, logger));
