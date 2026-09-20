@@ -144,6 +144,8 @@
     "return_title": "إرجاع فاتورة سابقة",
     "enter_invoice_number": "أدخل رقم الفاتورة أو امسح الباركود",
     "search_invoice": "بحث عن فاتورة",
+    "search_invoice_hint": "البحث برقم الفاتورة أو العميل أو المبلغ...",
+    "no_matching_invoices": "لا توجد فواتير مطابقة للبحث",
     "return_reason": "سبب الإرجاع",
     "return_amount": "مبلغ الإرجاع",
     "confirm_return": "تأكيد عملية الإرجاع",

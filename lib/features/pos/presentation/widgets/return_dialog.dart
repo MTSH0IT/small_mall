@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart' as intl;
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/core/widgets/app_toast.dart';
@@ -22,6 +23,8 @@ class _ReturnDialogState extends State<ReturnDialog> {
   List<InvoiceItem>? _selectedInvoiceItems;
   final Map<String, TextEditingController> _quantityControllers = {};
   final Map<String, double> _originalQuantities = {};
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
   bool _isLoading = false;
   bool _isSubmitting = false;
 
@@ -43,6 +46,16 @@ class _ReturnDialogState extends State<ReturnDialog> {
     } catch (e) {
       setState(() => _isLoading = false);
     }
+  }
+
+  String? _getCustomerName(String? customerId) {
+    if (customerId == null) return null;
+    final cubit = context.read<POSCubit>();
+    if (cubit.state is POSLoaded) {
+      final state = cubit.state as POSLoaded;
+      return state.customers.where((c) => c.customer.id == customerId).firstOrNull?.customer.name;
+    }
+    return null;
   }
 
   Future<void> _selectInvoice(Invoice invoice) async {
@@ -132,6 +145,7 @@ class _ReturnDialogState extends State<ReturnDialog> {
 
   @override
   void dispose() {
+    _searchController.dispose();
     for (final c in _quantityControllers.values) {
       c.dispose();
     }
@@ -156,7 +170,7 @@ class _ReturnDialogState extends State<ReturnDialog> {
         ],
       ),
       content: SizedBox(
-        width: 500,
+        width: 520,
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : _selectedInvoice == null
@@ -181,7 +195,14 @@ class _ReturnDialogState extends State<ReturnDialog> {
   }
 
   Widget _buildInvoiceList(ThemeData theme) {
-    if (_invoices == null || _invoices!.isEmpty) {
+    if (_invoices == null) {
+      return const SizedBox(
+        height: 300,
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_invoices!.isEmpty) {
       return SizedBox(
         height: 300,
         child: Center(
@@ -193,26 +214,214 @@ class _ReturnDialogState extends State<ReturnDialog> {
       );
     }
 
+    final query = _searchQuery.trim().toLowerCase();
+    final cleanQuery = query.replaceAll('#', '').trim();
+
+    final filteredInvoices = _invoices!.where((invoice) {
+      if (cleanQuery.isEmpty) return true;
+
+      // 1. Match serial number
+      final serialStr = invoice.serialNumber?.toString() ?? '';
+      if (serialStr == cleanQuery || serialStr.contains(cleanQuery)) return true;
+
+      // 2. Match ID prefix/full
+      final idStr = invoice.id.toLowerCase();
+      if (idStr.contains(cleanQuery)) return true;
+
+      // 3. Match customer name
+      final customerName = _getCustomerName(invoice.customerId)?.toLowerCase() ?? '';
+      if (customerName.contains(query)) return true;
+
+      // 4. Match total amount
+      final totalStr = invoice.totalAmount.toStringAsFixed(2);
+      if (totalStr.contains(cleanQuery) || invoice.totalAmount.toString().contains(cleanQuery)) return true;
+
+      // 5. Match payment type
+      if (invoice.paymentType == 'debt' &&
+          (query.contains('دين') || query.contains('آجل') || query.contains('debt'))) {
+        return true;
+      }
+      if (invoice.paymentType == 'cash' &&
+          (query.contains('نقد') || query.contains('كاش') || query.contains('cash'))) {
+        return true;
+      }
+
+      return false;
+    }).toList();
+
     return SizedBox(
-      height: 400,
-      child: ListView.separated(
-        itemCount: _invoices!.length,
-        separatorBuilder: (_, _) => const Divider(color: AppColors.border),
-        itemBuilder: (context, index) {
-          final invoice = _invoices![index];
-          final paymentLabel = invoice.paymentType == 'debt' ? 'pos.debt'.tr() : 'pos.cash'.tr();
-          return ListTile(
-            leading: const Icon(Icons.receipt_long, color: AppColors.primary),
-            title: Text('${'invoices.invoice_id'.tr()} #${invoice.id.substring(0, 8)}',
-                style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Text(
-              '${invoice.createdAt.toString().substring(0, 16)}  |  $paymentLabel  |  ${invoice.totalAmount.toStringAsFixed(2)}',
-              style: theme.textTheme.bodySmall,
+      height: 460,
+      child: Column(
+        children: [
+          // Search Bar
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'pos.search_invoice_hint'.tr(),
+                prefixIcon: const Icon(Icons.search, size: 20, color: AppColors.textSecondary),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear, size: 18),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() => _searchQuery = '');
+                        },
+                      )
+                    : null,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                isDense: true,
+                filled: true,
+                fillColor: theme.cardColor,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: AppColors.border),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: AppColors.border),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+                ),
+              ),
+              onChanged: (val) => setState(() => _searchQuery = val),
             ),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.textSecondary),
-            onTap: () => _selectInvoice(invoice),
-          );
-        },
+          ),
+
+          // Invoices List or Empty Search
+          Expanded(
+            child: filteredInvoices.isEmpty
+                ? Center(
+                    child: EmptyStateView(
+                      icon: Icons.search_off_rounded,
+                      title: 'pos.no_matching_invoices'.tr(),
+                    ),
+                  )
+                : ListView.separated(
+                    itemCount: filteredInvoices.length,
+                    separatorBuilder: (_, _) => const Divider(color: AppColors.border, height: 1),
+                    itemBuilder: (context, index) {
+                      final invoice = filteredInvoices[index];
+                      final customerName = _getCustomerName(invoice.customerId);
+                      final paymentLabel =
+                          invoice.paymentType == 'debt' ? 'pos.debt'.tr() : 'pos.cash'.tr();
+                      final isDebt = invoice.paymentType == 'debt';
+                      final serialText = invoice.serialNumber != null
+                          ? '#${invoice.serialNumber}'
+                          : '#${invoice.id.length >= 8 ? invoice.id.substring(0, 8) : invoice.id}';
+                      final formattedDate =
+                          intl.DateFormat('yyyy-MM-dd HH:mm').format(invoice.createdAt);
+
+                      return ListTile(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        leading: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(Icons.receipt_long_rounded,
+                              color: AppColors.primary, size: 22),
+                        ),
+                        title: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(5),
+                                border:
+                                    Border.all(color: AppColors.primary.withValues(alpha: 0.25)),
+                              ),
+                              child: Text(
+                                serialText,
+                                style: AppTheme.numericStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.primary,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'invoices.invoice_id'.tr(),
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5),
+                            ),
+                            if (customerName != null) ...[
+                              const SizedBox(width: 8),
+                              const Text('•', style: TextStyle(color: AppColors.textSecondary)),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  customerName,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: AppColors.textSecondary,
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                        subtitle: Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Row(
+                            children: [
+                              Text(
+                                formattedDate,
+                                style: AppTheme.numericStyle(
+                                  fontSize: 12,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              const Text('|', style: TextStyle(color: AppColors.border)),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                                decoration: BoxDecoration(
+                                  color: isDebt
+                                      ? AppColors.warning.withValues(alpha: 0.12)
+                                      : AppColors.success.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  paymentLabel,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: isDebt ? AppColors.warning : AppColors.success,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              const Text('|', style: TextStyle(color: AppColors.border)),
+                              const SizedBox(width: 8),
+                              Text(
+                                invoice.totalAmount.toStringAsFixed(2),
+                                style: AppTheme.numericStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12.5,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        trailing: const Icon(Icons.arrow_forward_ios,
+                            size: 14, color: AppColors.textSecondary),
+                        onTap: () => _selectInvoice(invoice),
+                      );
+                    },
+                  ),
+          ),
+        ],
       ),
     );
   }
@@ -230,23 +439,63 @@ class _ReturnDialogState extends State<ReturnDialog> {
       );
     }
 
+    final serialText = _selectedInvoice!.serialNumber != null
+        ? '#${_selectedInvoice!.serialNumber}'
+        : '#${_selectedInvoice!.id.length >= 8 ? _selectedInvoice!.id.substring(0, 8) : _selectedInvoice!.id}';
+    final customerName = _getCustomerName(_selectedInvoice!.customerId);
+
     return SizedBox(
-      height: 400,
+      height: 420,
       child: Column(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppColors.primary.withAlpha(20),
+              color: AppColors.primary.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
             ),
             child: Row(
               children: [
-                Text('${'invoices.invoice_id'.tr()}: ${_selectedInvoice!.id.substring(0, 8)}',
-                    style: const TextStyle(fontWeight: FontWeight.bold)),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(5),
+                  ),
+                  child: Text(
+                    serialText,
+                    style: AppTheme.numericStyle(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'invoices.invoice_id'.tr(),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                if (customerName != null) ...[
+                  const SizedBox(width: 8),
+                  const Text('•', style: TextStyle(color: AppColors.textSecondary)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      customerName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          color: AppColors.textSecondary, fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                ],
                 const Spacer(),
-                Text('${'common.total'.tr()}: ${_selectedInvoice!.totalAmount.toStringAsFixed(2)}',
-                    style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text(
+                  '${'common.total'.tr()}: ${_selectedInvoice!.totalAmount.toStringAsFixed(2)}',
+                  style: AppTheme.numericStyle(fontWeight: FontWeight.bold, fontSize: 13.5),
+                ),
               ],
             ),
           ),

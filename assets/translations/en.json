@@ -144,6 +144,8 @@
     "return_title": "Return Previous Invoice",
     "enter_invoice_number": "Enter invoice number or scan barcode",
     "search_invoice": "Search Invoice",
+    "search_invoice_hint": "Search by invoice #, customer, or amount...",
+    "no_matching_invoices": "No matching invoices found",
     "return_reason": "Return Reason",
     "return_amount": "Return Amount",
     "confirm_return": "Confirm Return",
