@@ -23,15 +23,10 @@ class ReportsScreen extends StatefulWidget {
 }
 
 class _ReportsScreenState extends State<ReportsScreen> {
-  DateTime _startDate = DateTime.now().subtract(const Duration(days: 30));
-  DateTime _endDate = DateTime.now();
-
   @override
   Widget build(BuildContext context) {
     return BlocProvider<ReportsCubit>(
-      create: (context) =>
-          ReportsCubit(getIt<ReportsRepository>())
-            ..loadReports(start: _startDate, end: _endDate),
+      create: (context) => ReportsCubit(getIt<ReportsRepository>())..loadReports(),
       child: BlocConsumer<ReportsCubit, ReportsState>(
         listener: (context, state) {
           if (state is ReportsError) {
@@ -41,24 +36,38 @@ class _ReportsScreenState extends State<ReportsScreen> {
         builder: (context, state) {
           final cubit = context.read<ReportsCubit>();
 
+          final now = DateTime.now();
+          final startDate = state is ReportsLoaded
+              ? state.startDate
+              : DateTime(now.year, now.month, now.day);
+          final endDate = state is ReportsLoaded
+              ? state.endDate
+              : DateTime(now.year, now.month, now.day, 23, 59, 59, 999);
+          final activePeriod = state is ReportsLoaded ? state.periodType : 'today';
+
           return AppScreenScaffold(
             title: 'reports.title'.tr(),
-            onRefresh: () =>
-                cubit.loadReports(start: _startDate, end: _endDate),
+            onRefresh: () => cubit.loadReports(start: startDate, end: endDate, periodType: activePeriod),
             body: Padding(
               padding: const EdgeInsets.all(24.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Period Selection Controls
+                  // 1. Smart Period Filter Bar (Defaults to Today)
                   PeriodFilterRow(
-                    startDate: _startDate,
-                    endDate: _endDate,
-                    onSelectDateRange: () => _selectDateRange(context, cubit),
+                    startDate: startDate,
+                    endDate: endDate,
+                    activePeriod: activePeriod,
+                    onSelectPeriod: (p) => cubit.setPeriod(p),
+                    onSelectCustomRange: () => _selectDateRange(context, cubit, startDate, endDate),
+                    onNavigatePeriod: (dir) => cubit.navigatePeriod(dir),
                   ),
-                  const SizedBox(height: 24),
-                  // Report Panels
-                  Expanded(child: _buildReportContent(context, state)),
+                  const SizedBox(height: 20),
+
+                  // 2. Simple & Direct Dashboard Body
+                  Expanded(
+                    child: _buildReportContent(context, state),
+                  ),
                 ],
               ),
             ),
@@ -68,159 +77,290 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
   }
 
-  Future<void> _selectDateRange(
-    BuildContext context,
-    ReportsCubit cubit,
-  ) async {
-    final picked = await showDateRangePicker(
-      context: context,
-      initialDateRange: DateTimeRange(start: _startDate, end: _endDate),
-      firstDate: DateTime(2025),
-      lastDate: DateTime.now().add(const Duration(days: 1)),
-      locale: context.locale,
-    );
-
-    if (picked != null) {
-      setState(() {
-        _startDate = picked.start;
-        _endDate = picked.end;
-      });
-      cubit.loadReports(start: _startDate, end: _endDate);
-    }
-  }
-
   Widget _buildReportContent(BuildContext context, ReportsState state) {
     if (state is ReportsLoading) {
       return LoadingIndicator(message: 'common.loading'.tr());
     }
 
     if (state is ReportsLoaded) {
-      // Calculate total current inventory valuation cost
-      final double totalInventoryValuation = state.inventoryReport.fold(
-        0.0,
-        (sum, item) => sum + item.totalCostValue,
-      );
+      final profit = state.profitData;
+      final cashSales = profit.cashSales;
+      final expenses = profit.totalExpenses;
+      final purchases = profit.totalPurchases;
+      final debts = profit.newDebts;
+      final debtPayments = profit.debtPayments;
+
+      // Net profit formula: (المبيعات + السداد) - (المصاريف + المشتريات)
+      final netProfit = profit.netProfit;
+      final totalInflow = cashSales + debtPayments;
+      final totalOutflow = expenses + purchases;
+
+      final isProfitable = netProfit >= 0;
+      final netProfitColor = isProfitable ? AppColors.success : AppColors.danger;
 
       return SingleChildScrollView(
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Row 1: Profit and Inventory Summary Cards
+            // Row 1: Primary Operating KPIs (المبيعات، المصاريف، المشتريات، صافي الربح)
             Row(
               children: [
                 Expanded(
                   child: StatCard(
-                    title: 'reports.net_profit'.tr(),
-                    value: state.profitData.netProfit.toStringAsFixed(2),
-                    color: state.profitData.netProfit >= 0
-                        ? AppColors.success
-                        : AppColors.danger,
-                    subtitle:
-                        '${'reports.gross_profit'.tr()}: ${state.profitData.grossProfit.toStringAsFixed(1)} | ${'expenses.title'.tr()}: ${state.profitData.totalExpenses.toStringAsFixed(1)}',
-                    icon: Icons.payments_outlined,
+                    title: 'reports.sales'.tr(),
+                    value: cashSales.toStringAsFixed(2),
+                    color: AppColors.primary,
+                    subtitle: 'reports.sales_no_debt_note'.tr(),
+                    icon: Icons.point_of_sale,
                   ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: StatCard(
                     title: 'expenses.title'.tr(),
-                    value: state.profitData.totalExpenses.toStringAsFixed(2),
+                    value: expenses.toStringAsFixed(2),
                     color: AppColors.warning,
-                    subtitle: 'expenses.operational_expenses'.tr(),
+                    subtitle: '${profit.expensesCount} ${'expenses.operations_count'.tr()}',
                     icon: Icons.receipt_long_outlined,
                   ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: StatCard(
-                    title: 'inventory.current_stock'.tr(),
-                    value: totalInventoryValuation.toStringAsFixed(2),
-                    color: AppColors.primary,
-                    subtitle:
-                        '${'inventory.products_title'.tr()}: ${state.inventoryReport.length}',
-                    icon: Icons.inventory_2_outlined,
+                    title: 'reports.purchases'.tr(),
+                    value: purchases.toStringAsFixed(2),
+                    color: const Color(0xFF8B5CF6),
+                    subtitle: '${profit.purchasesCount} ${'invoices.purchase'.tr()}',
+                    icon: Icons.shopping_bag_outlined,
                   ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: StatCard(
-                    title: 'customers.balance'.tr(),
-                    value: state.totalOutstandingDebts.toStringAsFixed(2),
-                    color: AppColors.accent,
-                    subtitle: 'customers.has_debt'.tr(),
-                    icon: Icons.account_balance_wallet_outlined,
+                    title: 'reports.net_profit_clean'.tr(),
+                    value: netProfit.toStringAsFixed(2),
+                    color: netProfitColor,
+                    subtitle: 'reports.net_profit_formula'.tr(),
+                    icon: Icons.calculate_outlined,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // Row 2: Secondary KPIs (الديون، السداد، إجمالي الداخل، إجمالي الخارج)
+            Row(
+              children: [
+                Expanded(
+                  child: StatCard(
+                    title: 'reports.simple_debts'.tr(),
+                    value: debts.toStringAsFixed(2),
+                    color: AppColors.danger,
+                    subtitle: 'reports.new_debts_issued'.tr(),
+                    icon: Icons.money_off_outlined,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: StatCard(
+                    title: 'reports.simple_debt_payments'.tr(),
+                    value: debtPayments.toStringAsFixed(2),
+                    color: AppColors.success,
+                    subtitle: '${profit.debtPaymentsCount} ${'reports.debt_collections'.tr()}',
+                    icon: Icons.payments_outlined,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: StatCard(
+                    title: 'reports.inflows_card_title'.tr(),
+                    value: totalInflow.toStringAsFixed(2),
+                    color: AppColors.success,
+                    subtitle: '${'reports.sales'.tr()} + ${'reports.simple_debt_payments'.tr()}',
+                    icon: Icons.download,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: StatCard(
+                    title: 'reports.outflows_card_title'.tr(),
+                    value: totalOutflow.toStringAsFixed(2),
+                    color: AppColors.danger,
+                    subtitle: '${'expenses.title'.tr()} + ${'reports.purchases'.tr()}',
+                    icon: Icons.upload,
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 24),
-            // Row 2: Sales vs Purchases Comparison & Best Sellers List
+
+            // Row 3: Mathematical Reconciliation Card & (Comparison + Best Sellers)
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Purchases vs Sales Custom Bar Chart
+                // Left: Clear Formula Reconciliation Card
                 Expanded(
                   flex: 3,
                   child: CardContainer(
-                    title: 'reports.comparison_chart'.tr(),
-                    child: SalesPurchasesComparisonChart(
-                      summary: state.purchasesSalesSummary,
+                    title: 'reports.net_profit_formula'.tr(),
+                    child: Padding(
+                      padding: const EdgeInsets.all(20.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // 1. Inflows Section
+                          Row(
+                            children: [
+                              const Icon(Icons.add_circle_outline, color: AppColors.success, size: 20),
+                              const SizedBox(width: 8),
+                              Text(
+                                'reports.inflows_card_title'.tr(),
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.success),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          _buildLineItem('reports.sales'.tr(), cashSales, AppColors.textPrimary),
+                          _buildLineItem('reports.simple_debt_payments'.tr(), debtPayments, AppColors.textPrimary),
+                          const Divider(height: 16, color: AppColors.border),
+                          _buildTotalLine('reports.inflows_card_title'.tr(), totalInflow, AppColors.success),
+
+                          const SizedBox(height: 20),
+
+                          // 2. Outflows Section
+                          Row(
+                            children: [
+                              const Icon(Icons.remove_circle_outline, color: AppColors.danger, size: 20),
+                              const SizedBox(width: 8),
+                              Text(
+                                'reports.outflows_card_title'.tr(),
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.danger),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          _buildLineItem('expenses.title'.tr(), expenses, AppColors.textPrimary),
+                          _buildLineItem('reports.purchases'.tr(), purchases, AppColors.textPrimary),
+                          const Divider(height: 16, color: AppColors.border),
+                          _buildTotalLine('reports.outflows_card_title'.tr(), totalOutflow, AppColors.danger),
+
+                          const SizedBox(height: 24),
+
+                          // 3. Final Net Profit Result
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: netProfitColor.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: netProfitColor.withValues(alpha: 0.3)),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'reports.net_profit_clean'.tr(),
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                        color: netProfitColor,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'reports.net_profit_formula'.tr(),
+                                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                                    ),
+                                  ],
+                                ),
+                                Text(
+                                  netProfit.toStringAsFixed(2),
+                                  style: AppTheme.numericStyle(
+                                    fontSize: 26,
+                                    fontWeight: FontWeight.bold,
+                                    color: netProfitColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
                 const SizedBox(width: 24),
-                // Best Sellers
+
+                // Right: Sales vs Purchases & Best Sellers
                 Expanded(
                   flex: 3,
-                  child: CardContainer(
-                    title: 'reports.top_selling'.tr(),
-                    child: state.bestSellers.isEmpty
-                        ? Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 16.0),
-                            child: EmptyStateView(
-                              icon: Icons.leaderboard_outlined,
-                              title: 'reports.top_selling'.tr(),
-                              description: 'reports.no_sales_data'.tr(),
-                            ),
-                          )
-                        : ListView.separated(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: state.bestSellers.length,
-                            separatorBuilder: (_, _) =>
-                                const Divider(color: AppColors.border),
-                            itemBuilder: (context, index) {
-                              final item = state.bestSellers[index];
-                              return ListTile(
-                                leading: Container(
-                                  width: 28,
-                                  height: 28,
-                                  decoration: const BoxDecoration(
-                                    color: AppColors.primary,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: Text(
-                                    '${index + 1}',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
+                  child: Column(
+                    children: [
+                      // Sales vs Purchases Chart
+                      CardContainer(
+                        title: 'reports.comparison_chart'.tr(),
+                        child: SalesPurchasesComparisonChart(
+                          summary: state.purchasesSalesSummary,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Top Selling Products
+                      CardContainer(
+                        title: 'reports.top_selling'.tr(),
+                        child: state.bestSellers.isEmpty
+                            ? Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 16.0),
+                                child: EmptyStateView(
+                                  icon: Icons.leaderboard_outlined,
+                                  title: 'reports.top_selling'.tr(),
+                                  description: 'reports.no_sales_data'.tr(),
+                                ),
+                              )
+                            : ListView.separated(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: state.bestSellers.length,
+                                separatorBuilder: (_, _) => const Divider(height: 1, color: AppColors.border),
+                                itemBuilder: (context, index) {
+                                  final item = state.bestSellers[index];
+                                  return ListTile(
+                                    dense: true,
+                                    leading: Container(
+                                      width: 24,
+                                      height: 24,
+                                      decoration: const BoxDecoration(
+                                        color: AppColors.primary,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      alignment: Alignment.center,
+                                      child: Text(
+                                        '${index + 1}',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12,
+                                        ),
+                                      ),
                                     ),
-                                  ),
-                                ),
-                                title: Text(item.product.name),
-                                subtitle: Text(
-                                  '${'common.quantity'.tr()}: ${item.totalQuantity.toStringAsFixed(0)}',
-                                ),
-                                trailing: Text(
-                                  item.totalRevenue.toStringAsFixed(2),
-                                  style: AppTheme.numericStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.primary,
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
+                                    title: Text(item.product.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                                    subtitle: Text(
+                                      '${'common.quantity'.tr()}: ${item.totalQuantity.toStringAsFixed(0)}',
+                                    ),
+                                    trailing: Text(
+                                      item.totalRevenue.toStringAsFixed(2),
+                                      style: AppTheme.numericStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.primary,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -231,5 +371,56 @@ class _ReportsScreenState extends State<ReportsScreen> {
     }
 
     return const SizedBox();
+  }
+
+  Widget _buildLineItem(String title, double amount, Color color) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3.0, horizontal: 8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(title, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+          Text(
+            amount.toStringAsFixed(2),
+            style: AppTheme.numericStyle(fontSize: 13, fontWeight: FontWeight.w600, color: color),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTotalLine(String title, double amount, Color color) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(title, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: color)),
+          Text(
+            amount.toStringAsFixed(2),
+            style: AppTheme.numericStyle(fontSize: 14, fontWeight: FontWeight.bold, color: color),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _selectDateRange(
+    BuildContext context,
+    ReportsCubit cubit,
+    DateTime currentStart,
+    DateTime currentEnd,
+  ) async {
+    final picked = await showDateRangePicker(
+      context: context,
+      initialDateRange: DateTimeRange(start: currentStart, end: currentEnd),
+      firstDate: DateTime(2025),
+      lastDate: DateTime.now().add(const Duration(days: 1)),
+      locale: context.locale,
+    );
+
+    if (picked != null) {
+      cubit.setPeriod('custom', customRange: picked);
+    }
   }
 }
