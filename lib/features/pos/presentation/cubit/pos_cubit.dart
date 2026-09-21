@@ -202,6 +202,7 @@ class POSCubit extends Cubit<POSState> {
             'priceUsed': item.unitPrice,
             'quantity': item.quantity,
             'discount': item.discount,
+            'currency': item.currency,
           }).toList();
 
       await _posRepository.createSale(
@@ -209,6 +210,7 @@ class POSCubit extends Cubit<POSState> {
         totalAmount: loaded.totalAmount,
         discount: loaded.invoiceDiscount,
         paymentType: loaded.paymentType,
+        currency: loaded.cartCurrency,
         items: items,
       );
 

@@ -1,3 +1,4 @@
+import 'package:small_mall/core/constants/app_currency.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/features/customers_debts/data/customers_debts_repository.dart';
 import 'package:small_mall/features/inventory/data/inventory_repository.dart';
@@ -15,6 +16,9 @@ class CartItem {
   final double quantity;
   final double discount;
   final double? customPrice;
+
+  String get currency => selectedPrice.currency ?? productDetails.currency;
+  String get currencySymbol => AppCurrency.getSymbol(currency);
 
   double get unitPrice => customPrice ?? selectedPrice.priceValue;
   bool get hasCustomPrice => customPrice != null && customPrice != selectedPrice.priceValue;
@@ -63,8 +67,39 @@ class POSLoaded extends POSState {
   final String paymentType;
   final bool isCheckingOut;
 
+  bool get hasMultipleCurrencies {
+    if (cart.isEmpty) return false;
+    final first = cart.first.currency;
+    return cart.any((item) => item.currency != first);
+  }
+
+  double get subtotalSyp => cart
+      .where((item) => item.currency != AppCurrency.usdCode)
+      .fold<double>(0.0, (sum, item) => sum + item.subtotal);
+
+  double get subtotalUsd => cart
+      .where((item) => item.currency == AppCurrency.usdCode)
+      .fold<double>(0.0, (sum, item) => sum + item.subtotal);
+
+  double get totalSyp {
+    if (!hasMultipleCurrencies) {
+      return cartCurrency != AppCurrency.usdCode ? totalAmount : 0.0;
+    }
+    return (subtotalSyp - invoiceDiscount).clamp(0.0, double.infinity);
+  }
+
+  double get totalUsd {
+    if (!hasMultipleCurrencies) {
+      return cartCurrency == AppCurrency.usdCode ? totalAmount : 0.0;
+    }
+    return subtotalUsd;
+  }
+
   double get cartSubtotal => cart.fold<double>(0.0, (sum, item) => sum + item.subtotal);
   double get totalAmount => (cartSubtotal - invoiceDiscount).clamp(0.0, double.infinity);
+
+  String get cartCurrency => cart.isNotEmpty ? cart.first.currency : AppCurrency.defaultCode;
+  String get cartCurrencySymbol => AppCurrency.getSymbol(cartCurrency);
 
   POSLoaded copyWith({
     List<ProductWithDetails>? products,

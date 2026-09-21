@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import 'package:small_mall/core/constants/app_currency.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/logging/app_logger.dart';
 import 'package:small_mall/core/logging/log_context.dart';
@@ -19,6 +20,39 @@ class ProductWithDetails {
   final List<ProductPrice> prices;
   final double currentStock;
   final double initialStock;
+
+  String get currency => product.currency;
+  String get currencySymbol => AppCurrency.getSymbol(product.currency);
+
+  /// Dual Currency Price Getters
+  ProductPrice? get retailPriceSypItem => prices
+      .where((p) =>
+          p.priceLabel == 'retail' &&
+          (p.currency == 'SYP' || p.currency == null || p.currency!.isEmpty))
+      .firstOrNull;
+  ProductPrice? get retailPriceUsdItem => prices
+      .where((p) => p.priceLabel == 'retail' && p.currency == 'USD')
+      .firstOrNull;
+  ProductPrice? get wholesalePriceSypItem => prices
+      .where((p) =>
+          p.priceLabel == 'wholesale' &&
+          (p.currency == 'SYP' || p.currency == null || p.currency!.isEmpty))
+      .firstOrNull;
+  ProductPrice? get wholesalePriceUsdItem => prices
+      .where((p) => p.priceLabel == 'wholesale' && p.currency == 'USD')
+      .firstOrNull;
+
+  double? get retailPriceSyp => retailPriceSypItem?.priceValue;
+  double? get retailPriceUsd => retailPriceUsdItem?.priceValue;
+  double? get wholesalePriceSyp => wholesalePriceSypItem?.priceValue;
+  double? get wholesalePriceUsd => wholesalePriceUsdItem?.priceValue;
+
+  /// Dual Currency Cost Price Getters
+  double get costPriceSyp => product.costPrice;
+  double get costPriceUsd => product.costPriceUsd;
+  bool get hasDualCostPrices => costPriceSyp > 0 && costPriceUsd > 0;
+
+  bool get hasDualPrices => retailPriceSyp != null && retailPriceUsd != null;
 
   bool get isLowStock => product.minStockAlert > 0 && currentStock <= product.minStockAlert;
 
@@ -167,11 +201,13 @@ class InventoryRepository {
     required String name,
     required String? categoryId,
     required double costPrice,
+    double costPriceUsd = 0.0,
     required double minStockAlert,
     required List<Map<String, dynamic>> prices,
     required double initialStock,
+    String? currency = 'SYP',
   }) async {
-    _logger.info('Adding product: $name, cost=$costPrice, stock=$initialStock',
+    _logger.info('Adding product: $name, cost=$costPrice, costUsd=$costPriceUsd, stock=$initialStock, currency=$currency',
         context: LogContext.inventory);
     final productId = _uuid.v4();
     final productCode = (code != null && code.trim().isNotEmpty) ? code.trim() : null;
@@ -186,8 +222,10 @@ class InventoryRepository {
         name: name,
         categoryId: categoryId,
         costPrice: costPrice,
+        costPriceUsd: costPriceUsd,
         isActive: true,
         minStockAlert: minStockAlert,
+        currency: currency ?? 'SYP',
         createdAt: now,
         updatedAt: now,
       );
@@ -201,11 +239,14 @@ class InventoryRepository {
         final priceVal = (price['price_value'] as num).toDouble();
         final label = price['price_label'] as String;
 
+        final priceCurrency = (price['currency'] as String?) ?? currency ?? 'SYP';
+
         final prodPrice = ProductPrice(
           id: priceId,
           productId: productId,
           priceLabel: label,
           priceValue: priceVal,
+          currency: priceCurrency,
         );
 
         await _db.into(_db.productPrices).insert(prodPrice);
@@ -238,10 +279,12 @@ class InventoryRepository {
     required String name,
     required String? categoryId,
     required double costPrice,
+    double costPriceUsd = 0.0,
     required double minStockAlert,
     required List<Map<String, dynamic>> prices,
+    String? currency,
   }) async {
-    _logger.info('Updating product: $id, name=$name, cost=$costPrice',
+    _logger.info('Updating product: $id, name=$name, cost=$costPrice, costUsd=$costPriceUsd, currency=$currency',
         context: LogContext.inventory);
     final now = DateTime.now();
     final productCode = (code != null && code.trim().isNotEmpty) ? code.trim() : null;
@@ -253,7 +296,9 @@ class InventoryRepository {
         name: Value(name),
         categoryId: Value(categoryId),
         costPrice: Value(costPrice),
+        costPriceUsd: Value(costPriceUsd),
         minStockAlert: Value(minStockAlert),
+        currency: currency != null ? Value(currency) : const Value.absent(),
         updatedAt: Value(now),
         syncedAt: const Value(null),
       );
@@ -280,11 +325,14 @@ class InventoryRepository {
         final priceVal = (price['price_value'] as num).toDouble();
         final label = price['price_label'] as String;
 
+        final priceCurrency = (price['currency'] as String?) ?? currency ?? 'SYP';
+
         final prodPrice = ProductPrice(
           id: priceId,
           productId: id,
           priceLabel: label,
           priceValue: priceVal,
+          currency: priceCurrency,
         );
 
         await _db.into(_db.productPrices).insert(prodPrice);

@@ -248,6 +248,7 @@ class CustomersDebtsRepository {
         debtId: debtId,
         amountPaid: amountPaid,
         paidAt: now,
+        currency: debt.currency,
       );
 
       await _db.into(_db.debtPayments).insert(payment);

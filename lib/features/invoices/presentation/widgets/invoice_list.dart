@@ -1,5 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:small_mall/core/constants/app_currency.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/core/widgets/empty_state_view.dart';
 import 'package:small_mall/features/invoices/data/invoices_repository.dart';
@@ -189,17 +190,84 @@ class InvoiceList extends StatelessWidget {
                                     ),
                                   ),
                                 ],
+                                if (item.hasMultipleCurrencies) ...[
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF0D9488).withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(4),
+                                      border: Border.all(color: const Color(0xFF0D9488).withValues(alpha: 0.3)),
+                                    ),
+                                    child: Text(
+                                      'عملتان (${AppCurrency.sypSymbol} + ${AppCurrency.usdSymbol})',
+                                      style: const TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF0D9488),
+                                      ),
+                                    ),
+                                  ),
+                                ] else ...[
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                    decoration: BoxDecoration(
+                                      color: (item.currency == 'USD'
+                                              ? const Color(0xFF059669)
+                                              : AppColors.primary)
+                                          .withValues(alpha: 0.12),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      item.currencySymbol,
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                        color: item.currency == 'USD'
+                                            ? const Color(0xFF059669)
+                                            : AppColors.primary,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ],
                             ),
-                            Text(
-                              item.isReturn
-                                  ? '-${item.totalAmount.toStringAsFixed(2)}'
-                                  : item.totalAmount.toStringAsFixed(2),
-                              style: AppTheme.numericStyle(
-                                fontWeight: FontWeight.bold,
-                                color: typeColor,
+                            if (item.hasMultipleCurrencies)
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (item.totalUsd > 0)
+                                    Text(
+                                      '${item.isReturn ? '-' : ''}${item.totalUsd.toStringAsFixed(2)} ${AppCurrency.usdSymbol}',
+                                      style: AppTheme.numericStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                        color: const Color(0xFF059669),
+                                      ),
+                                    ),
+                                  if (item.totalSyp > 0)
+                                    Text(
+                                      '${item.isReturn ? '-' : ''}${item.totalSyp.toStringAsFixed(2)} ${AppCurrency.sypSymbol}',
+                                      style: AppTheme.numericStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                        color: AppColors.primary,
+                                      ),
+                                    ),
+                                ],
+                              )
+                            else
+                              Text(
+                                item.isReturn
+                                    ? '-${item.totalAmount.toStringAsFixed(2)} ${item.currencySymbol}'
+                                    : '${item.totalAmount.toStringAsFixed(2)} ${item.currencySymbol}',
+                                style: AppTheme.numericStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: typeColor,
+                                ),
                               ),
-                            ),
                           ],
                         ),
                         const SizedBox(height: 6),

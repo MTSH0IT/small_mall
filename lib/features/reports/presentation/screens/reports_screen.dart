@@ -94,8 +94,20 @@ class _ReportsScreenState extends State<ReportsScreen> {
       final totalInflow = cashSales + debtPayments;
       final totalOutflow = expenses + purchases;
 
+      // USD counterparts
+      final cashSalesUsd = profit.cashSalesUsd;
+      final expensesUsd = profit.totalExpensesUsd;
+      final purchasesUsd = profit.totalPurchasesUsd;
+      final debtsUsd = profit.newDebtsUsd;
+      final debtPaymentsUsd = profit.debtPaymentsUsd;
+      final netProfitUsd = profit.netProfitUsd;
+      final totalInflowUsd = profit.totalInflowsUsd;
+      final totalOutflowUsd = profit.totalOutflowsUsd;
+
       final isProfitable = netProfit >= 0;
       final netProfitColor = isProfitable ? AppColors.success : AppColors.danger;
+      final isProfitableUsd = netProfitUsd >= 0;
+      final netProfitColorUsd = isProfitableUsd ? const Color(0xFF059669) : AppColors.danger;
 
       return SingleChildScrollView(
         child: Column(
@@ -107,7 +119,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 Expanded(
                   child: StatCard(
                     title: 'reports.sales'.tr(),
-                    value: cashSales.toStringAsFixed(2),
+                    value: '${cashSales.toStringAsFixed(2)} ل.س',
+                    secondaryValue: '${cashSalesUsd.toStringAsFixed(2)} \$',
                     color: AppColors.primary,
                     subtitle: 'reports.sales_no_debt_note'.tr(),
                     icon: Icons.point_of_sale,
@@ -117,7 +130,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 Expanded(
                   child: StatCard(
                     title: 'expenses.title'.tr(),
-                    value: expenses.toStringAsFixed(2),
+                    value: '${expenses.toStringAsFixed(2)} ل.س',
+                    secondaryValue: '${expensesUsd.toStringAsFixed(2)} \$',
                     color: AppColors.warning,
                     subtitle: '${profit.expensesCount} ${'expenses.operations_count'.tr()}',
                     icon: Icons.receipt_long_outlined,
@@ -127,7 +141,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 Expanded(
                   child: StatCard(
                     title: 'reports.purchases'.tr(),
-                    value: purchases.toStringAsFixed(2),
+                    value: '${purchases.toStringAsFixed(2)} ل.س',
+                    secondaryValue: '${purchasesUsd.toStringAsFixed(2)} \$',
                     color: const Color(0xFF8B5CF6),
                     subtitle: '${profit.purchasesCount} ${'invoices.purchase'.tr()}',
                     icon: Icons.shopping_bag_outlined,
@@ -137,8 +152,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 Expanded(
                   child: StatCard(
                     title: 'reports.net_profit_clean'.tr(),
-                    value: netProfit.toStringAsFixed(2),
+                    value: '${netProfit.toStringAsFixed(2)} ل.س',
+                    secondaryValue: '${netProfitUsd.toStringAsFixed(2)} \$',
                     color: netProfitColor,
+                    secondaryColor: netProfitColorUsd,
                     subtitle: 'reports.net_profit_formula'.tr(),
                     icon: Icons.calculate_outlined,
                   ),
@@ -153,7 +170,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 Expanded(
                   child: StatCard(
                     title: 'reports.simple_debts'.tr(),
-                    value: debts.toStringAsFixed(2),
+                    value: '${debts.toStringAsFixed(2)} ل.س',
+                    secondaryValue: '${debtsUsd.toStringAsFixed(2)} \$',
                     color: AppColors.danger,
                     subtitle: 'reports.new_debts_issued'.tr(),
                     icon: Icons.money_off_outlined,
@@ -163,7 +181,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 Expanded(
                   child: StatCard(
                     title: 'reports.simple_debt_payments'.tr(),
-                    value: debtPayments.toStringAsFixed(2),
+                    value: '${debtPayments.toStringAsFixed(2)} ل.س',
+                    secondaryValue: '${debtPaymentsUsd.toStringAsFixed(2)} \$',
                     color: AppColors.success,
                     subtitle: '${profit.debtPaymentsCount} ${'reports.debt_collections'.tr()}',
                     icon: Icons.payments_outlined,
@@ -173,7 +192,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 Expanded(
                   child: StatCard(
                     title: 'reports.inflows_card_title'.tr(),
-                    value: totalInflow.toStringAsFixed(2),
+                    value: '${totalInflow.toStringAsFixed(2)} ل.س',
+                    secondaryValue: '${totalInflowUsd.toStringAsFixed(2)} \$',
                     color: AppColors.success,
                     subtitle: '${'reports.sales'.tr()} + ${'reports.simple_debt_payments'.tr()}',
                     icon: Icons.download,
@@ -183,7 +203,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 Expanded(
                   child: StatCard(
                     title: 'reports.outflows_card_title'.tr(),
-                    value: totalOutflow.toStringAsFixed(2),
+                    value: '${totalOutflow.toStringAsFixed(2)} ل.س',
+                    secondaryValue: '${totalOutflowUsd.toStringAsFixed(2)} \$',
                     color: AppColors.danger,
                     subtitle: '${'expenses.title'.tr()} + ${'reports.purchases'.tr()}',
                     icon: Icons.upload,
@@ -219,10 +240,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
                             ],
                           ),
                           const SizedBox(height: 10),
-                          _buildLineItem('reports.sales'.tr(), cashSales, AppColors.textPrimary),
-                          _buildLineItem('reports.simple_debt_payments'.tr(), debtPayments, AppColors.textPrimary),
+                          _buildLineItem('reports.sales'.tr(), cashSales, AppColors.textPrimary, amountUsd: cashSalesUsd),
+                          _buildLineItem('reports.simple_debt_payments'.tr(), debtPayments, AppColors.textPrimary, amountUsd: debtPaymentsUsd),
                           const Divider(height: 16, color: AppColors.border),
-                          _buildTotalLine('reports.inflows_card_title'.tr(), totalInflow, AppColors.success),
+                          _buildTotalLine('reports.inflows_card_title'.tr(), totalInflow, AppColors.success, amountUsd: totalInflowUsd),
 
                           const SizedBox(height: 20),
 
@@ -238,10 +259,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
                             ],
                           ),
                           const SizedBox(height: 10),
-                          _buildLineItem('expenses.title'.tr(), expenses, AppColors.textPrimary),
-                          _buildLineItem('reports.purchases'.tr(), purchases, AppColors.textPrimary),
+                          _buildLineItem('expenses.title'.tr(), expenses, AppColors.textPrimary, amountUsd: expensesUsd),
+                          _buildLineItem('reports.purchases'.tr(), purchases, AppColors.textPrimary, amountUsd: purchasesUsd),
                           const Divider(height: 16, color: AppColors.border),
-                          _buildTotalLine('reports.outflows_card_title'.tr(), totalOutflow, AppColors.danger),
+                          _buildTotalLine('reports.outflows_card_title'.tr(), totalOutflow, AppColors.danger, amountUsd: totalOutflowUsd),
 
                           const SizedBox(height: 24),
 
@@ -274,13 +295,27 @@ class _ReportsScreenState extends State<ReportsScreen> {
                                     ),
                                   ],
                                 ),
-                                Text(
-                                  netProfit.toStringAsFixed(2),
-                                  style: AppTheme.numericStyle(
-                                    fontSize: 26,
-                                    fontWeight: FontWeight.bold,
-                                    color: netProfitColor,
-                                  ),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      '${netProfit.toStringAsFixed(2)} ل.س',
+                                      style: AppTheme.numericStyle(
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.bold,
+                                        color: netProfitColor,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '${netProfitUsd.toStringAsFixed(2)} \$',
+                                      style: AppTheme.numericStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: netProfitColorUsd,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
@@ -312,32 +347,62 @@ class _ReportsScreenState extends State<ReportsScreen> {
     return const SizedBox();
   }
 
-  Widget _buildLineItem(String title, double amount, Color color) {
+  Widget _buildLineItem(String title, double amount, Color color, {double? amountUsd}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3.0, horizontal: 8.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(title, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
-          Text(
-            amount.toStringAsFixed(2),
-            style: AppTheme.numericStyle(fontSize: 13, fontWeight: FontWeight.w600, color: color),
+          Row(
+            children: [
+              Text(
+                '${amount.toStringAsFixed(2)} ل.س',
+                style: AppTheme.numericStyle(fontSize: 13, fontWeight: FontWeight.w600, color: color),
+              ),
+              if (amountUsd != null && amountUsd != 0) ...[
+                const SizedBox(width: 6),
+                Text(
+                  '/ ${amountUsd.toStringAsFixed(2)} \$',
+                  style: AppTheme.numericStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF059669),
+                  ),
+                ),
+              ],
+            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _buildTotalLine(String title, double amount, Color color) {
+  Widget _buildTotalLine(String title, double amount, Color color, {double? amountUsd}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(title, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: color)),
-          Text(
-            amount.toStringAsFixed(2),
-            style: AppTheme.numericStyle(fontSize: 14, fontWeight: FontWeight.bold, color: color),
+          Row(
+            children: [
+              Text(
+                '${amount.toStringAsFixed(2)} ل.س',
+                style: AppTheme.numericStyle(fontSize: 14, fontWeight: FontWeight.bold, color: color),
+              ),
+              if (amountUsd != null && amountUsd != 0) ...[
+                const SizedBox(width: 6),
+                Text(
+                  '/ ${amountUsd.toStringAsFixed(2)} \$',
+                  style: AppTheme.numericStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF059669),
+                  ),
+                ),
+              ],
+            ],
           ),
         ],
       ),

@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:small_mall/core/constants/app_currency.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/logging/app_logger.dart';
 import 'package:small_mall/core/logging/log_context.dart';
@@ -21,13 +22,16 @@ class UnifiedTransactionItem {
     required this.quantity,
     required this.unitPrice,
     this.discount = 0.0,
+    this.currency = AppCurrency.defaultCode,
   });
 
   final String productName;
   final double quantity;
   final double unitPrice;
   final double discount;
+  final String currency;
 
+  String get currencySymbol => AppCurrency.getSymbol(currency);
   double get total => (quantity * unitPrice) - discount;
 }
 
@@ -39,6 +43,7 @@ class UnifiedTransactionRecord {
     required this.type,
     required this.createdAt,
     required this.totalAmount,
+    this.currency = AppCurrency.defaultCode,
     this.partyName,
     this.paymentType,
     this.discount = 0.0,
@@ -57,11 +62,53 @@ class UnifiedTransactionRecord {
   final UnifiedTransactionType type;
   final DateTime createdAt;
   final double totalAmount;
+  final String currency;
   final String? partyName; // Customer, Supplier, or Expense Category
   final String? paymentType; // 'cash', 'debt', etc.
   final double discount;
   final String? notes;
   final List<UnifiedTransactionItem> items;
+
+  String get currencySymbol => AppCurrency.getSymbol(currency);
+
+  bool get hasMultipleCurrencies {
+    if (items.isEmpty) return false;
+    final first = items.first.currency;
+    return items.any((i) => i.currency != first);
+  }
+
+  Set<String> get currencies {
+    if (items.isEmpty) return {currency};
+    return items.map((i) => i.currency).toSet();
+  }
+
+  double totalForCurrency(String currencyCode) {
+    return items
+        .where((i) => i.currency == currencyCode)
+        .fold<double>(0.0, (sum, i) => sum + i.total);
+  }
+
+  double get totalSyp {
+    if (!hasMultipleCurrencies) {
+      return currency != AppCurrency.usdCode ? totalAmount : 0.0;
+    }
+    final raw = totalForCurrency(AppCurrency.sypCode);
+    if (currency != AppCurrency.usdCode && discount > 0) {
+      return (raw - discount).clamp(0.0, double.infinity);
+    }
+    return raw;
+  }
+
+  double get totalUsd {
+    if (!hasMultipleCurrencies) {
+      return currency == AppCurrency.usdCode ? totalAmount : 0.0;
+    }
+    final raw = totalForCurrency(AppCurrency.usdCode);
+    if (currency == AppCurrency.usdCode && discount > 0) {
+      return (raw - discount).clamp(0.0, double.infinity);
+    }
+    return raw;
+  }
 
   // Reference to original records when needed
   final InvoiceWithDetails? rawInvoice;
@@ -123,6 +170,7 @@ class UnifiedTransactionRecord {
     UnifiedTransactionType? type,
     DateTime? createdAt,
     double? totalAmount,
+    String? currency,
     String? partyName,
     String? paymentType,
     double? discount,
@@ -141,6 +189,7 @@ class UnifiedTransactionRecord {
       type: type ?? this.type,
       createdAt: createdAt ?? this.createdAt,
       totalAmount: totalAmount ?? this.totalAmount,
+      currency: currency ?? this.currency,
       partyName: partyName ?? this.partyName,
       paymentType: paymentType ?? this.paymentType,
       discount: discount ?? this.discount,
@@ -215,6 +264,7 @@ class InvoicesRepository {
           quantity: item.invoiceItem.quantity,
           unitPrice: item.invoiceItem.priceUsed,
           discount: item.invoiceItem.discount,
+          currency: item.invoiceItem.currency,
         );
       }).toList();
 
@@ -224,6 +274,7 @@ class InvoicesRepository {
         type: type,
         createdAt: inv.invoice.createdAt,
         totalAmount: inv.invoice.totalAmount,
+        currency: inv.invoice.currency,
         partyName: inv.customerName,
         paymentType: inv.invoice.paymentType,
         discount: inv.invoice.discount,
@@ -261,6 +312,7 @@ class InvoicesRepository {
           productName: productMap[item.productId] ?? 'common.deleted_product'.tr(),
           quantity: item.quantity,
           unitPrice: item.unitCost,
+          currency: item.currency,
         );
       }).toList();
 
@@ -270,6 +322,7 @@ class InvoicesRepository {
         type: UnifiedTransactionType.purchase,
         createdAt: p.createdAt,
         totalAmount: p.totalAmount,
+        currency: p.currency,
         partyName: supplierMap[p.supplierId] ?? 'invoices.supplier'.tr(),
         paymentType: 'cash',
         items: items,
@@ -302,6 +355,7 @@ class InvoicesRepository {
         type: UnifiedTransactionType.expense,
         createdAt: e.createdAt,
         totalAmount: e.amount,
+        currency: e.currency,
         partyName: categoryMap[e.categoryId] ?? 'invoices.expense_category'.tr(),
         notes: e.notes,
         rawExpense: e,
@@ -339,8 +393,9 @@ class InvoicesRepository {
         type: UnifiedTransactionType.debtPayment,
         createdAt: dp.paidAt,
         totalAmount: dp.amountPaid,
+        currency: dp.currency,
         partyName: customerName ?? 'common.deleted_customer'.tr(),
-        notes: debt != null ? '${'customers.remaining_debt'.tr()}: ${debt.remainingAmount.toStringAsFixed(2)}' : null,
+        notes: debt != null ? '${'customers.remaining_debt'.tr()}: ${debt.remainingAmount.toStringAsFixed(2)} ${AppCurrency.getSymbol(debt.currency)}' : null,
         rawDebtPayment: dp,
       );
     }).toList();
@@ -369,6 +424,7 @@ class InvoicesRepository {
       final productName = product?.name ?? 'common.deleted_product'.tr();
       final cost = product?.costPrice ?? 0.0;
       final totalValue = (m.quantity.abs() * cost);
+      final currency = product?.currency ?? AppCurrency.sypCode;
 
       return UnifiedTransactionRecord(
         id: m.id,
@@ -376,6 +432,7 @@ class InvoicesRepository {
         type: UnifiedTransactionType.adjustment,
         createdAt: m.createdAt,
         totalAmount: totalValue,
+        currency: currency,
         partyName: productName,
         notes: m.referenceId, // reason stored in referenceId
         items: [
@@ -383,6 +440,7 @@ class InvoicesRepository {
             productName: productName,
             quantity: m.quantity,
             unitPrice: cost,
+            currency: currency,
           ),
         ],
         rawStockMovement: m,

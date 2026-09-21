@@ -1,5 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:small_mall/core/constants/app_currency.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/utils/price_helper.dart';
 import 'package:small_mall/core/utils/theme.dart';
@@ -93,9 +94,48 @@ class ProductsTable extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                item.product.name,
-                style: const TextStyle(fontWeight: FontWeight.bold),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: Text(
+                      item.product.name,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                    decoration: BoxDecoration(
+                      color: item.hasDualPrices
+                          ? const Color(0xFF6366F1).withValues(alpha: 0.12)
+                          : (item.currency == AppCurrency.secondaryCode
+                              ? const Color(0xFF10B981).withValues(alpha: 0.12)
+                              : AppColors.primary.withValues(alpha: 0.08)),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(
+                        color: item.hasDualPrices
+                            ? const Color(0xFF6366F1).withValues(alpha: 0.3)
+                            : (item.currency == AppCurrency.secondaryCode
+                                ? const Color(0xFF10B981).withValues(alpha: 0.3)
+                                : AppColors.primary.withValues(alpha: 0.25)),
+                        width: 0.8,
+                      ),
+                    ),
+                    child: Text(
+                      item.hasDualPrices ? 'ل.س / \$' : item.currencySymbol,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: item.hasDualPrices
+                            ? const Color(0xFF4F46E5)
+                            : (item.currency == AppCurrency.secondaryCode
+                                ? const Color(0xFF059669)
+                                : AppColors.primary),
+                      ),
+                    ),
+                  ),
+                ],
               ),
               if (item.product.code != null && item.product.code!.isNotEmpty)
                 Padding(
@@ -128,33 +168,127 @@ class ProductsTable extends StatelessWidget {
         ),
         AppTableColumn<ProductWithDetails>(
           title: 'inventory.cost_price'.tr(),
-          cellBuilder: (item) => Text(
-            item.product.costPrice.toStringAsFixed(2),
-            style: AppTheme.numericStyle(),
-          ),
+          cellBuilder: (item) {
+            final hasUsdCost = item.costPriceUsd > 0;
+            return Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      item.costPriceSyp.toStringAsFixed(2),
+                      style: AppTheme.numericStyle(),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      AppCurrency.primarySymbol,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+                if (hasUsdCost) ...[
+                  const SizedBox(height: 2),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        item.costPriceUsd.toStringAsFixed(2),
+                        style: AppTheme.numericStyle(color: const Color(0xFF059669)),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        AppCurrency.secondarySymbol,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF059669),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            );
+          },
         ),
         AppTableColumn<ProductWithDetails>(
           title: 'inventory.selling_prices'.tr(),
           cellBuilder: (item) {
-            final retail = item.prices.firstWhere((p) => p.priceLabel == 'retail',
-                orElse: () => ProductPrice(id: '', productId: '', priceLabel: 'retail', priceValue: 0.0));
-            final wholesale = item.prices.firstWhere((p) => p.priceLabel == 'wholesale',
-                orElse: () => ProductPrice(id: '', productId: '', priceLabel: 'wholesale', priceValue: 0.0));
+            final chips = <Widget>[];
 
-            return Wrap(
-              spacing: 8,
-              children: [
+            final sypRetail = item.retailPriceSyp;
+            final sypWholesale = item.wholesalePriceSyp;
+            final usdRetail = item.retailPriceUsd;
+            final usdWholesale = item.wholesalePriceUsd;
+
+            if (sypRetail != null && sypRetail > 0) {
+              chips.add(
                 PriceTagChip(
-                  label: '${'retail'.priceLabelText}: ${retail.priceValue.toStringAsFixed(1)}',
+                  label: '${'retail'.priceLabelText}: ${sypRetail.toStringAsFixed(sypRetail % 1 == 0 ? 0 : 1)} ${AppCurrency.baseSymbol}',
+                  backgroundColor: 'retail'.priceLabelColor,
+                  cutSize: 6,
+                ),
+              );
+            }
+            if (sypWholesale != null && sypWholesale > 0) {
+              chips.add(
+                PriceTagChip(
+                  label: '${'wholesale'.priceLabelText}: ${sypWholesale.toStringAsFixed(sypWholesale % 1 == 0 ? 0 : 1)} ${AppCurrency.baseSymbol}',
+                  backgroundColor: 'wholesale'.priceLabelColor,
+                  cutSize: 6,
+                ),
+              );
+            }
+
+            if (usdRetail != null && usdRetail > 0) {
+              chips.add(
+                PriceTagChip(
+                  label: '${'retail'.priceLabelText}: ${usdRetail.toStringAsFixed(usdRetail % 1 == 0 ? 0 : 2)} ${AppCurrency.secondarySymbol}',
+                  backgroundColor: const Color(0xFF059669),
+                  cutSize: 6,
+                ),
+              );
+            }
+            if (usdWholesale != null && usdWholesale > 0) {
+              chips.add(
+                PriceTagChip(
+                  label: '${'wholesale'.priceLabelText}: ${usdWholesale.toStringAsFixed(usdWholesale % 1 == 0 ? 0 : 2)} ${AppCurrency.secondarySymbol}',
+                  backgroundColor: const Color(0xFF0D9488),
+                  cutSize: 6,
+                ),
+              );
+            }
+
+            if (chips.isEmpty) {
+              final retail = item.prices.firstWhere((p) => p.priceLabel == 'retail',
+                  orElse: () => ProductPrice(id: '', productId: '', priceLabel: 'retail', priceValue: 0.0));
+              final wholesale = item.prices.firstWhere((p) => p.priceLabel == 'wholesale',
+                  orElse: () => ProductPrice(id: '', productId: '', priceLabel: 'wholesale', priceValue: 0.0));
+
+              chips.addAll([
+                PriceTagChip(
+                  label: '${'retail'.priceLabelText}: ${retail.priceValue.toStringAsFixed(1)} ${item.currencySymbol}',
                   backgroundColor: 'retail'.priceLabelColor,
                   cutSize: 6,
                 ),
                 PriceTagChip(
-                  label: '${'wholesale'.priceLabelText}: ${wholesale.priceValue.toStringAsFixed(1)}',
+                  label: '${'wholesale'.priceLabelText}: ${wholesale.priceValue.toStringAsFixed(1)} ${item.currencySymbol}',
                   backgroundColor: 'wholesale'.priceLabelColor,
                   cutSize: 6,
                 ),
-              ],
+              ]);
+            }
+
+            return Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              children: chips,
             );
           },
         ),

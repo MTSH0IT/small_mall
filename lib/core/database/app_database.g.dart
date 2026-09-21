@@ -384,6 +384,18 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
     requiredDuringInsert: false,
     defaultValue: const Constant(0.0),
   );
+  static const VerificationMeta _costPriceUsdMeta = const VerificationMeta(
+    'costPriceUsd',
+  );
+  @override
+  late final GeneratedColumn<double> costPriceUsd = GeneratedColumn<double>(
+    'cost_price_usd',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0.0),
+  );
   static const VerificationMeta _isActiveMeta = const VerificationMeta(
     'isActive',
   );
@@ -444,6 +456,18 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
     type: DriftSqlType.dateTime,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _currencyMeta = const VerificationMeta(
+    'currency',
+  );
+  @override
+  late final GeneratedColumn<String> currency = GeneratedColumn<String>(
+    'currency',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('SYP'),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -452,11 +476,13 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
     name,
     categoryId,
     costPrice,
+    costPriceUsd,
     isActive,
     minStockAlert,
     createdAt,
     updatedAt,
     syncedAt,
+    currency,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -510,6 +536,15 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
         costPrice.isAcceptableOrUnknown(data['cost_price']!, _costPriceMeta),
       );
     }
+    if (data.containsKey('cost_price_usd')) {
+      context.handle(
+        _costPriceUsdMeta,
+        costPriceUsd.isAcceptableOrUnknown(
+          data['cost_price_usd']!,
+          _costPriceUsdMeta,
+        ),
+      );
+    }
     if (data.containsKey('is_active')) {
       context.handle(
         _isActiveMeta,
@@ -547,6 +582,12 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
         syncedAt.isAcceptableOrUnknown(data['synced_at']!, _syncedAtMeta),
       );
     }
+    if (data.containsKey('currency')) {
+      context.handle(
+        _currencyMeta,
+        currency.isAcceptableOrUnknown(data['currency']!, _currencyMeta),
+      );
+    }
     return context;
   }
 
@@ -580,6 +621,10 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
         DriftSqlType.double,
         data['${effectivePrefix}cost_price'],
       )!,
+      costPriceUsd: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}cost_price_usd'],
+      )!,
       isActive: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}is_active'],
@@ -600,6 +645,10 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
         DriftSqlType.dateTime,
         data['${effectivePrefix}synced_at'],
       ),
+      currency: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}currency'],
+      )!,
     );
   }
 
@@ -616,11 +665,13 @@ class Product extends DataClass implements Insertable<Product> {
   final String name;
   final String? categoryId;
   final double costPrice;
+  final double costPriceUsd;
   final bool isActive;
   final double minStockAlert;
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? syncedAt;
+  final String currency;
   const Product({
     required this.id,
     this.serialNumber,
@@ -628,11 +679,13 @@ class Product extends DataClass implements Insertable<Product> {
     required this.name,
     this.categoryId,
     required this.costPrice,
+    required this.costPriceUsd,
     required this.isActive,
     required this.minStockAlert,
     required this.createdAt,
     required this.updatedAt,
     this.syncedAt,
+    required this.currency,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -649,6 +702,7 @@ class Product extends DataClass implements Insertable<Product> {
       map['category_id'] = Variable<String>(categoryId);
     }
     map['cost_price'] = Variable<double>(costPrice);
+    map['cost_price_usd'] = Variable<double>(costPriceUsd);
     map['is_active'] = Variable<bool>(isActive);
     map['min_stock_alert'] = Variable<double>(minStockAlert);
     map['created_at'] = Variable<DateTime>(createdAt);
@@ -656,6 +710,7 @@ class Product extends DataClass implements Insertable<Product> {
     if (!nullToAbsent || syncedAt != null) {
       map['synced_at'] = Variable<DateTime>(syncedAt);
     }
+    map['currency'] = Variable<String>(currency);
     return map;
   }
 
@@ -671,6 +726,7 @@ class Product extends DataClass implements Insertable<Product> {
           ? const Value.absent()
           : Value(categoryId),
       costPrice: Value(costPrice),
+      costPriceUsd: Value(costPriceUsd),
       isActive: Value(isActive),
       minStockAlert: Value(minStockAlert),
       createdAt: Value(createdAt),
@@ -678,6 +734,7 @@ class Product extends DataClass implements Insertable<Product> {
       syncedAt: syncedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(syncedAt),
+      currency: Value(currency),
     );
   }
 
@@ -693,11 +750,13 @@ class Product extends DataClass implements Insertable<Product> {
       name: serializer.fromJson<String>(json['name']),
       categoryId: serializer.fromJson<String?>(json['categoryId']),
       costPrice: serializer.fromJson<double>(json['costPrice']),
+      costPriceUsd: serializer.fromJson<double>(json['costPriceUsd']),
       isActive: serializer.fromJson<bool>(json['isActive']),
       minStockAlert: serializer.fromJson<double>(json['minStockAlert']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
       syncedAt: serializer.fromJson<DateTime?>(json['syncedAt']),
+      currency: serializer.fromJson<String>(json['currency']),
     );
   }
   @override
@@ -710,11 +769,13 @@ class Product extends DataClass implements Insertable<Product> {
       'name': serializer.toJson<String>(name),
       'categoryId': serializer.toJson<String?>(categoryId),
       'costPrice': serializer.toJson<double>(costPrice),
+      'costPriceUsd': serializer.toJson<double>(costPriceUsd),
       'isActive': serializer.toJson<bool>(isActive),
       'minStockAlert': serializer.toJson<double>(minStockAlert),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
       'syncedAt': serializer.toJson<DateTime?>(syncedAt),
+      'currency': serializer.toJson<String>(currency),
     };
   }
 
@@ -725,11 +786,13 @@ class Product extends DataClass implements Insertable<Product> {
     String? name,
     Value<String?> categoryId = const Value.absent(),
     double? costPrice,
+    double? costPriceUsd,
     bool? isActive,
     double? minStockAlert,
     DateTime? createdAt,
     DateTime? updatedAt,
     Value<DateTime?> syncedAt = const Value.absent(),
+    String? currency,
   }) => Product(
     id: id ?? this.id,
     serialNumber: serialNumber.present ? serialNumber.value : this.serialNumber,
@@ -737,11 +800,13 @@ class Product extends DataClass implements Insertable<Product> {
     name: name ?? this.name,
     categoryId: categoryId.present ? categoryId.value : this.categoryId,
     costPrice: costPrice ?? this.costPrice,
+    costPriceUsd: costPriceUsd ?? this.costPriceUsd,
     isActive: isActive ?? this.isActive,
     minStockAlert: minStockAlert ?? this.minStockAlert,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
     syncedAt: syncedAt.present ? syncedAt.value : this.syncedAt,
+    currency: currency ?? this.currency,
   );
   Product copyWithCompanion(ProductsCompanion data) {
     return Product(
@@ -755,6 +820,9 @@ class Product extends DataClass implements Insertable<Product> {
           ? data.categoryId.value
           : this.categoryId,
       costPrice: data.costPrice.present ? data.costPrice.value : this.costPrice,
+      costPriceUsd: data.costPriceUsd.present
+          ? data.costPriceUsd.value
+          : this.costPriceUsd,
       isActive: data.isActive.present ? data.isActive.value : this.isActive,
       minStockAlert: data.minStockAlert.present
           ? data.minStockAlert.value
@@ -762,6 +830,7 @@ class Product extends DataClass implements Insertable<Product> {
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       syncedAt: data.syncedAt.present ? data.syncedAt.value : this.syncedAt,
+      currency: data.currency.present ? data.currency.value : this.currency,
     );
   }
 
@@ -774,11 +843,13 @@ class Product extends DataClass implements Insertable<Product> {
           ..write('name: $name, ')
           ..write('categoryId: $categoryId, ')
           ..write('costPrice: $costPrice, ')
+          ..write('costPriceUsd: $costPriceUsd, ')
           ..write('isActive: $isActive, ')
           ..write('minStockAlert: $minStockAlert, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
-          ..write('syncedAt: $syncedAt')
+          ..write('syncedAt: $syncedAt, ')
+          ..write('currency: $currency')
           ..write(')'))
         .toString();
   }
@@ -791,11 +862,13 @@ class Product extends DataClass implements Insertable<Product> {
     name,
     categoryId,
     costPrice,
+    costPriceUsd,
     isActive,
     minStockAlert,
     createdAt,
     updatedAt,
     syncedAt,
+    currency,
   );
   @override
   bool operator ==(Object other) =>
@@ -807,11 +880,13 @@ class Product extends DataClass implements Insertable<Product> {
           other.name == this.name &&
           other.categoryId == this.categoryId &&
           other.costPrice == this.costPrice &&
+          other.costPriceUsd == this.costPriceUsd &&
           other.isActive == this.isActive &&
           other.minStockAlert == this.minStockAlert &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
-          other.syncedAt == this.syncedAt);
+          other.syncedAt == this.syncedAt &&
+          other.currency == this.currency);
 }
 
 class ProductsCompanion extends UpdateCompanion<Product> {
@@ -821,11 +896,13 @@ class ProductsCompanion extends UpdateCompanion<Product> {
   final Value<String> name;
   final Value<String?> categoryId;
   final Value<double> costPrice;
+  final Value<double> costPriceUsd;
   final Value<bool> isActive;
   final Value<double> minStockAlert;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<DateTime?> syncedAt;
+  final Value<String> currency;
   final Value<int> rowid;
   const ProductsCompanion({
     this.id = const Value.absent(),
@@ -834,11 +911,13 @@ class ProductsCompanion extends UpdateCompanion<Product> {
     this.name = const Value.absent(),
     this.categoryId = const Value.absent(),
     this.costPrice = const Value.absent(),
+    this.costPriceUsd = const Value.absent(),
     this.isActive = const Value.absent(),
     this.minStockAlert = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.syncedAt = const Value.absent(),
+    this.currency = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ProductsCompanion.insert({
@@ -848,11 +927,13 @@ class ProductsCompanion extends UpdateCompanion<Product> {
     required String name,
     this.categoryId = const Value.absent(),
     this.costPrice = const Value.absent(),
+    this.costPriceUsd = const Value.absent(),
     this.isActive = const Value.absent(),
     this.minStockAlert = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
     this.syncedAt = const Value.absent(),
+    this.currency = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        name = Value(name),
@@ -865,11 +946,13 @@ class ProductsCompanion extends UpdateCompanion<Product> {
     Expression<String>? name,
     Expression<String>? categoryId,
     Expression<double>? costPrice,
+    Expression<double>? costPriceUsd,
     Expression<bool>? isActive,
     Expression<double>? minStockAlert,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<DateTime>? syncedAt,
+    Expression<String>? currency,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -879,11 +962,13 @@ class ProductsCompanion extends UpdateCompanion<Product> {
       if (name != null) 'name': name,
       if (categoryId != null) 'category_id': categoryId,
       if (costPrice != null) 'cost_price': costPrice,
+      if (costPriceUsd != null) 'cost_price_usd': costPriceUsd,
       if (isActive != null) 'is_active': isActive,
       if (minStockAlert != null) 'min_stock_alert': minStockAlert,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (syncedAt != null) 'synced_at': syncedAt,
+      if (currency != null) 'currency': currency,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -895,11 +980,13 @@ class ProductsCompanion extends UpdateCompanion<Product> {
     Value<String>? name,
     Value<String?>? categoryId,
     Value<double>? costPrice,
+    Value<double>? costPriceUsd,
     Value<bool>? isActive,
     Value<double>? minStockAlert,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<DateTime?>? syncedAt,
+    Value<String>? currency,
     Value<int>? rowid,
   }) {
     return ProductsCompanion(
@@ -909,11 +996,13 @@ class ProductsCompanion extends UpdateCompanion<Product> {
       name: name ?? this.name,
       categoryId: categoryId ?? this.categoryId,
       costPrice: costPrice ?? this.costPrice,
+      costPriceUsd: costPriceUsd ?? this.costPriceUsd,
       isActive: isActive ?? this.isActive,
       minStockAlert: minStockAlert ?? this.minStockAlert,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       syncedAt: syncedAt ?? this.syncedAt,
+      currency: currency ?? this.currency,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -939,6 +1028,9 @@ class ProductsCompanion extends UpdateCompanion<Product> {
     if (costPrice.present) {
       map['cost_price'] = Variable<double>(costPrice.value);
     }
+    if (costPriceUsd.present) {
+      map['cost_price_usd'] = Variable<double>(costPriceUsd.value);
+    }
     if (isActive.present) {
       map['is_active'] = Variable<bool>(isActive.value);
     }
@@ -953,6 +1045,9 @@ class ProductsCompanion extends UpdateCompanion<Product> {
     }
     if (syncedAt.present) {
       map['synced_at'] = Variable<DateTime>(syncedAt.value);
+    }
+    if (currency.present) {
+      map['currency'] = Variable<String>(currency.value);
     }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
@@ -969,11 +1064,13 @@ class ProductsCompanion extends UpdateCompanion<Product> {
           ..write('name: $name, ')
           ..write('categoryId: $categoryId, ')
           ..write('costPrice: $costPrice, ')
+          ..write('costPriceUsd: $costPriceUsd, ')
           ..write('isActive: $isActive, ')
           ..write('minStockAlert: $minStockAlert, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('syncedAt: $syncedAt, ')
+          ..write('currency: $currency, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -1028,8 +1125,25 @@ class $ProductPricesTable extends ProductPrices
     type: DriftSqlType.double,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _currencyMeta = const VerificationMeta(
+    'currency',
+  );
   @override
-  List<GeneratedColumn> get $columns => [id, productId, priceLabel, priceValue];
+  late final GeneratedColumn<String> currency = GeneratedColumn<String>(
+    'currency',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    productId,
+    priceLabel,
+    priceValue,
+    currency,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -1071,6 +1185,12 @@ class $ProductPricesTable extends ProductPrices
     } else if (isInserting) {
       context.missing(_priceValueMeta);
     }
+    if (data.containsKey('currency')) {
+      context.handle(
+        _currencyMeta,
+        currency.isAcceptableOrUnknown(data['currency']!, _currencyMeta),
+      );
+    }
     return context;
   }
 
@@ -1096,6 +1216,10 @@ class $ProductPricesTable extends ProductPrices
         DriftSqlType.double,
         data['${effectivePrefix}price_value'],
       )!,
+      currency: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}currency'],
+      ),
     );
   }
 
@@ -1110,11 +1234,13 @@ class ProductPrice extends DataClass implements Insertable<ProductPrice> {
   final String productId;
   final String priceLabel;
   final double priceValue;
+  final String? currency;
   const ProductPrice({
     required this.id,
     required this.productId,
     required this.priceLabel,
     required this.priceValue,
+    this.currency,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1123,6 +1249,9 @@ class ProductPrice extends DataClass implements Insertable<ProductPrice> {
     map['product_id'] = Variable<String>(productId);
     map['price_label'] = Variable<String>(priceLabel);
     map['price_value'] = Variable<double>(priceValue);
+    if (!nullToAbsent || currency != null) {
+      map['currency'] = Variable<String>(currency);
+    }
     return map;
   }
 
@@ -1132,6 +1261,9 @@ class ProductPrice extends DataClass implements Insertable<ProductPrice> {
       productId: Value(productId),
       priceLabel: Value(priceLabel),
       priceValue: Value(priceValue),
+      currency: currency == null && nullToAbsent
+          ? const Value.absent()
+          : Value(currency),
     );
   }
 
@@ -1145,6 +1277,7 @@ class ProductPrice extends DataClass implements Insertable<ProductPrice> {
       productId: serializer.fromJson<String>(json['productId']),
       priceLabel: serializer.fromJson<String>(json['priceLabel']),
       priceValue: serializer.fromJson<double>(json['priceValue']),
+      currency: serializer.fromJson<String?>(json['currency']),
     );
   }
   @override
@@ -1155,6 +1288,7 @@ class ProductPrice extends DataClass implements Insertable<ProductPrice> {
       'productId': serializer.toJson<String>(productId),
       'priceLabel': serializer.toJson<String>(priceLabel),
       'priceValue': serializer.toJson<double>(priceValue),
+      'currency': serializer.toJson<String?>(currency),
     };
   }
 
@@ -1163,11 +1297,13 @@ class ProductPrice extends DataClass implements Insertable<ProductPrice> {
     String? productId,
     String? priceLabel,
     double? priceValue,
+    Value<String?> currency = const Value.absent(),
   }) => ProductPrice(
     id: id ?? this.id,
     productId: productId ?? this.productId,
     priceLabel: priceLabel ?? this.priceLabel,
     priceValue: priceValue ?? this.priceValue,
+    currency: currency.present ? currency.value : this.currency,
   );
   ProductPrice copyWithCompanion(ProductPricesCompanion data) {
     return ProductPrice(
@@ -1179,6 +1315,7 @@ class ProductPrice extends DataClass implements Insertable<ProductPrice> {
       priceValue: data.priceValue.present
           ? data.priceValue.value
           : this.priceValue,
+      currency: data.currency.present ? data.currency.value : this.currency,
     );
   }
 
@@ -1188,13 +1325,15 @@ class ProductPrice extends DataClass implements Insertable<ProductPrice> {
           ..write('id: $id, ')
           ..write('productId: $productId, ')
           ..write('priceLabel: $priceLabel, ')
-          ..write('priceValue: $priceValue')
+          ..write('priceValue: $priceValue, ')
+          ..write('currency: $currency')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, productId, priceLabel, priceValue);
+  int get hashCode =>
+      Object.hash(id, productId, priceLabel, priceValue, currency);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1202,7 +1341,8 @@ class ProductPrice extends DataClass implements Insertable<ProductPrice> {
           other.id == this.id &&
           other.productId == this.productId &&
           other.priceLabel == this.priceLabel &&
-          other.priceValue == this.priceValue);
+          other.priceValue == this.priceValue &&
+          other.currency == this.currency);
 }
 
 class ProductPricesCompanion extends UpdateCompanion<ProductPrice> {
@@ -1210,12 +1350,14 @@ class ProductPricesCompanion extends UpdateCompanion<ProductPrice> {
   final Value<String> productId;
   final Value<String> priceLabel;
   final Value<double> priceValue;
+  final Value<String?> currency;
   final Value<int> rowid;
   const ProductPricesCompanion({
     this.id = const Value.absent(),
     this.productId = const Value.absent(),
     this.priceLabel = const Value.absent(),
     this.priceValue = const Value.absent(),
+    this.currency = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ProductPricesCompanion.insert({
@@ -1223,6 +1365,7 @@ class ProductPricesCompanion extends UpdateCompanion<ProductPrice> {
     required String productId,
     required String priceLabel,
     required double priceValue,
+    this.currency = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        productId = Value(productId),
@@ -1233,6 +1376,7 @@ class ProductPricesCompanion extends UpdateCompanion<ProductPrice> {
     Expression<String>? productId,
     Expression<String>? priceLabel,
     Expression<double>? priceValue,
+    Expression<String>? currency,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1240,6 +1384,7 @@ class ProductPricesCompanion extends UpdateCompanion<ProductPrice> {
       if (productId != null) 'product_id': productId,
       if (priceLabel != null) 'price_label': priceLabel,
       if (priceValue != null) 'price_value': priceValue,
+      if (currency != null) 'currency': currency,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1249,6 +1394,7 @@ class ProductPricesCompanion extends UpdateCompanion<ProductPrice> {
     Value<String>? productId,
     Value<String>? priceLabel,
     Value<double>? priceValue,
+    Value<String?>? currency,
     Value<int>? rowid,
   }) {
     return ProductPricesCompanion(
@@ -1256,6 +1402,7 @@ class ProductPricesCompanion extends UpdateCompanion<ProductPrice> {
       productId: productId ?? this.productId,
       priceLabel: priceLabel ?? this.priceLabel,
       priceValue: priceValue ?? this.priceValue,
+      currency: currency ?? this.currency,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1275,6 +1422,9 @@ class ProductPricesCompanion extends UpdateCompanion<ProductPrice> {
     if (priceValue.present) {
       map['price_value'] = Variable<double>(priceValue.value);
     }
+    if (currency.present) {
+      map['currency'] = Variable<String>(currency.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1288,6 +1438,7 @@ class ProductPricesCompanion extends UpdateCompanion<ProductPrice> {
           ..write('productId: $productId, ')
           ..write('priceLabel: $priceLabel, ')
           ..write('priceValue: $priceValue, ')
+          ..write('currency: $currency, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -2270,6 +2421,18 @@ class $InvoicesTable extends Invoices with TableInfo<$InvoicesTable, Invoice> {
     type: DriftSqlType.dateTime,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _currencyMeta = const VerificationMeta(
+    'currency',
+  );
+  @override
+  late final GeneratedColumn<String> currency = GeneratedColumn<String>(
+    'currency',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('SYP'),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -2281,6 +2444,7 @@ class $InvoicesTable extends Invoices with TableInfo<$InvoicesTable, Invoice> {
     paymentType,
     createdAt,
     syncedAt,
+    currency,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2364,6 +2528,12 @@ class $InvoicesTable extends Invoices with TableInfo<$InvoicesTable, Invoice> {
         syncedAt.isAcceptableOrUnknown(data['synced_at']!, _syncedAtMeta),
       );
     }
+    if (data.containsKey('currency')) {
+      context.handle(
+        _currencyMeta,
+        currency.isAcceptableOrUnknown(data['currency']!, _currencyMeta),
+      );
+    }
     return context;
   }
 
@@ -2409,6 +2579,10 @@ class $InvoicesTable extends Invoices with TableInfo<$InvoicesTable, Invoice> {
         DriftSqlType.dateTime,
         data['${effectivePrefix}synced_at'],
       ),
+      currency: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}currency'],
+      )!,
     );
   }
 
@@ -2428,6 +2602,7 @@ class Invoice extends DataClass implements Insertable<Invoice> {
   final String paymentType;
   final DateTime createdAt;
   final DateTime? syncedAt;
+  final String currency;
   const Invoice({
     required this.id,
     this.serialNumber,
@@ -2438,6 +2613,7 @@ class Invoice extends DataClass implements Insertable<Invoice> {
     required this.paymentType,
     required this.createdAt,
     this.syncedAt,
+    required this.currency,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2457,6 +2633,7 @@ class Invoice extends DataClass implements Insertable<Invoice> {
     if (!nullToAbsent || syncedAt != null) {
       map['synced_at'] = Variable<DateTime>(syncedAt);
     }
+    map['currency'] = Variable<String>(currency);
     return map;
   }
 
@@ -2477,6 +2654,7 @@ class Invoice extends DataClass implements Insertable<Invoice> {
       syncedAt: syncedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(syncedAt),
+      currency: Value(currency),
     );
   }
 
@@ -2495,6 +2673,7 @@ class Invoice extends DataClass implements Insertable<Invoice> {
       paymentType: serializer.fromJson<String>(json['paymentType']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       syncedAt: serializer.fromJson<DateTime?>(json['syncedAt']),
+      currency: serializer.fromJson<String>(json['currency']),
     );
   }
   @override
@@ -2510,6 +2689,7 @@ class Invoice extends DataClass implements Insertable<Invoice> {
       'paymentType': serializer.toJson<String>(paymentType),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'syncedAt': serializer.toJson<DateTime?>(syncedAt),
+      'currency': serializer.toJson<String>(currency),
     };
   }
 
@@ -2523,6 +2703,7 @@ class Invoice extends DataClass implements Insertable<Invoice> {
     String? paymentType,
     DateTime? createdAt,
     Value<DateTime?> syncedAt = const Value.absent(),
+    String? currency,
   }) => Invoice(
     id: id ?? this.id,
     serialNumber: serialNumber.present ? serialNumber.value : this.serialNumber,
@@ -2533,6 +2714,7 @@ class Invoice extends DataClass implements Insertable<Invoice> {
     paymentType: paymentType ?? this.paymentType,
     createdAt: createdAt ?? this.createdAt,
     syncedAt: syncedAt.present ? syncedAt.value : this.syncedAt,
+    currency: currency ?? this.currency,
   );
   Invoice copyWithCompanion(InvoicesCompanion data) {
     return Invoice(
@@ -2553,6 +2735,7 @@ class Invoice extends DataClass implements Insertable<Invoice> {
           : this.paymentType,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       syncedAt: data.syncedAt.present ? data.syncedAt.value : this.syncedAt,
+      currency: data.currency.present ? data.currency.value : this.currency,
     );
   }
 
@@ -2567,7 +2750,8 @@ class Invoice extends DataClass implements Insertable<Invoice> {
           ..write('discount: $discount, ')
           ..write('paymentType: $paymentType, ')
           ..write('createdAt: $createdAt, ')
-          ..write('syncedAt: $syncedAt')
+          ..write('syncedAt: $syncedAt, ')
+          ..write('currency: $currency')
           ..write(')'))
         .toString();
   }
@@ -2583,6 +2767,7 @@ class Invoice extends DataClass implements Insertable<Invoice> {
     paymentType,
     createdAt,
     syncedAt,
+    currency,
   );
   @override
   bool operator ==(Object other) =>
@@ -2596,7 +2781,8 @@ class Invoice extends DataClass implements Insertable<Invoice> {
           other.discount == this.discount &&
           other.paymentType == this.paymentType &&
           other.createdAt == this.createdAt &&
-          other.syncedAt == this.syncedAt);
+          other.syncedAt == this.syncedAt &&
+          other.currency == this.currency);
 }
 
 class InvoicesCompanion extends UpdateCompanion<Invoice> {
@@ -2609,6 +2795,7 @@ class InvoicesCompanion extends UpdateCompanion<Invoice> {
   final Value<String> paymentType;
   final Value<DateTime> createdAt;
   final Value<DateTime?> syncedAt;
+  final Value<String> currency;
   final Value<int> rowid;
   const InvoicesCompanion({
     this.id = const Value.absent(),
@@ -2620,6 +2807,7 @@ class InvoicesCompanion extends UpdateCompanion<Invoice> {
     this.paymentType = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.syncedAt = const Value.absent(),
+    this.currency = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   InvoicesCompanion.insert({
@@ -2632,6 +2820,7 @@ class InvoicesCompanion extends UpdateCompanion<Invoice> {
     required String paymentType,
     required DateTime createdAt,
     this.syncedAt = const Value.absent(),
+    this.currency = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        type = Value(type),
@@ -2648,6 +2837,7 @@ class InvoicesCompanion extends UpdateCompanion<Invoice> {
     Expression<String>? paymentType,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? syncedAt,
+    Expression<String>? currency,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -2660,6 +2850,7 @@ class InvoicesCompanion extends UpdateCompanion<Invoice> {
       if (paymentType != null) 'payment_type': paymentType,
       if (createdAt != null) 'created_at': createdAt,
       if (syncedAt != null) 'synced_at': syncedAt,
+      if (currency != null) 'currency': currency,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -2674,6 +2865,7 @@ class InvoicesCompanion extends UpdateCompanion<Invoice> {
     Value<String>? paymentType,
     Value<DateTime>? createdAt,
     Value<DateTime?>? syncedAt,
+    Value<String>? currency,
     Value<int>? rowid,
   }) {
     return InvoicesCompanion(
@@ -2686,6 +2878,7 @@ class InvoicesCompanion extends UpdateCompanion<Invoice> {
       paymentType: paymentType ?? this.paymentType,
       createdAt: createdAt ?? this.createdAt,
       syncedAt: syncedAt ?? this.syncedAt,
+      currency: currency ?? this.currency,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -2720,6 +2913,9 @@ class InvoicesCompanion extends UpdateCompanion<Invoice> {
     if (syncedAt.present) {
       map['synced_at'] = Variable<DateTime>(syncedAt.value);
     }
+    if (currency.present) {
+      map['currency'] = Variable<String>(currency.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -2738,6 +2934,7 @@ class InvoicesCompanion extends UpdateCompanion<Invoice> {
           ..write('paymentType: $paymentType, ')
           ..write('createdAt: $createdAt, ')
           ..write('syncedAt: $syncedAt, ')
+          ..write('currency: $currency, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -2815,6 +3012,18 @@ class $InvoiceItemsTable extends InvoiceItems
     requiredDuringInsert: false,
     defaultValue: const Constant(0.0),
   );
+  static const VerificationMeta _currencyMeta = const VerificationMeta(
+    'currency',
+  );
+  @override
+  late final GeneratedColumn<String> currency = GeneratedColumn<String>(
+    'currency',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('SYP'),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -2823,6 +3032,7 @@ class $InvoiceItemsTable extends InvoiceItems
     priceUsed,
     quantity,
     discount,
+    currency,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2879,6 +3089,12 @@ class $InvoiceItemsTable extends InvoiceItems
         discount.isAcceptableOrUnknown(data['discount']!, _discountMeta),
       );
     }
+    if (data.containsKey('currency')) {
+      context.handle(
+        _currencyMeta,
+        currency.isAcceptableOrUnknown(data['currency']!, _currencyMeta),
+      );
+    }
     return context;
   }
 
@@ -2912,6 +3128,10 @@ class $InvoiceItemsTable extends InvoiceItems
         DriftSqlType.double,
         data['${effectivePrefix}discount'],
       )!,
+      currency: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}currency'],
+      )!,
     );
   }
 
@@ -2928,6 +3148,7 @@ class InvoiceItem extends DataClass implements Insertable<InvoiceItem> {
   final double priceUsed;
   final double quantity;
   final double discount;
+  final String currency;
   const InvoiceItem({
     required this.id,
     required this.invoiceId,
@@ -2935,6 +3156,7 @@ class InvoiceItem extends DataClass implements Insertable<InvoiceItem> {
     required this.priceUsed,
     required this.quantity,
     required this.discount,
+    required this.currency,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2945,6 +3167,7 @@ class InvoiceItem extends DataClass implements Insertable<InvoiceItem> {
     map['price_used'] = Variable<double>(priceUsed);
     map['quantity'] = Variable<double>(quantity);
     map['discount'] = Variable<double>(discount);
+    map['currency'] = Variable<String>(currency);
     return map;
   }
 
@@ -2956,6 +3179,7 @@ class InvoiceItem extends DataClass implements Insertable<InvoiceItem> {
       priceUsed: Value(priceUsed),
       quantity: Value(quantity),
       discount: Value(discount),
+      currency: Value(currency),
     );
   }
 
@@ -2971,6 +3195,7 @@ class InvoiceItem extends DataClass implements Insertable<InvoiceItem> {
       priceUsed: serializer.fromJson<double>(json['priceUsed']),
       quantity: serializer.fromJson<double>(json['quantity']),
       discount: serializer.fromJson<double>(json['discount']),
+      currency: serializer.fromJson<String>(json['currency']),
     );
   }
   @override
@@ -2983,6 +3208,7 @@ class InvoiceItem extends DataClass implements Insertable<InvoiceItem> {
       'priceUsed': serializer.toJson<double>(priceUsed),
       'quantity': serializer.toJson<double>(quantity),
       'discount': serializer.toJson<double>(discount),
+      'currency': serializer.toJson<String>(currency),
     };
   }
 
@@ -2993,6 +3219,7 @@ class InvoiceItem extends DataClass implements Insertable<InvoiceItem> {
     double? priceUsed,
     double? quantity,
     double? discount,
+    String? currency,
   }) => InvoiceItem(
     id: id ?? this.id,
     invoiceId: invoiceId ?? this.invoiceId,
@@ -3000,6 +3227,7 @@ class InvoiceItem extends DataClass implements Insertable<InvoiceItem> {
     priceUsed: priceUsed ?? this.priceUsed,
     quantity: quantity ?? this.quantity,
     discount: discount ?? this.discount,
+    currency: currency ?? this.currency,
   );
   InvoiceItem copyWithCompanion(InvoiceItemsCompanion data) {
     return InvoiceItem(
@@ -3009,6 +3237,7 @@ class InvoiceItem extends DataClass implements Insertable<InvoiceItem> {
       priceUsed: data.priceUsed.present ? data.priceUsed.value : this.priceUsed,
       quantity: data.quantity.present ? data.quantity.value : this.quantity,
       discount: data.discount.present ? data.discount.value : this.discount,
+      currency: data.currency.present ? data.currency.value : this.currency,
     );
   }
 
@@ -3020,14 +3249,22 @@ class InvoiceItem extends DataClass implements Insertable<InvoiceItem> {
           ..write('productId: $productId, ')
           ..write('priceUsed: $priceUsed, ')
           ..write('quantity: $quantity, ')
-          ..write('discount: $discount')
+          ..write('discount: $discount, ')
+          ..write('currency: $currency')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, invoiceId, productId, priceUsed, quantity, discount);
+  int get hashCode => Object.hash(
+    id,
+    invoiceId,
+    productId,
+    priceUsed,
+    quantity,
+    discount,
+    currency,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -3037,7 +3274,8 @@ class InvoiceItem extends DataClass implements Insertable<InvoiceItem> {
           other.productId == this.productId &&
           other.priceUsed == this.priceUsed &&
           other.quantity == this.quantity &&
-          other.discount == this.discount);
+          other.discount == this.discount &&
+          other.currency == this.currency);
 }
 
 class InvoiceItemsCompanion extends UpdateCompanion<InvoiceItem> {
@@ -3047,6 +3285,7 @@ class InvoiceItemsCompanion extends UpdateCompanion<InvoiceItem> {
   final Value<double> priceUsed;
   final Value<double> quantity;
   final Value<double> discount;
+  final Value<String> currency;
   final Value<int> rowid;
   const InvoiceItemsCompanion({
     this.id = const Value.absent(),
@@ -3055,6 +3294,7 @@ class InvoiceItemsCompanion extends UpdateCompanion<InvoiceItem> {
     this.priceUsed = const Value.absent(),
     this.quantity = const Value.absent(),
     this.discount = const Value.absent(),
+    this.currency = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   InvoiceItemsCompanion.insert({
@@ -3064,6 +3304,7 @@ class InvoiceItemsCompanion extends UpdateCompanion<InvoiceItem> {
     required double priceUsed,
     required double quantity,
     this.discount = const Value.absent(),
+    this.currency = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        invoiceId = Value(invoiceId),
@@ -3077,6 +3318,7 @@ class InvoiceItemsCompanion extends UpdateCompanion<InvoiceItem> {
     Expression<double>? priceUsed,
     Expression<double>? quantity,
     Expression<double>? discount,
+    Expression<String>? currency,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -3086,6 +3328,7 @@ class InvoiceItemsCompanion extends UpdateCompanion<InvoiceItem> {
       if (priceUsed != null) 'price_used': priceUsed,
       if (quantity != null) 'quantity': quantity,
       if (discount != null) 'discount': discount,
+      if (currency != null) 'currency': currency,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -3097,6 +3340,7 @@ class InvoiceItemsCompanion extends UpdateCompanion<InvoiceItem> {
     Value<double>? priceUsed,
     Value<double>? quantity,
     Value<double>? discount,
+    Value<String>? currency,
     Value<int>? rowid,
   }) {
     return InvoiceItemsCompanion(
@@ -3106,6 +3350,7 @@ class InvoiceItemsCompanion extends UpdateCompanion<InvoiceItem> {
       priceUsed: priceUsed ?? this.priceUsed,
       quantity: quantity ?? this.quantity,
       discount: discount ?? this.discount,
+      currency: currency ?? this.currency,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -3131,6 +3376,9 @@ class InvoiceItemsCompanion extends UpdateCompanion<InvoiceItem> {
     if (discount.present) {
       map['discount'] = Variable<double>(discount.value);
     }
+    if (currency.present) {
+      map['currency'] = Variable<String>(currency.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -3146,6 +3394,7 @@ class InvoiceItemsCompanion extends UpdateCompanion<InvoiceItem> {
           ..write('priceUsed: $priceUsed, ')
           ..write('quantity: $quantity, ')
           ..write('discount: $discount, ')
+          ..write('currency: $currency, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -3239,6 +3488,18 @@ class $DebtsTable extends Debts with TableInfo<$DebtsTable, Debt> {
     type: DriftSqlType.dateTime,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _currencyMeta = const VerificationMeta(
+    'currency',
+  );
+  @override
+  late final GeneratedColumn<String> currency = GeneratedColumn<String>(
+    'currency',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('SYP'),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -3249,6 +3510,7 @@ class $DebtsTable extends Debts with TableInfo<$DebtsTable, Debt> {
     status,
     createdAt,
     syncedAt,
+    currency,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -3322,6 +3584,12 @@ class $DebtsTable extends Debts with TableInfo<$DebtsTable, Debt> {
         syncedAt.isAcceptableOrUnknown(data['synced_at']!, _syncedAtMeta),
       );
     }
+    if (data.containsKey('currency')) {
+      context.handle(
+        _currencyMeta,
+        currency.isAcceptableOrUnknown(data['currency']!, _currencyMeta),
+      );
+    }
     return context;
   }
 
@@ -3363,6 +3631,10 @@ class $DebtsTable extends Debts with TableInfo<$DebtsTable, Debt> {
         DriftSqlType.dateTime,
         data['${effectivePrefix}synced_at'],
       ),
+      currency: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}currency'],
+      )!,
     );
   }
 
@@ -3381,6 +3653,7 @@ class Debt extends DataClass implements Insertable<Debt> {
   final String status;
   final DateTime createdAt;
   final DateTime? syncedAt;
+  final String currency;
   const Debt({
     required this.id,
     required this.customerId,
@@ -3390,6 +3663,7 @@ class Debt extends DataClass implements Insertable<Debt> {
     required this.status,
     required this.createdAt,
     this.syncedAt,
+    required this.currency,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -3406,6 +3680,7 @@ class Debt extends DataClass implements Insertable<Debt> {
     if (!nullToAbsent || syncedAt != null) {
       map['synced_at'] = Variable<DateTime>(syncedAt);
     }
+    map['currency'] = Variable<String>(currency);
     return map;
   }
 
@@ -3423,6 +3698,7 @@ class Debt extends DataClass implements Insertable<Debt> {
       syncedAt: syncedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(syncedAt),
+      currency: Value(currency),
     );
   }
 
@@ -3440,6 +3716,7 @@ class Debt extends DataClass implements Insertable<Debt> {
       status: serializer.fromJson<String>(json['status']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       syncedAt: serializer.fromJson<DateTime?>(json['syncedAt']),
+      currency: serializer.fromJson<String>(json['currency']),
     );
   }
   @override
@@ -3454,6 +3731,7 @@ class Debt extends DataClass implements Insertable<Debt> {
       'status': serializer.toJson<String>(status),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'syncedAt': serializer.toJson<DateTime?>(syncedAt),
+      'currency': serializer.toJson<String>(currency),
     };
   }
 
@@ -3466,6 +3744,7 @@ class Debt extends DataClass implements Insertable<Debt> {
     String? status,
     DateTime? createdAt,
     Value<DateTime?> syncedAt = const Value.absent(),
+    String? currency,
   }) => Debt(
     id: id ?? this.id,
     customerId: customerId ?? this.customerId,
@@ -3475,6 +3754,7 @@ class Debt extends DataClass implements Insertable<Debt> {
     status: status ?? this.status,
     createdAt: createdAt ?? this.createdAt,
     syncedAt: syncedAt.present ? syncedAt.value : this.syncedAt,
+    currency: currency ?? this.currency,
   );
   Debt copyWithCompanion(DebtsCompanion data) {
     return Debt(
@@ -3490,6 +3770,7 @@ class Debt extends DataClass implements Insertable<Debt> {
       status: data.status.present ? data.status.value : this.status,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       syncedAt: data.syncedAt.present ? data.syncedAt.value : this.syncedAt,
+      currency: data.currency.present ? data.currency.value : this.currency,
     );
   }
 
@@ -3503,7 +3784,8 @@ class Debt extends DataClass implements Insertable<Debt> {
           ..write('remainingAmount: $remainingAmount, ')
           ..write('status: $status, ')
           ..write('createdAt: $createdAt, ')
-          ..write('syncedAt: $syncedAt')
+          ..write('syncedAt: $syncedAt, ')
+          ..write('currency: $currency')
           ..write(')'))
         .toString();
   }
@@ -3518,6 +3800,7 @@ class Debt extends DataClass implements Insertable<Debt> {
     status,
     createdAt,
     syncedAt,
+    currency,
   );
   @override
   bool operator ==(Object other) =>
@@ -3530,7 +3813,8 @@ class Debt extends DataClass implements Insertable<Debt> {
           other.remainingAmount == this.remainingAmount &&
           other.status == this.status &&
           other.createdAt == this.createdAt &&
-          other.syncedAt == this.syncedAt);
+          other.syncedAt == this.syncedAt &&
+          other.currency == this.currency);
 }
 
 class DebtsCompanion extends UpdateCompanion<Debt> {
@@ -3542,6 +3826,7 @@ class DebtsCompanion extends UpdateCompanion<Debt> {
   final Value<String> status;
   final Value<DateTime> createdAt;
   final Value<DateTime?> syncedAt;
+  final Value<String> currency;
   final Value<int> rowid;
   const DebtsCompanion({
     this.id = const Value.absent(),
@@ -3552,6 +3837,7 @@ class DebtsCompanion extends UpdateCompanion<Debt> {
     this.status = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.syncedAt = const Value.absent(),
+    this.currency = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   DebtsCompanion.insert({
@@ -3563,6 +3849,7 @@ class DebtsCompanion extends UpdateCompanion<Debt> {
     required String status,
     required DateTime createdAt,
     this.syncedAt = const Value.absent(),
+    this.currency = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        customerId = Value(customerId),
@@ -3579,6 +3866,7 @@ class DebtsCompanion extends UpdateCompanion<Debt> {
     Expression<String>? status,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? syncedAt,
+    Expression<String>? currency,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -3590,6 +3878,7 @@ class DebtsCompanion extends UpdateCompanion<Debt> {
       if (status != null) 'status': status,
       if (createdAt != null) 'created_at': createdAt,
       if (syncedAt != null) 'synced_at': syncedAt,
+      if (currency != null) 'currency': currency,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -3603,6 +3892,7 @@ class DebtsCompanion extends UpdateCompanion<Debt> {
     Value<String>? status,
     Value<DateTime>? createdAt,
     Value<DateTime?>? syncedAt,
+    Value<String>? currency,
     Value<int>? rowid,
   }) {
     return DebtsCompanion(
@@ -3614,6 +3904,7 @@ class DebtsCompanion extends UpdateCompanion<Debt> {
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
       syncedAt: syncedAt ?? this.syncedAt,
+      currency: currency ?? this.currency,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -3645,6 +3936,9 @@ class DebtsCompanion extends UpdateCompanion<Debt> {
     if (syncedAt.present) {
       map['synced_at'] = Variable<DateTime>(syncedAt.value);
     }
+    if (currency.present) {
+      map['currency'] = Variable<String>(currency.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -3662,6 +3956,7 @@ class DebtsCompanion extends UpdateCompanion<Debt> {
           ..write('status: $status, ')
           ..write('createdAt: $createdAt, ')
           ..write('syncedAt: $syncedAt, ')
+          ..write('currency: $currency, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -3723,6 +4018,18 @@ class $DebtPaymentsTable extends DebtPayments
     type: DriftSqlType.dateTime,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _currencyMeta = const VerificationMeta(
+    'currency',
+  );
+  @override
+  late final GeneratedColumn<String> currency = GeneratedColumn<String>(
+    'currency',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('SYP'),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -3730,6 +4037,7 @@ class $DebtPaymentsTable extends DebtPayments
     amountPaid,
     paidAt,
     syncedAt,
+    currency,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -3778,6 +4086,12 @@ class $DebtPaymentsTable extends DebtPayments
         syncedAt.isAcceptableOrUnknown(data['synced_at']!, _syncedAtMeta),
       );
     }
+    if (data.containsKey('currency')) {
+      context.handle(
+        _currencyMeta,
+        currency.isAcceptableOrUnknown(data['currency']!, _currencyMeta),
+      );
+    }
     return context;
   }
 
@@ -3807,6 +4121,10 @@ class $DebtPaymentsTable extends DebtPayments
         DriftSqlType.dateTime,
         data['${effectivePrefix}synced_at'],
       ),
+      currency: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}currency'],
+      )!,
     );
   }
 
@@ -3822,12 +4140,14 @@ class DebtPayment extends DataClass implements Insertable<DebtPayment> {
   final double amountPaid;
   final DateTime paidAt;
   final DateTime? syncedAt;
+  final String currency;
   const DebtPayment({
     required this.id,
     required this.debtId,
     required this.amountPaid,
     required this.paidAt,
     this.syncedAt,
+    required this.currency,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -3839,6 +4159,7 @@ class DebtPayment extends DataClass implements Insertable<DebtPayment> {
     if (!nullToAbsent || syncedAt != null) {
       map['synced_at'] = Variable<DateTime>(syncedAt);
     }
+    map['currency'] = Variable<String>(currency);
     return map;
   }
 
@@ -3851,6 +4172,7 @@ class DebtPayment extends DataClass implements Insertable<DebtPayment> {
       syncedAt: syncedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(syncedAt),
+      currency: Value(currency),
     );
   }
 
@@ -3865,6 +4187,7 @@ class DebtPayment extends DataClass implements Insertable<DebtPayment> {
       amountPaid: serializer.fromJson<double>(json['amountPaid']),
       paidAt: serializer.fromJson<DateTime>(json['paidAt']),
       syncedAt: serializer.fromJson<DateTime?>(json['syncedAt']),
+      currency: serializer.fromJson<String>(json['currency']),
     );
   }
   @override
@@ -3876,6 +4199,7 @@ class DebtPayment extends DataClass implements Insertable<DebtPayment> {
       'amountPaid': serializer.toJson<double>(amountPaid),
       'paidAt': serializer.toJson<DateTime>(paidAt),
       'syncedAt': serializer.toJson<DateTime?>(syncedAt),
+      'currency': serializer.toJson<String>(currency),
     };
   }
 
@@ -3885,12 +4209,14 @@ class DebtPayment extends DataClass implements Insertable<DebtPayment> {
     double? amountPaid,
     DateTime? paidAt,
     Value<DateTime?> syncedAt = const Value.absent(),
+    String? currency,
   }) => DebtPayment(
     id: id ?? this.id,
     debtId: debtId ?? this.debtId,
     amountPaid: amountPaid ?? this.amountPaid,
     paidAt: paidAt ?? this.paidAt,
     syncedAt: syncedAt.present ? syncedAt.value : this.syncedAt,
+    currency: currency ?? this.currency,
   );
   DebtPayment copyWithCompanion(DebtPaymentsCompanion data) {
     return DebtPayment(
@@ -3901,6 +4227,7 @@ class DebtPayment extends DataClass implements Insertable<DebtPayment> {
           : this.amountPaid,
       paidAt: data.paidAt.present ? data.paidAt.value : this.paidAt,
       syncedAt: data.syncedAt.present ? data.syncedAt.value : this.syncedAt,
+      currency: data.currency.present ? data.currency.value : this.currency,
     );
   }
 
@@ -3911,13 +4238,15 @@ class DebtPayment extends DataClass implements Insertable<DebtPayment> {
           ..write('debtId: $debtId, ')
           ..write('amountPaid: $amountPaid, ')
           ..write('paidAt: $paidAt, ')
-          ..write('syncedAt: $syncedAt')
+          ..write('syncedAt: $syncedAt, ')
+          ..write('currency: $currency')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, debtId, amountPaid, paidAt, syncedAt);
+  int get hashCode =>
+      Object.hash(id, debtId, amountPaid, paidAt, syncedAt, currency);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -3926,7 +4255,8 @@ class DebtPayment extends DataClass implements Insertable<DebtPayment> {
           other.debtId == this.debtId &&
           other.amountPaid == this.amountPaid &&
           other.paidAt == this.paidAt &&
-          other.syncedAt == this.syncedAt);
+          other.syncedAt == this.syncedAt &&
+          other.currency == this.currency);
 }
 
 class DebtPaymentsCompanion extends UpdateCompanion<DebtPayment> {
@@ -3935,6 +4265,7 @@ class DebtPaymentsCompanion extends UpdateCompanion<DebtPayment> {
   final Value<double> amountPaid;
   final Value<DateTime> paidAt;
   final Value<DateTime?> syncedAt;
+  final Value<String> currency;
   final Value<int> rowid;
   const DebtPaymentsCompanion({
     this.id = const Value.absent(),
@@ -3942,6 +4273,7 @@ class DebtPaymentsCompanion extends UpdateCompanion<DebtPayment> {
     this.amountPaid = const Value.absent(),
     this.paidAt = const Value.absent(),
     this.syncedAt = const Value.absent(),
+    this.currency = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   DebtPaymentsCompanion.insert({
@@ -3950,6 +4282,7 @@ class DebtPaymentsCompanion extends UpdateCompanion<DebtPayment> {
     required double amountPaid,
     required DateTime paidAt,
     this.syncedAt = const Value.absent(),
+    this.currency = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        debtId = Value(debtId),
@@ -3961,6 +4294,7 @@ class DebtPaymentsCompanion extends UpdateCompanion<DebtPayment> {
     Expression<double>? amountPaid,
     Expression<DateTime>? paidAt,
     Expression<DateTime>? syncedAt,
+    Expression<String>? currency,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -3969,6 +4303,7 @@ class DebtPaymentsCompanion extends UpdateCompanion<DebtPayment> {
       if (amountPaid != null) 'amount_paid': amountPaid,
       if (paidAt != null) 'paid_at': paidAt,
       if (syncedAt != null) 'synced_at': syncedAt,
+      if (currency != null) 'currency': currency,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -3979,6 +4314,7 @@ class DebtPaymentsCompanion extends UpdateCompanion<DebtPayment> {
     Value<double>? amountPaid,
     Value<DateTime>? paidAt,
     Value<DateTime?>? syncedAt,
+    Value<String>? currency,
     Value<int>? rowid,
   }) {
     return DebtPaymentsCompanion(
@@ -3987,6 +4323,7 @@ class DebtPaymentsCompanion extends UpdateCompanion<DebtPayment> {
       amountPaid: amountPaid ?? this.amountPaid,
       paidAt: paidAt ?? this.paidAt,
       syncedAt: syncedAt ?? this.syncedAt,
+      currency: currency ?? this.currency,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -4009,6 +4346,9 @@ class DebtPaymentsCompanion extends UpdateCompanion<DebtPayment> {
     if (syncedAt.present) {
       map['synced_at'] = Variable<DateTime>(syncedAt.value);
     }
+    if (currency.present) {
+      map['currency'] = Variable<String>(currency.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -4023,6 +4363,7 @@ class DebtPaymentsCompanion extends UpdateCompanion<DebtPayment> {
           ..write('amountPaid: $amountPaid, ')
           ..write('paidAt: $paidAt, ')
           ..write('syncedAt: $syncedAt, ')
+          ..write('currency: $currency, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -4441,6 +4782,18 @@ class $PurchaseInvoicesTable extends PurchaseInvoices
     type: DriftSqlType.dateTime,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _currencyMeta = const VerificationMeta(
+    'currency',
+  );
+  @override
+  late final GeneratedColumn<String> currency = GeneratedColumn<String>(
+    'currency',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('SYP'),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -4448,6 +4801,7 @@ class $PurchaseInvoicesTable extends PurchaseInvoices
     totalAmount,
     createdAt,
     syncedAt,
+    currency,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -4499,6 +4853,12 @@ class $PurchaseInvoicesTable extends PurchaseInvoices
         syncedAt.isAcceptableOrUnknown(data['synced_at']!, _syncedAtMeta),
       );
     }
+    if (data.containsKey('currency')) {
+      context.handle(
+        _currencyMeta,
+        currency.isAcceptableOrUnknown(data['currency']!, _currencyMeta),
+      );
+    }
     return context;
   }
 
@@ -4528,6 +4888,10 @@ class $PurchaseInvoicesTable extends PurchaseInvoices
         DriftSqlType.dateTime,
         data['${effectivePrefix}synced_at'],
       ),
+      currency: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}currency'],
+      )!,
     );
   }
 
@@ -4543,12 +4907,14 @@ class PurchaseInvoice extends DataClass implements Insertable<PurchaseInvoice> {
   final double totalAmount;
   final DateTime createdAt;
   final DateTime? syncedAt;
+  final String currency;
   const PurchaseInvoice({
     required this.id,
     required this.supplierId,
     required this.totalAmount,
     required this.createdAt,
     this.syncedAt,
+    required this.currency,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -4560,6 +4926,7 @@ class PurchaseInvoice extends DataClass implements Insertable<PurchaseInvoice> {
     if (!nullToAbsent || syncedAt != null) {
       map['synced_at'] = Variable<DateTime>(syncedAt);
     }
+    map['currency'] = Variable<String>(currency);
     return map;
   }
 
@@ -4572,6 +4939,7 @@ class PurchaseInvoice extends DataClass implements Insertable<PurchaseInvoice> {
       syncedAt: syncedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(syncedAt),
+      currency: Value(currency),
     );
   }
 
@@ -4586,6 +4954,7 @@ class PurchaseInvoice extends DataClass implements Insertable<PurchaseInvoice> {
       totalAmount: serializer.fromJson<double>(json['totalAmount']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       syncedAt: serializer.fromJson<DateTime?>(json['syncedAt']),
+      currency: serializer.fromJson<String>(json['currency']),
     );
   }
   @override
@@ -4597,6 +4966,7 @@ class PurchaseInvoice extends DataClass implements Insertable<PurchaseInvoice> {
       'totalAmount': serializer.toJson<double>(totalAmount),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'syncedAt': serializer.toJson<DateTime?>(syncedAt),
+      'currency': serializer.toJson<String>(currency),
     };
   }
 
@@ -4606,12 +4976,14 @@ class PurchaseInvoice extends DataClass implements Insertable<PurchaseInvoice> {
     double? totalAmount,
     DateTime? createdAt,
     Value<DateTime?> syncedAt = const Value.absent(),
+    String? currency,
   }) => PurchaseInvoice(
     id: id ?? this.id,
     supplierId: supplierId ?? this.supplierId,
     totalAmount: totalAmount ?? this.totalAmount,
     createdAt: createdAt ?? this.createdAt,
     syncedAt: syncedAt.present ? syncedAt.value : this.syncedAt,
+    currency: currency ?? this.currency,
   );
   PurchaseInvoice copyWithCompanion(PurchaseInvoicesCompanion data) {
     return PurchaseInvoice(
@@ -4624,6 +4996,7 @@ class PurchaseInvoice extends DataClass implements Insertable<PurchaseInvoice> {
           : this.totalAmount,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       syncedAt: data.syncedAt.present ? data.syncedAt.value : this.syncedAt,
+      currency: data.currency.present ? data.currency.value : this.currency,
     );
   }
 
@@ -4634,14 +5007,15 @@ class PurchaseInvoice extends DataClass implements Insertable<PurchaseInvoice> {
           ..write('supplierId: $supplierId, ')
           ..write('totalAmount: $totalAmount, ')
           ..write('createdAt: $createdAt, ')
-          ..write('syncedAt: $syncedAt')
+          ..write('syncedAt: $syncedAt, ')
+          ..write('currency: $currency')
           ..write(')'))
         .toString();
   }
 
   @override
   int get hashCode =>
-      Object.hash(id, supplierId, totalAmount, createdAt, syncedAt);
+      Object.hash(id, supplierId, totalAmount, createdAt, syncedAt, currency);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -4650,7 +5024,8 @@ class PurchaseInvoice extends DataClass implements Insertable<PurchaseInvoice> {
           other.supplierId == this.supplierId &&
           other.totalAmount == this.totalAmount &&
           other.createdAt == this.createdAt &&
-          other.syncedAt == this.syncedAt);
+          other.syncedAt == this.syncedAt &&
+          other.currency == this.currency);
 }
 
 class PurchaseInvoicesCompanion extends UpdateCompanion<PurchaseInvoice> {
@@ -4659,6 +5034,7 @@ class PurchaseInvoicesCompanion extends UpdateCompanion<PurchaseInvoice> {
   final Value<double> totalAmount;
   final Value<DateTime> createdAt;
   final Value<DateTime?> syncedAt;
+  final Value<String> currency;
   final Value<int> rowid;
   const PurchaseInvoicesCompanion({
     this.id = const Value.absent(),
@@ -4666,6 +5042,7 @@ class PurchaseInvoicesCompanion extends UpdateCompanion<PurchaseInvoice> {
     this.totalAmount = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.syncedAt = const Value.absent(),
+    this.currency = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   PurchaseInvoicesCompanion.insert({
@@ -4674,6 +5051,7 @@ class PurchaseInvoicesCompanion extends UpdateCompanion<PurchaseInvoice> {
     required double totalAmount,
     required DateTime createdAt,
     this.syncedAt = const Value.absent(),
+    this.currency = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        supplierId = Value(supplierId),
@@ -4685,6 +5063,7 @@ class PurchaseInvoicesCompanion extends UpdateCompanion<PurchaseInvoice> {
     Expression<double>? totalAmount,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? syncedAt,
+    Expression<String>? currency,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -4693,6 +5072,7 @@ class PurchaseInvoicesCompanion extends UpdateCompanion<PurchaseInvoice> {
       if (totalAmount != null) 'total_amount': totalAmount,
       if (createdAt != null) 'created_at': createdAt,
       if (syncedAt != null) 'synced_at': syncedAt,
+      if (currency != null) 'currency': currency,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -4703,6 +5083,7 @@ class PurchaseInvoicesCompanion extends UpdateCompanion<PurchaseInvoice> {
     Value<double>? totalAmount,
     Value<DateTime>? createdAt,
     Value<DateTime?>? syncedAt,
+    Value<String>? currency,
     Value<int>? rowid,
   }) {
     return PurchaseInvoicesCompanion(
@@ -4711,6 +5092,7 @@ class PurchaseInvoicesCompanion extends UpdateCompanion<PurchaseInvoice> {
       totalAmount: totalAmount ?? this.totalAmount,
       createdAt: createdAt ?? this.createdAt,
       syncedAt: syncedAt ?? this.syncedAt,
+      currency: currency ?? this.currency,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -4733,6 +5115,9 @@ class PurchaseInvoicesCompanion extends UpdateCompanion<PurchaseInvoice> {
     if (syncedAt.present) {
       map['synced_at'] = Variable<DateTime>(syncedAt.value);
     }
+    if (currency.present) {
+      map['currency'] = Variable<String>(currency.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -4747,6 +5132,7 @@ class PurchaseInvoicesCompanion extends UpdateCompanion<PurchaseInvoice> {
           ..write('totalAmount: $totalAmount, ')
           ..write('createdAt: $createdAt, ')
           ..write('syncedAt: $syncedAt, ')
+          ..write('currency: $currency, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -4813,6 +5199,18 @@ class $PurchaseItemsTable extends PurchaseItems
     type: DriftSqlType.double,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _currencyMeta = const VerificationMeta(
+    'currency',
+  );
+  @override
+  late final GeneratedColumn<String> currency = GeneratedColumn<String>(
+    'currency',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('SYP'),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -4820,6 +5218,7 @@ class $PurchaseItemsTable extends PurchaseItems
     productId,
     quantity,
     unitCost,
+    currency,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -4873,6 +5272,12 @@ class $PurchaseItemsTable extends PurchaseItems
     } else if (isInserting) {
       context.missing(_unitCostMeta);
     }
+    if (data.containsKey('currency')) {
+      context.handle(
+        _currencyMeta,
+        currency.isAcceptableOrUnknown(data['currency']!, _currencyMeta),
+      );
+    }
     return context;
   }
 
@@ -4902,6 +5307,10 @@ class $PurchaseItemsTable extends PurchaseItems
         DriftSqlType.double,
         data['${effectivePrefix}unit_cost'],
       )!,
+      currency: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}currency'],
+      )!,
     );
   }
 
@@ -4917,12 +5326,14 @@ class PurchaseItem extends DataClass implements Insertable<PurchaseItem> {
   final String productId;
   final double quantity;
   final double unitCost;
+  final String currency;
   const PurchaseItem({
     required this.id,
     required this.purchaseInvoiceId,
     required this.productId,
     required this.quantity,
     required this.unitCost,
+    required this.currency,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -4932,6 +5343,7 @@ class PurchaseItem extends DataClass implements Insertable<PurchaseItem> {
     map['product_id'] = Variable<String>(productId);
     map['quantity'] = Variable<double>(quantity);
     map['unit_cost'] = Variable<double>(unitCost);
+    map['currency'] = Variable<String>(currency);
     return map;
   }
 
@@ -4942,6 +5354,7 @@ class PurchaseItem extends DataClass implements Insertable<PurchaseItem> {
       productId: Value(productId),
       quantity: Value(quantity),
       unitCost: Value(unitCost),
+      currency: Value(currency),
     );
   }
 
@@ -4956,6 +5369,7 @@ class PurchaseItem extends DataClass implements Insertable<PurchaseItem> {
       productId: serializer.fromJson<String>(json['productId']),
       quantity: serializer.fromJson<double>(json['quantity']),
       unitCost: serializer.fromJson<double>(json['unitCost']),
+      currency: serializer.fromJson<String>(json['currency']),
     );
   }
   @override
@@ -4967,6 +5381,7 @@ class PurchaseItem extends DataClass implements Insertable<PurchaseItem> {
       'productId': serializer.toJson<String>(productId),
       'quantity': serializer.toJson<double>(quantity),
       'unitCost': serializer.toJson<double>(unitCost),
+      'currency': serializer.toJson<String>(currency),
     };
   }
 
@@ -4976,12 +5391,14 @@ class PurchaseItem extends DataClass implements Insertable<PurchaseItem> {
     String? productId,
     double? quantity,
     double? unitCost,
+    String? currency,
   }) => PurchaseItem(
     id: id ?? this.id,
     purchaseInvoiceId: purchaseInvoiceId ?? this.purchaseInvoiceId,
     productId: productId ?? this.productId,
     quantity: quantity ?? this.quantity,
     unitCost: unitCost ?? this.unitCost,
+    currency: currency ?? this.currency,
   );
   PurchaseItem copyWithCompanion(PurchaseItemsCompanion data) {
     return PurchaseItem(
@@ -4992,6 +5409,7 @@ class PurchaseItem extends DataClass implements Insertable<PurchaseItem> {
       productId: data.productId.present ? data.productId.value : this.productId,
       quantity: data.quantity.present ? data.quantity.value : this.quantity,
       unitCost: data.unitCost.present ? data.unitCost.value : this.unitCost,
+      currency: data.currency.present ? data.currency.value : this.currency,
     );
   }
 
@@ -5002,14 +5420,21 @@ class PurchaseItem extends DataClass implements Insertable<PurchaseItem> {
           ..write('purchaseInvoiceId: $purchaseInvoiceId, ')
           ..write('productId: $productId, ')
           ..write('quantity: $quantity, ')
-          ..write('unitCost: $unitCost')
+          ..write('unitCost: $unitCost, ')
+          ..write('currency: $currency')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, purchaseInvoiceId, productId, quantity, unitCost);
+  int get hashCode => Object.hash(
+    id,
+    purchaseInvoiceId,
+    productId,
+    quantity,
+    unitCost,
+    currency,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -5018,7 +5443,8 @@ class PurchaseItem extends DataClass implements Insertable<PurchaseItem> {
           other.purchaseInvoiceId == this.purchaseInvoiceId &&
           other.productId == this.productId &&
           other.quantity == this.quantity &&
-          other.unitCost == this.unitCost);
+          other.unitCost == this.unitCost &&
+          other.currency == this.currency);
 }
 
 class PurchaseItemsCompanion extends UpdateCompanion<PurchaseItem> {
@@ -5027,6 +5453,7 @@ class PurchaseItemsCompanion extends UpdateCompanion<PurchaseItem> {
   final Value<String> productId;
   final Value<double> quantity;
   final Value<double> unitCost;
+  final Value<String> currency;
   final Value<int> rowid;
   const PurchaseItemsCompanion({
     this.id = const Value.absent(),
@@ -5034,6 +5461,7 @@ class PurchaseItemsCompanion extends UpdateCompanion<PurchaseItem> {
     this.productId = const Value.absent(),
     this.quantity = const Value.absent(),
     this.unitCost = const Value.absent(),
+    this.currency = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   PurchaseItemsCompanion.insert({
@@ -5042,6 +5470,7 @@ class PurchaseItemsCompanion extends UpdateCompanion<PurchaseItem> {
     required String productId,
     required double quantity,
     required double unitCost,
+    this.currency = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        purchaseInvoiceId = Value(purchaseInvoiceId),
@@ -5054,6 +5483,7 @@ class PurchaseItemsCompanion extends UpdateCompanion<PurchaseItem> {
     Expression<String>? productId,
     Expression<double>? quantity,
     Expression<double>? unitCost,
+    Expression<String>? currency,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -5062,6 +5492,7 @@ class PurchaseItemsCompanion extends UpdateCompanion<PurchaseItem> {
       if (productId != null) 'product_id': productId,
       if (quantity != null) 'quantity': quantity,
       if (unitCost != null) 'unit_cost': unitCost,
+      if (currency != null) 'currency': currency,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -5072,6 +5503,7 @@ class PurchaseItemsCompanion extends UpdateCompanion<PurchaseItem> {
     Value<String>? productId,
     Value<double>? quantity,
     Value<double>? unitCost,
+    Value<String>? currency,
     Value<int>? rowid,
   }) {
     return PurchaseItemsCompanion(
@@ -5080,6 +5512,7 @@ class PurchaseItemsCompanion extends UpdateCompanion<PurchaseItem> {
       productId: productId ?? this.productId,
       quantity: quantity ?? this.quantity,
       unitCost: unitCost ?? this.unitCost,
+      currency: currency ?? this.currency,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -5102,6 +5535,9 @@ class PurchaseItemsCompanion extends UpdateCompanion<PurchaseItem> {
     if (unitCost.present) {
       map['unit_cost'] = Variable<double>(unitCost.value);
     }
+    if (currency.present) {
+      map['currency'] = Variable<String>(currency.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -5116,6 +5552,7 @@ class PurchaseItemsCompanion extends UpdateCompanion<PurchaseItem> {
           ..write('productId: $productId, ')
           ..write('quantity: $quantity, ')
           ..write('unitCost: $unitCost, ')
+          ..write('currency: $currency, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -6396,6 +6833,18 @@ class $ExpensesTable extends Expenses with TableInfo<$ExpensesTable, Expense> {
     type: DriftSqlType.dateTime,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _currencyMeta = const VerificationMeta(
+    'currency',
+  );
+  @override
+  late final GeneratedColumn<String> currency = GeneratedColumn<String>(
+    'currency',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('SYP'),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -6405,6 +6854,7 @@ class $ExpensesTable extends Expenses with TableInfo<$ExpensesTable, Expense> {
     notes,
     createdAt,
     syncedAt,
+    currency,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -6468,6 +6918,12 @@ class $ExpensesTable extends Expenses with TableInfo<$ExpensesTable, Expense> {
         syncedAt.isAcceptableOrUnknown(data['synced_at']!, _syncedAtMeta),
       );
     }
+    if (data.containsKey('currency')) {
+      context.handle(
+        _currencyMeta,
+        currency.isAcceptableOrUnknown(data['currency']!, _currencyMeta),
+      );
+    }
     return context;
   }
 
@@ -6505,6 +6961,10 @@ class $ExpensesTable extends Expenses with TableInfo<$ExpensesTable, Expense> {
         DriftSqlType.dateTime,
         data['${effectivePrefix}synced_at'],
       ),
+      currency: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}currency'],
+      )!,
     );
   }
 
@@ -6522,6 +6982,7 @@ class Expense extends DataClass implements Insertable<Expense> {
   final String? notes;
   final DateTime createdAt;
   final DateTime? syncedAt;
+  final String currency;
   const Expense({
     required this.id,
     required this.categoryId,
@@ -6530,6 +6991,7 @@ class Expense extends DataClass implements Insertable<Expense> {
     this.notes,
     required this.createdAt,
     this.syncedAt,
+    required this.currency,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -6547,6 +7009,7 @@ class Expense extends DataClass implements Insertable<Expense> {
     if (!nullToAbsent || syncedAt != null) {
       map['synced_at'] = Variable<DateTime>(syncedAt);
     }
+    map['currency'] = Variable<String>(currency);
     return map;
   }
 
@@ -6565,6 +7028,7 @@ class Expense extends DataClass implements Insertable<Expense> {
       syncedAt: syncedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(syncedAt),
+      currency: Value(currency),
     );
   }
 
@@ -6581,6 +7045,7 @@ class Expense extends DataClass implements Insertable<Expense> {
       notes: serializer.fromJson<String?>(json['notes']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       syncedAt: serializer.fromJson<DateTime?>(json['syncedAt']),
+      currency: serializer.fromJson<String>(json['currency']),
     );
   }
   @override
@@ -6594,6 +7059,7 @@ class Expense extends DataClass implements Insertable<Expense> {
       'notes': serializer.toJson<String?>(notes),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'syncedAt': serializer.toJson<DateTime?>(syncedAt),
+      'currency': serializer.toJson<String>(currency),
     };
   }
 
@@ -6605,6 +7071,7 @@ class Expense extends DataClass implements Insertable<Expense> {
     Value<String?> notes = const Value.absent(),
     DateTime? createdAt,
     Value<DateTime?> syncedAt = const Value.absent(),
+    String? currency,
   }) => Expense(
     id: id ?? this.id,
     categoryId: categoryId ?? this.categoryId,
@@ -6615,6 +7082,7 @@ class Expense extends DataClass implements Insertable<Expense> {
     notes: notes.present ? notes.value : this.notes,
     createdAt: createdAt ?? this.createdAt,
     syncedAt: syncedAt.present ? syncedAt.value : this.syncedAt,
+    currency: currency ?? this.currency,
   );
   Expense copyWithCompanion(ExpensesCompanion data) {
     return Expense(
@@ -6629,6 +7097,7 @@ class Expense extends DataClass implements Insertable<Expense> {
       notes: data.notes.present ? data.notes.value : this.notes,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       syncedAt: data.syncedAt.present ? data.syncedAt.value : this.syncedAt,
+      currency: data.currency.present ? data.currency.value : this.currency,
     );
   }
 
@@ -6641,7 +7110,8 @@ class Expense extends DataClass implements Insertable<Expense> {
           ..write('amount: $amount, ')
           ..write('notes: $notes, ')
           ..write('createdAt: $createdAt, ')
-          ..write('syncedAt: $syncedAt')
+          ..write('syncedAt: $syncedAt, ')
+          ..write('currency: $currency')
           ..write(')'))
         .toString();
   }
@@ -6655,6 +7125,7 @@ class Expense extends DataClass implements Insertable<Expense> {
     notes,
     createdAt,
     syncedAt,
+    currency,
   );
   @override
   bool operator ==(Object other) =>
@@ -6666,7 +7137,8 @@ class Expense extends DataClass implements Insertable<Expense> {
           other.amount == this.amount &&
           other.notes == this.notes &&
           other.createdAt == this.createdAt &&
-          other.syncedAt == this.syncedAt);
+          other.syncedAt == this.syncedAt &&
+          other.currency == this.currency);
 }
 
 class ExpensesCompanion extends UpdateCompanion<Expense> {
@@ -6677,6 +7149,7 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
   final Value<String?> notes;
   final Value<DateTime> createdAt;
   final Value<DateTime?> syncedAt;
+  final Value<String> currency;
   final Value<int> rowid;
   const ExpensesCompanion({
     this.id = const Value.absent(),
@@ -6686,6 +7159,7 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
     this.notes = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.syncedAt = const Value.absent(),
+    this.currency = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ExpensesCompanion.insert({
@@ -6696,6 +7170,7 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
     this.notes = const Value.absent(),
     required DateTime createdAt,
     this.syncedAt = const Value.absent(),
+    this.currency = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        categoryId = Value(categoryId),
@@ -6709,6 +7184,7 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
     Expression<String>? notes,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? syncedAt,
+    Expression<String>? currency,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -6719,6 +7195,7 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
       if (notes != null) 'notes': notes,
       if (createdAt != null) 'created_at': createdAt,
       if (syncedAt != null) 'synced_at': syncedAt,
+      if (currency != null) 'currency': currency,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -6731,6 +7208,7 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
     Value<String?>? notes,
     Value<DateTime>? createdAt,
     Value<DateTime?>? syncedAt,
+    Value<String>? currency,
     Value<int>? rowid,
   }) {
     return ExpensesCompanion(
@@ -6741,6 +7219,7 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
       notes: notes ?? this.notes,
       createdAt: createdAt ?? this.createdAt,
       syncedAt: syncedAt ?? this.syncedAt,
+      currency: currency ?? this.currency,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -6769,6 +7248,9 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
     if (syncedAt.present) {
       map['synced_at'] = Variable<DateTime>(syncedAt.value);
     }
+    if (currency.present) {
+      map['currency'] = Variable<String>(currency.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -6785,6 +7267,7 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
           ..write('notes: $notes, ')
           ..write('createdAt: $createdAt, ')
           ..write('syncedAt: $syncedAt, ')
+          ..write('currency: $currency, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -7022,11 +7505,13 @@ typedef $$ProductsTableCreateCompanionBuilder =
       required String name,
       Value<String?> categoryId,
       Value<double> costPrice,
+      Value<double> costPriceUsd,
       Value<bool> isActive,
       Value<double> minStockAlert,
       required DateTime createdAt,
       required DateTime updatedAt,
       Value<DateTime?> syncedAt,
+      Value<String> currency,
       Value<int> rowid,
     });
 typedef $$ProductsTableUpdateCompanionBuilder =
@@ -7037,11 +7522,13 @@ typedef $$ProductsTableUpdateCompanionBuilder =
       Value<String> name,
       Value<String?> categoryId,
       Value<double> costPrice,
+      Value<double> costPriceUsd,
       Value<bool> isActive,
       Value<double> minStockAlert,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<DateTime?> syncedAt,
+      Value<String> currency,
       Value<int> rowid,
     });
 
@@ -7084,6 +7571,11 @@ class $$ProductsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<double> get costPriceUsd => $composableBuilder(
+    column: $table.costPriceUsd,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<bool> get isActive => $composableBuilder(
     column: $table.isActive,
     builder: (column) => ColumnFilters(column),
@@ -7106,6 +7598,11 @@ class $$ProductsTableFilterComposer
 
   ColumnFilters<DateTime> get syncedAt => $composableBuilder(
     column: $table.syncedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get currency => $composableBuilder(
+    column: $table.currency,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -7149,6 +7646,11 @@ class $$ProductsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<double> get costPriceUsd => $composableBuilder(
+    column: $table.costPriceUsd,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<bool> get isActive => $composableBuilder(
     column: $table.isActive,
     builder: (column) => ColumnOrderings(column),
@@ -7171,6 +7673,11 @@ class $$ProductsTableOrderingComposer
 
   ColumnOrderings<DateTime> get syncedAt => $composableBuilder(
     column: $table.syncedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get currency => $composableBuilder(
+    column: $table.currency,
     builder: (column) => ColumnOrderings(column),
   );
 }
@@ -7206,6 +7713,11 @@ class $$ProductsTableAnnotationComposer
   GeneratedColumn<double> get costPrice =>
       $composableBuilder(column: $table.costPrice, builder: (column) => column);
 
+  GeneratedColumn<double> get costPriceUsd => $composableBuilder(
+    column: $table.costPriceUsd,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<bool> get isActive =>
       $composableBuilder(column: $table.isActive, builder: (column) => column);
 
@@ -7222,6 +7734,9 @@ class $$ProductsTableAnnotationComposer
 
   GeneratedColumn<DateTime> get syncedAt =>
       $composableBuilder(column: $table.syncedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get currency =>
+      $composableBuilder(column: $table.currency, builder: (column) => column);
 }
 
 class $$ProductsTableTableManager
@@ -7258,11 +7773,13 @@ class $$ProductsTableTableManager
                 Value<String> name = const Value.absent(),
                 Value<String?> categoryId = const Value.absent(),
                 Value<double> costPrice = const Value.absent(),
+                Value<double> costPriceUsd = const Value.absent(),
                 Value<bool> isActive = const Value.absent(),
                 Value<double> minStockAlert = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<DateTime?> syncedAt = const Value.absent(),
+                Value<String> currency = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ProductsCompanion(
                 id: id,
@@ -7271,11 +7788,13 @@ class $$ProductsTableTableManager
                 name: name,
                 categoryId: categoryId,
                 costPrice: costPrice,
+                costPriceUsd: costPriceUsd,
                 isActive: isActive,
                 minStockAlert: minStockAlert,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 syncedAt: syncedAt,
+                currency: currency,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -7286,11 +7805,13 @@ class $$ProductsTableTableManager
                 required String name,
                 Value<String?> categoryId = const Value.absent(),
                 Value<double> costPrice = const Value.absent(),
+                Value<double> costPriceUsd = const Value.absent(),
                 Value<bool> isActive = const Value.absent(),
                 Value<double> minStockAlert = const Value.absent(),
                 required DateTime createdAt,
                 required DateTime updatedAt,
                 Value<DateTime?> syncedAt = const Value.absent(),
+                Value<String> currency = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ProductsCompanion.insert(
                 id: id,
@@ -7299,11 +7820,13 @@ class $$ProductsTableTableManager
                 name: name,
                 categoryId: categoryId,
                 costPrice: costPrice,
+                costPriceUsd: costPriceUsd,
                 isActive: isActive,
                 minStockAlert: minStockAlert,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 syncedAt: syncedAt,
+                currency: currency,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -7334,6 +7857,7 @@ typedef $$ProductPricesTableCreateCompanionBuilder =
       required String productId,
       required String priceLabel,
       required double priceValue,
+      Value<String?> currency,
       Value<int> rowid,
     });
 typedef $$ProductPricesTableUpdateCompanionBuilder =
@@ -7342,6 +7866,7 @@ typedef $$ProductPricesTableUpdateCompanionBuilder =
       Value<String> productId,
       Value<String> priceLabel,
       Value<double> priceValue,
+      Value<String?> currency,
       Value<int> rowid,
     });
 
@@ -7371,6 +7896,11 @@ class $$ProductPricesTableFilterComposer
 
   ColumnFilters<double> get priceValue => $composableBuilder(
     column: $table.priceValue,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get currency => $composableBuilder(
+    column: $table.currency,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -7403,6 +7933,11 @@ class $$ProductPricesTableOrderingComposer
     column: $table.priceValue,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get currency => $composableBuilder(
+    column: $table.currency,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ProductPricesTableAnnotationComposer
@@ -7429,6 +7964,9 @@ class $$ProductPricesTableAnnotationComposer
     column: $table.priceValue,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get currency =>
+      $composableBuilder(column: $table.currency, builder: (column) => column);
 }
 
 class $$ProductPricesTableTableManager
@@ -7466,12 +8004,14 @@ class $$ProductPricesTableTableManager
                 Value<String> productId = const Value.absent(),
                 Value<String> priceLabel = const Value.absent(),
                 Value<double> priceValue = const Value.absent(),
+                Value<String?> currency = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ProductPricesCompanion(
                 id: id,
                 productId: productId,
                 priceLabel: priceLabel,
                 priceValue: priceValue,
+                currency: currency,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -7480,12 +8020,14 @@ class $$ProductPricesTableTableManager
                 required String productId,
                 required String priceLabel,
                 required double priceValue,
+                Value<String?> currency = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ProductPricesCompanion.insert(
                 id: id,
                 productId: productId,
                 priceLabel: priceLabel,
                 priceValue: priceValue,
+                currency: currency,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -7979,6 +8521,7 @@ typedef $$InvoicesTableCreateCompanionBuilder =
       required String paymentType,
       required DateTime createdAt,
       Value<DateTime?> syncedAt,
+      Value<String> currency,
       Value<int> rowid,
     });
 typedef $$InvoicesTableUpdateCompanionBuilder =
@@ -7992,6 +8535,7 @@ typedef $$InvoicesTableUpdateCompanionBuilder =
       Value<String> paymentType,
       Value<DateTime> createdAt,
       Value<DateTime?> syncedAt,
+      Value<String> currency,
       Value<int> rowid,
     });
 
@@ -8046,6 +8590,11 @@ class $$InvoicesTableFilterComposer
 
   ColumnFilters<DateTime> get syncedAt => $composableBuilder(
     column: $table.syncedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get currency => $composableBuilder(
+    column: $table.currency,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -8103,6 +8652,11 @@ class $$InvoicesTableOrderingComposer
     column: $table.syncedAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get currency => $composableBuilder(
+    column: $table.currency,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$InvoicesTableAnnotationComposer
@@ -8148,6 +8702,9 @@ class $$InvoicesTableAnnotationComposer
 
   GeneratedColumn<DateTime> get syncedAt =>
       $composableBuilder(column: $table.syncedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get currency =>
+      $composableBuilder(column: $table.currency, builder: (column) => column);
 }
 
 class $$InvoicesTableTableManager
@@ -8187,6 +8744,7 @@ class $$InvoicesTableTableManager
                 Value<String> paymentType = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime?> syncedAt = const Value.absent(),
+                Value<String> currency = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => InvoicesCompanion(
                 id: id,
@@ -8198,6 +8756,7 @@ class $$InvoicesTableTableManager
                 paymentType: paymentType,
                 createdAt: createdAt,
                 syncedAt: syncedAt,
+                currency: currency,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -8211,6 +8770,7 @@ class $$InvoicesTableTableManager
                 required String paymentType,
                 required DateTime createdAt,
                 Value<DateTime?> syncedAt = const Value.absent(),
+                Value<String> currency = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => InvoicesCompanion.insert(
                 id: id,
@@ -8222,6 +8782,7 @@ class $$InvoicesTableTableManager
                 paymentType: paymentType,
                 createdAt: createdAt,
                 syncedAt: syncedAt,
+                currency: currency,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -8254,6 +8815,7 @@ typedef $$InvoiceItemsTableCreateCompanionBuilder =
       required double priceUsed,
       required double quantity,
       Value<double> discount,
+      Value<String> currency,
       Value<int> rowid,
     });
 typedef $$InvoiceItemsTableUpdateCompanionBuilder =
@@ -8264,6 +8826,7 @@ typedef $$InvoiceItemsTableUpdateCompanionBuilder =
       Value<double> priceUsed,
       Value<double> quantity,
       Value<double> discount,
+      Value<String> currency,
       Value<int> rowid,
     });
 
@@ -8303,6 +8866,11 @@ class $$InvoiceItemsTableFilterComposer
 
   ColumnFilters<double> get discount => $composableBuilder(
     column: $table.discount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get currency => $composableBuilder(
+    column: $table.currency,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -8345,6 +8913,11 @@ class $$InvoiceItemsTableOrderingComposer
     column: $table.discount,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get currency => $composableBuilder(
+    column: $table.currency,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$InvoiceItemsTableAnnotationComposer
@@ -8373,6 +8946,9 @@ class $$InvoiceItemsTableAnnotationComposer
 
   GeneratedColumn<double> get discount =>
       $composableBuilder(column: $table.discount, builder: (column) => column);
+
+  GeneratedColumn<String> get currency =>
+      $composableBuilder(column: $table.currency, builder: (column) => column);
 }
 
 class $$InvoiceItemsTableTableManager
@@ -8412,6 +8988,7 @@ class $$InvoiceItemsTableTableManager
                 Value<double> priceUsed = const Value.absent(),
                 Value<double> quantity = const Value.absent(),
                 Value<double> discount = const Value.absent(),
+                Value<String> currency = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => InvoiceItemsCompanion(
                 id: id,
@@ -8420,6 +8997,7 @@ class $$InvoiceItemsTableTableManager
                 priceUsed: priceUsed,
                 quantity: quantity,
                 discount: discount,
+                currency: currency,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -8430,6 +9008,7 @@ class $$InvoiceItemsTableTableManager
                 required double priceUsed,
                 required double quantity,
                 Value<double> discount = const Value.absent(),
+                Value<String> currency = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => InvoiceItemsCompanion.insert(
                 id: id,
@@ -8438,6 +9017,7 @@ class $$InvoiceItemsTableTableManager
                 priceUsed: priceUsed,
                 quantity: quantity,
                 discount: discount,
+                currency: currency,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -8475,6 +9055,7 @@ typedef $$DebtsTableCreateCompanionBuilder =
       required String status,
       required DateTime createdAt,
       Value<DateTime?> syncedAt,
+      Value<String> currency,
       Value<int> rowid,
     });
 typedef $$DebtsTableUpdateCompanionBuilder =
@@ -8487,6 +9068,7 @@ typedef $$DebtsTableUpdateCompanionBuilder =
       Value<String> status,
       Value<DateTime> createdAt,
       Value<DateTime?> syncedAt,
+      Value<String> currency,
       Value<int> rowid,
     });
 
@@ -8535,6 +9117,11 @@ class $$DebtsTableFilterComposer extends Composer<_$AppDatabase, $DebtsTable> {
 
   ColumnFilters<DateTime> get syncedAt => $composableBuilder(
     column: $table.syncedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get currency => $composableBuilder(
+    column: $table.currency,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -8587,6 +9174,11 @@ class $$DebtsTableOrderingComposer
     column: $table.syncedAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get currency => $composableBuilder(
+    column: $table.currency,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$DebtsTableAnnotationComposer
@@ -8625,6 +9217,9 @@ class $$DebtsTableAnnotationComposer
 
   GeneratedColumn<DateTime> get syncedAt =>
       $composableBuilder(column: $table.syncedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get currency =>
+      $composableBuilder(column: $table.currency, builder: (column) => column);
 }
 
 class $$DebtsTableTableManager
@@ -8663,6 +9258,7 @@ class $$DebtsTableTableManager
                 Value<String> status = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime?> syncedAt = const Value.absent(),
+                Value<String> currency = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DebtsCompanion(
                 id: id,
@@ -8673,6 +9269,7 @@ class $$DebtsTableTableManager
                 status: status,
                 createdAt: createdAt,
                 syncedAt: syncedAt,
+                currency: currency,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -8685,6 +9282,7 @@ class $$DebtsTableTableManager
                 required String status,
                 required DateTime createdAt,
                 Value<DateTime?> syncedAt = const Value.absent(),
+                Value<String> currency = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DebtsCompanion.insert(
                 id: id,
@@ -8695,6 +9293,7 @@ class $$DebtsTableTableManager
                 status: status,
                 createdAt: createdAt,
                 syncedAt: syncedAt,
+                currency: currency,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -8726,6 +9325,7 @@ typedef $$DebtPaymentsTableCreateCompanionBuilder =
       required double amountPaid,
       required DateTime paidAt,
       Value<DateTime?> syncedAt,
+      Value<String> currency,
       Value<int> rowid,
     });
 typedef $$DebtPaymentsTableUpdateCompanionBuilder =
@@ -8735,6 +9335,7 @@ typedef $$DebtPaymentsTableUpdateCompanionBuilder =
       Value<double> amountPaid,
       Value<DateTime> paidAt,
       Value<DateTime?> syncedAt,
+      Value<String> currency,
       Value<int> rowid,
     });
 
@@ -8769,6 +9370,11 @@ class $$DebtPaymentsTableFilterComposer
 
   ColumnFilters<DateTime> get syncedAt => $composableBuilder(
     column: $table.syncedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get currency => $composableBuilder(
+    column: $table.currency,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -8806,6 +9412,11 @@ class $$DebtPaymentsTableOrderingComposer
     column: $table.syncedAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get currency => $composableBuilder(
+    column: $table.currency,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$DebtPaymentsTableAnnotationComposer
@@ -8833,6 +9444,9 @@ class $$DebtPaymentsTableAnnotationComposer
 
   GeneratedColumn<DateTime> get syncedAt =>
       $composableBuilder(column: $table.syncedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get currency =>
+      $composableBuilder(column: $table.currency, builder: (column) => column);
 }
 
 class $$DebtPaymentsTableTableManager
@@ -8871,6 +9485,7 @@ class $$DebtPaymentsTableTableManager
                 Value<double> amountPaid = const Value.absent(),
                 Value<DateTime> paidAt = const Value.absent(),
                 Value<DateTime?> syncedAt = const Value.absent(),
+                Value<String> currency = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DebtPaymentsCompanion(
                 id: id,
@@ -8878,6 +9493,7 @@ class $$DebtPaymentsTableTableManager
                 amountPaid: amountPaid,
                 paidAt: paidAt,
                 syncedAt: syncedAt,
+                currency: currency,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -8887,6 +9503,7 @@ class $$DebtPaymentsTableTableManager
                 required double amountPaid,
                 required DateTime paidAt,
                 Value<DateTime?> syncedAt = const Value.absent(),
+                Value<String> currency = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DebtPaymentsCompanion.insert(
                 id: id,
@@ -8894,6 +9511,7 @@ class $$DebtPaymentsTableTableManager
                 amountPaid: amountPaid,
                 paidAt: paidAt,
                 syncedAt: syncedAt,
+                currency: currency,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -9122,6 +9740,7 @@ typedef $$PurchaseInvoicesTableCreateCompanionBuilder =
       required double totalAmount,
       required DateTime createdAt,
       Value<DateTime?> syncedAt,
+      Value<String> currency,
       Value<int> rowid,
     });
 typedef $$PurchaseInvoicesTableUpdateCompanionBuilder =
@@ -9131,6 +9750,7 @@ typedef $$PurchaseInvoicesTableUpdateCompanionBuilder =
       Value<double> totalAmount,
       Value<DateTime> createdAt,
       Value<DateTime?> syncedAt,
+      Value<String> currency,
       Value<int> rowid,
     });
 
@@ -9165,6 +9785,11 @@ class $$PurchaseInvoicesTableFilterComposer
 
   ColumnFilters<DateTime> get syncedAt => $composableBuilder(
     column: $table.syncedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get currency => $composableBuilder(
+    column: $table.currency,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -9202,6 +9827,11 @@ class $$PurchaseInvoicesTableOrderingComposer
     column: $table.syncedAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get currency => $composableBuilder(
+    column: $table.currency,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$PurchaseInvoicesTableAnnotationComposer
@@ -9231,6 +9861,9 @@ class $$PurchaseInvoicesTableAnnotationComposer
 
   GeneratedColumn<DateTime> get syncedAt =>
       $composableBuilder(column: $table.syncedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get currency =>
+      $composableBuilder(column: $table.currency, builder: (column) => column);
 }
 
 class $$PurchaseInvoicesTableTableManager
@@ -9275,6 +9908,7 @@ class $$PurchaseInvoicesTableTableManager
                 Value<double> totalAmount = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime?> syncedAt = const Value.absent(),
+                Value<String> currency = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => PurchaseInvoicesCompanion(
                 id: id,
@@ -9282,6 +9916,7 @@ class $$PurchaseInvoicesTableTableManager
                 totalAmount: totalAmount,
                 createdAt: createdAt,
                 syncedAt: syncedAt,
+                currency: currency,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -9291,6 +9926,7 @@ class $$PurchaseInvoicesTableTableManager
                 required double totalAmount,
                 required DateTime createdAt,
                 Value<DateTime?> syncedAt = const Value.absent(),
+                Value<String> currency = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => PurchaseInvoicesCompanion.insert(
                 id: id,
@@ -9298,6 +9934,7 @@ class $$PurchaseInvoicesTableTableManager
                 totalAmount: totalAmount,
                 createdAt: createdAt,
                 syncedAt: syncedAt,
+                currency: currency,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -9332,6 +9969,7 @@ typedef $$PurchaseItemsTableCreateCompanionBuilder =
       required String productId,
       required double quantity,
       required double unitCost,
+      Value<String> currency,
       Value<int> rowid,
     });
 typedef $$PurchaseItemsTableUpdateCompanionBuilder =
@@ -9341,6 +9979,7 @@ typedef $$PurchaseItemsTableUpdateCompanionBuilder =
       Value<String> productId,
       Value<double> quantity,
       Value<double> unitCost,
+      Value<String> currency,
       Value<int> rowid,
     });
 
@@ -9375,6 +10014,11 @@ class $$PurchaseItemsTableFilterComposer
 
   ColumnFilters<double> get unitCost => $composableBuilder(
     column: $table.unitCost,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get currency => $composableBuilder(
+    column: $table.currency,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -9412,6 +10056,11 @@ class $$PurchaseItemsTableOrderingComposer
     column: $table.unitCost,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get currency => $composableBuilder(
+    column: $table.currency,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$PurchaseItemsTableAnnotationComposer
@@ -9439,6 +10088,9 @@ class $$PurchaseItemsTableAnnotationComposer
 
   GeneratedColumn<double> get unitCost =>
       $composableBuilder(column: $table.unitCost, builder: (column) => column);
+
+  GeneratedColumn<String> get currency =>
+      $composableBuilder(column: $table.currency, builder: (column) => column);
 }
 
 class $$PurchaseItemsTableTableManager
@@ -9477,6 +10129,7 @@ class $$PurchaseItemsTableTableManager
                 Value<String> productId = const Value.absent(),
                 Value<double> quantity = const Value.absent(),
                 Value<double> unitCost = const Value.absent(),
+                Value<String> currency = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => PurchaseItemsCompanion(
                 id: id,
@@ -9484,6 +10137,7 @@ class $$PurchaseItemsTableTableManager
                 productId: productId,
                 quantity: quantity,
                 unitCost: unitCost,
+                currency: currency,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -9493,6 +10147,7 @@ class $$PurchaseItemsTableTableManager
                 required String productId,
                 required double quantity,
                 required double unitCost,
+                Value<String> currency = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => PurchaseItemsCompanion.insert(
                 id: id,
@@ -9500,6 +10155,7 @@ class $$PurchaseItemsTableTableManager
                 productId: productId,
                 quantity: quantity,
                 unitCost: unitCost,
+                currency: currency,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -10191,6 +10847,7 @@ typedef $$ExpensesTableCreateCompanionBuilder =
       Value<String?> notes,
       required DateTime createdAt,
       Value<DateTime?> syncedAt,
+      Value<String> currency,
       Value<int> rowid,
     });
 typedef $$ExpensesTableUpdateCompanionBuilder =
@@ -10202,6 +10859,7 @@ typedef $$ExpensesTableUpdateCompanionBuilder =
       Value<String?> notes,
       Value<DateTime> createdAt,
       Value<DateTime?> syncedAt,
+      Value<String> currency,
       Value<int> rowid,
     });
 
@@ -10246,6 +10904,11 @@ class $$ExpensesTableFilterComposer
 
   ColumnFilters<DateTime> get syncedAt => $composableBuilder(
     column: $table.syncedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get currency => $composableBuilder(
+    column: $table.currency,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -10293,6 +10956,11 @@ class $$ExpensesTableOrderingComposer
     column: $table.syncedAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get currency => $composableBuilder(
+    column: $table.currency,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ExpensesTableAnnotationComposer
@@ -10328,6 +10996,9 @@ class $$ExpensesTableAnnotationComposer
 
   GeneratedColumn<DateTime> get syncedAt =>
       $composableBuilder(column: $table.syncedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get currency =>
+      $composableBuilder(column: $table.currency, builder: (column) => column);
 }
 
 class $$ExpensesTableTableManager
@@ -10365,6 +11036,7 @@ class $$ExpensesTableTableManager
                 Value<String?> notes = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime?> syncedAt = const Value.absent(),
+                Value<String> currency = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ExpensesCompanion(
                 id: id,
@@ -10374,6 +11046,7 @@ class $$ExpensesTableTableManager
                 notes: notes,
                 createdAt: createdAt,
                 syncedAt: syncedAt,
+                currency: currency,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -10385,6 +11058,7 @@ class $$ExpensesTableTableManager
                 Value<String?> notes = const Value.absent(),
                 required DateTime createdAt,
                 Value<DateTime?> syncedAt = const Value.absent(),
+                Value<String> currency = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ExpensesCompanion.insert(
                 id: id,
@@ -10394,6 +11068,7 @@ class $$ExpensesTableTableManager
                 notes: notes,
                 createdAt: createdAt,
                 syncedAt: syncedAt,
+                currency: currency,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

@@ -160,7 +160,7 @@ class _CartItemRowState extends State<CartItemRow> {
                       decoration: InputDecoration(
                         labelText: 'pos.unit_price'.tr(),
                         prefixIcon: const Icon(Icons.sell_outlined, size: 18),
-                        suffixText: 'common.currency'.tr(),
+                        suffixText: widget.item.currencySymbol,
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                       ),
                       onChanged: (val) {
@@ -182,7 +182,7 @@ class _CartItemRowState extends State<CartItemRow> {
                         labelText: 'pos.final_line_price'.tr(),
                         helperText: '(${qty.toStringAsFixed(qty % 1 == 0 ? 0 : 1)} ${'pos.units_count'.tr(namedArgs: {'count': ''}).trim()})',
                         prefixIcon: const Icon(Icons.calculate_outlined, size: 18),
-                        suffixText: 'common.currency'.tr(),
+                        suffixText: widget.item.currencySymbol,
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                       ),
                       onChanged: (val) {
@@ -355,7 +355,7 @@ class _CartItemRowState extends State<CartItemRow> {
                           ),
                         ],
                         Text(
-                          '× ${widget.item.unitPrice.toStringAsFixed(2)}',
+                          '× ${widget.item.unitPrice.toStringAsFixed(2)} ${widget.item.currencySymbol}',
                           style: AppTheme.numericStyle(
                             color: widget.item.hasCustomPrice ? Colors.amber.shade900 : AppColors.textPrimary,
                             fontWeight: widget.item.hasCustomPrice ? FontWeight.bold : FontWeight.normal,
@@ -480,7 +480,7 @@ class _CartItemRowState extends State<CartItemRow> {
 
               // Subtotal
               Text(
-                widget.item.subtotal.toStringAsFixed(2),
+                '${widget.item.subtotal.toStringAsFixed(2)} ${widget.item.currencySymbol}',
                 style: AppTheme.numericStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 14,

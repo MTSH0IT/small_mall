@@ -22,7 +22,6 @@ class _CashDrawerViewState extends State<CashDrawerView> {
 
   @override
   Widget build(BuildContext context) {
-    final currency = 'common.currency'.tr();
     final data = widget.cashDrawerData;
 
     final filteredMovements = data.movements.where((m) {
@@ -148,18 +147,35 @@ class _CashDrawerViewState extends State<CashDrawerView> {
                               ],
                             ),
                             const SizedBox(height: 8),
-                            Text(
-                              '+${data.totalCashIn.toStringAsFixed(2)} $currency',
-                              style: AppTheme.numericStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.success,
-                              ),
+                            Wrap(
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              spacing: 6,
+                              children: [
+                                Text(
+                                  '+${data.totalCashIn.toStringAsFixed(2)} ل.س',
+                                  style: AppTheme.numericStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.success,
+                                  ),
+                                ),
+                                if (data.totalCashInUsd > 0) ...[
+                                  Text('/', style: TextStyle(color: AppColors.textSecondary.withValues(alpha: 0.5))),
+                                  Text(
+                                    '+${data.totalCashInUsd.toStringAsFixed(2)} \$',
+                                    style: AppTheme.numericStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: const Color(0xFF059669),
+                                    ),
+                                  ),
+                                ],
+                              ],
                             ),
                             const Divider(height: 16, color: AppColors.border),
-                            _buildMiniSummaryRow('reports.cash_sales'.tr(), data.cashSales, currency),
+                            _buildMiniSummaryRow('reports.cash_sales'.tr(), data.cashSales, amountUsd: data.cashSalesUsd),
                             const SizedBox(height: 4),
-                            _buildMiniSummaryRow('reports.debt_collections'.tr(), data.debtPaymentsCollected, currency),
+                            _buildMiniSummaryRow('reports.debt_collections'.tr(), data.debtPaymentsCollected, amountUsd: data.debtPaymentsCollectedUsd),
                           ],
                         ),
                       ),
@@ -193,20 +209,37 @@ class _CashDrawerViewState extends State<CashDrawerView> {
                               ],
                             ),
                             const SizedBox(height: 8),
-                            Text(
-                              '-${data.totalCashOut.toStringAsFixed(2)} $currency',
-                              style: AppTheme.numericStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.danger,
-                              ),
+                            Wrap(
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              spacing: 6,
+                              children: [
+                                Text(
+                                  '-${data.totalCashOut.toStringAsFixed(2)} ل.س',
+                                  style: AppTheme.numericStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.danger,
+                                  ),
+                                ),
+                                if (data.totalCashOutUsd > 0) ...[
+                                  Text('/', style: TextStyle(color: AppColors.textSecondary.withValues(alpha: 0.5))),
+                                  Text(
+                                    '-${data.totalCashOutUsd.toStringAsFixed(2)} \$',
+                                    style: AppTheme.numericStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.danger,
+                                    ),
+                                  ),
+                                ],
+                              ],
                             ),
                             const Divider(height: 16, color: AppColors.border),
-                            _buildMiniSummaryRow('reports.cash_returns'.tr(), data.cashReturns, currency),
+                            _buildMiniSummaryRow('reports.cash_returns'.tr(), data.cashReturns, amountUsd: data.cashReturnsUsd),
                             const SizedBox(height: 4),
-                            _buildMiniSummaryRow('reports.expenses_paid'.tr(), data.expensesPaid, currency),
+                            _buildMiniSummaryRow('reports.expenses_paid'.tr(), data.expensesPaid, amountUsd: data.expensesPaidUsd),
                             const SizedBox(height: 4),
-                            _buildMiniSummaryRow('reports.cash_purchases'.tr(), data.cashPurchases, currency),
+                            _buildMiniSummaryRow('reports.cash_purchases'.tr(), data.cashPurchases, amountUsd: data.cashPurchasesUsd),
                           ],
                         ),
                       ),
@@ -240,13 +273,30 @@ class _CashDrawerViewState extends State<CashDrawerView> {
                               ],
                             ),
                             const SizedBox(height: 8),
-                            Text(
-                              '${data.netCashFlow >= 0 ? '+' : ''}${data.netCashFlow.toStringAsFixed(2)} $currency',
-                              style: AppTheme.numericStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: statusColor,
-                              ),
+                            Wrap(
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              spacing: 6,
+                              children: [
+                                Text(
+                                  '${data.netCashFlow >= 0 ? '+' : ''}${data.netCashFlow.toStringAsFixed(2)} ل.س',
+                                  style: AppTheme.numericStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: statusColor,
+                                  ),
+                                ),
+                                if (data.netCashFlowUsd != 0) ...[
+                                  Text('/', style: TextStyle(color: AppColors.textSecondary.withValues(alpha: 0.5))),
+                                  Text(
+                                    '${data.netCashFlowUsd >= 0 ? '+' : ''}${data.netCashFlowUsd.toStringAsFixed(2)} \$',
+                                    style: AppTheme.numericStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: data.netCashFlowUsd >= 0 ? const Color(0xFF059669) : AppColors.danger,
+                                    ),
+                                  ),
+                                ],
+                              ],
                             ),
                             const Divider(height: 16, color: AppColors.border),
                             Text(
@@ -392,6 +442,22 @@ class _CashDrawerViewState extends State<CashDrawerView> {
                                 ),
                               ),
                             ],
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: (item.currency == 'USD' ? const Color(0xFF059669) : AppColors.primary).withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                item.currencySymbol,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: item.currency == 'USD' ? const Color(0xFF059669) : AppColors.primary,
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                         subtitle: Row(
@@ -420,7 +486,7 @@ class _CashDrawerViewState extends State<CashDrawerView> {
                           ],
                         ),
                         trailing: Text(
-                          '$sign${item.amount.toStringAsFixed(2)} $currency',
+                          '$sign${item.amount.toStringAsFixed(2)} ${item.currencySymbol}',
                           style: AppTheme.numericStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
@@ -459,14 +525,30 @@ class _CashDrawerViewState extends State<CashDrawerView> {
     );
   }
 
-  Widget _buildMiniSummaryRow(String title, double amount, String currency) {
+  Widget _buildMiniSummaryRow(String title, double amount, {double? amountUsd, String? currency}) {
+    final hasUsd = amountUsd != null && amountUsd != 0;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(title, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-        Text(
-          '${amount.toStringAsFixed(1)} $currency',
-          style: AppTheme.numericStyle(fontSize: 12, fontWeight: FontWeight.bold),
+        Row(
+          children: [
+            Text(
+              '${amount.toStringAsFixed(1)} ${currency ?? 'ل.س'}',
+              style: AppTheme.numericStyle(fontSize: 12, fontWeight: FontWeight.bold),
+            ),
+            if (hasUsd) ...[
+              const SizedBox(width: 4),
+              Text(
+                '/ ${amountUsd.toStringAsFixed(1)} \$',
+                style: AppTheme.numericStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF059669),
+                ),
+              ),
+            ],
+          ],
         ),
       ],
     );

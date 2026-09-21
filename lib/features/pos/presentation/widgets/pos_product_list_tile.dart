@@ -1,5 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:small_mall/core/constants/app_currency.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/utils/price_helper.dart';
 import 'package:small_mall/core/utils/theme.dart';
@@ -113,6 +114,38 @@ class _POSProductListTileState extends State<POSProductListTile> {
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                            decoration: BoxDecoration(
+                              color: item.hasDualPrices
+                                  ? const Color(0xFF6366F1).withValues(alpha: 0.12)
+                                  : (item.currency == AppCurrency.secondaryCode
+                                      ? const Color(0xFF10B981).withValues(alpha: 0.12)
+                                      : AppColors.primary.withValues(alpha: 0.08)),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(
+                                color: item.hasDualPrices
+                                    ? const Color(0xFF6366F1).withValues(alpha: 0.3)
+                                    : (item.currency == AppCurrency.secondaryCode
+                                        ? const Color(0xFF10B981).withValues(alpha: 0.3)
+                                        : AppColors.primary.withValues(alpha: 0.25)),
+                                width: 0.8,
+                              ),
+                            ),
+                            child: Text(
+                              item.hasDualPrices ? 'ل.س / \$' : item.currencySymbol,
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: item.hasDualPrices
+                                    ? const Color(0xFF4F46E5)
+                                    : (item.currency == AppCurrency.secondaryCode
+                                        ? const Color(0xFF059669)
+                                        : AppColors.primary),
+                              ),
                             ),
                           ),
                           if (hasInCart) ...[
@@ -253,7 +286,7 @@ class _POSProductListTileState extends State<POSProductListTile> {
                             ),
                             const SizedBox(width: 5),
                             Text(
-                              '${singlePrice.priceValue.toStringAsFixed(2)} ${'common.currency'.tr()}',
+                              '${singlePrice.priceValue.toStringAsFixed((singlePrice.currency ?? item.currency) == AppCurrency.baseCode ? (singlePrice.priceValue % 1 == 0 ? 0 : 1) : 2)} ${AppCurrency.getSymbol(singlePrice.currency ?? item.currency)}',
                               style: AppTheme.numericStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
@@ -271,7 +304,15 @@ class _POSProductListTileState extends State<POSProductListTile> {
                     runSpacing: 4,
                     children: item.prices.map((price) {
                       final label = price.priceLabel.priceLabelDisplay;
-                      final color = price.priceLabel.priceLabelColor;
+                      final priceCurr = price.currency ?? item.currency;
+                      final isUsd = priceCurr == AppCurrency.secondaryCode;
+                      final color = isUsd
+                          ? (price.priceLabel == 'retail' ? const Color(0xFF059669) : const Color(0xFF0D9488))
+                          : price.priceLabel.priceLabelColor;
+                      final priceSymbol = AppCurrency.getSymbol(priceCurr);
+                      final priceStr = price.priceValue.toStringAsFixed(
+                        !isUsd && price.priceValue % 1 == 0 ? 0 : (isUsd ? 2 : 1),
+                      );
 
                       return Material(
                         color: inStock
@@ -303,7 +344,7 @@ class _POSProductListTileState extends State<POSProductListTile> {
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  price.priceValue.toStringAsFixed(1),
+                                  '$priceStr $priceSymbol',
                                   style: AppTheme.numericStyle(
                                     fontSize: 10.5,
                                     color: inStock ? color : Colors.grey,

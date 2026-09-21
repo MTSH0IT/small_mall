@@ -1,5 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:small_mall/core/constants/app_currency.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/core/widgets/app_searchable_dropdown.dart';
@@ -72,19 +73,31 @@ class _NewPurchaseInvoiceDialogState extends State<NewPurchaseInvoiceDialog> {
       return;
     }
 
-    final initialRetailPrice = productDetails.prices.where((p) => p.priceLabel == 'retail').firstOrNull?.priceValue ?? 0.0;
-    final initialWholesalePrice = productDetails.prices.where((p) => p.priceLabel == 'wholesale').firstOrNull?.priceValue ?? 0.0;
+    final initialRetailPriceSyp = productDetails.retailPriceSyp ?? 0.0;
+    final initialWholesalePriceSyp = productDetails.wholesalePriceSyp ?? 0.0;
+    final initialRetailPriceUsd = productDetails.retailPriceUsd ?? 0.0;
+    final initialWholesalePriceUsd = productDetails.wholesalePriceUsd ?? 0.0;
+    final initialCostSyp = productDetails.costPriceSyp;
+    final initialCostUsd = productDetails.costPriceUsd;
 
     setState(() {
       _draftItems.add({
         'productId': productDetails.product.id,
         'productName': productDetails.product.name,
         'productCode': productDetails.product.code,
+        'currency': productDetails.currency,
+        'currencySymbol': productDetails.currencySymbol,
         'currentStock': productDetails.currentStock,
         'quantity': 1.0,
-        'unitCost': productDetails.product.costPrice,
-        'retailPrice': initialRetailPrice,
-        'wholesalePrice': initialWholesalePrice,
+        'unitCost': initialCostSyp,
+        'unitCostSyp': initialCostSyp,
+        'unitCostUsd': initialCostUsd,
+        'retailPriceSyp': initialRetailPriceSyp,
+        'wholesalePriceSyp': initialWholesalePriceSyp,
+        'retailPriceUsd': initialRetailPriceUsd,
+        'wholesalePriceUsd': initialWholesalePriceUsd,
+        'retailPrice': initialRetailPriceSyp > 0 ? initialRetailPriceSyp : initialRetailPriceUsd,
+        'wholesalePrice': initialWholesalePriceSyp > 0 ? initialWholesalePriceSyp : initialWholesalePriceUsd,
       });
     });
   }
@@ -361,29 +374,41 @@ class _DraftItemRow extends StatefulWidget {
 class _DraftItemRowState extends State<_DraftItemRow> {
   late final TextEditingController _qtyController;
   late final TextEditingController _costController;
-  late final TextEditingController _retailPriceController;
-  late final TextEditingController _wholesalePriceController;
+  late final TextEditingController _costUsdController;
+  late final TextEditingController _retailSypController;
+  late final TextEditingController _wholesaleSypController;
+  late final TextEditingController _retailUsdController;
+  late final TextEditingController _wholesaleUsdController;
 
   @override
   void initState() {
     super.initState();
     final qty = (widget.item['quantity'] as num).toDouble();
     final cost = (widget.item['unitCost'] as num).toDouble();
-    final retail = (widget.item['retailPrice'] as num?)?.toDouble() ?? 0.0;
-    final wholesale = (widget.item['wholesalePrice'] as num?)?.toDouble() ?? 0.0;
+    final costUsd = (widget.item['unitCostUsd'] as num?)?.toDouble() ?? 0.0;
+    final retailSyp = (widget.item['retailPriceSyp'] as num?)?.toDouble() ?? 0.0;
+    final wholesaleSyp = (widget.item['wholesalePriceSyp'] as num?)?.toDouble() ?? 0.0;
+    final retailUsd = (widget.item['retailPriceUsd'] as num?)?.toDouble() ?? 0.0;
+    final wholesaleUsd = (widget.item['wholesalePriceUsd'] as num?)?.toDouble() ?? 0.0;
 
     _qtyController = TextEditingController(text: qty == qty.roundToDouble() ? qty.toInt().toString() : qty.toString());
     _costController = TextEditingController(text: cost.toStringAsFixed(2));
-    _retailPriceController = TextEditingController(text: retail > 0 ? retail.toStringAsFixed(2) : '');
-    _wholesalePriceController = TextEditingController(text: wholesale > 0 ? wholesale.toStringAsFixed(2) : '');
+    _costUsdController = TextEditingController(text: costUsd > 0 ? costUsd.toStringAsFixed(costUsd % 1 == 0 ? 0 : 2) : '');
+    _retailSypController = TextEditingController(text: retailSyp > 0 ? retailSyp.toStringAsFixed(retailSyp % 1 == 0 ? 0 : 1) : '');
+    _wholesaleSypController = TextEditingController(text: wholesaleSyp > 0 ? wholesaleSyp.toStringAsFixed(wholesaleSyp % 1 == 0 ? 0 : 1) : '');
+    _retailUsdController = TextEditingController(text: retailUsd > 0 ? retailUsd.toStringAsFixed(retailUsd % 1 == 0 ? 0 : 2) : '');
+    _wholesaleUsdController = TextEditingController(text: wholesaleUsd > 0 ? wholesaleUsd.toStringAsFixed(wholesaleUsd % 1 == 0 ? 0 : 2) : '');
   }
 
   @override
   void dispose() {
     _qtyController.dispose();
     _costController.dispose();
-    _retailPriceController.dispose();
-    _wholesalePriceController.dispose();
+    _costUsdController.dispose();
+    _retailSypController.dispose();
+    _wholesaleSypController.dispose();
+    _retailUsdController.dispose();
+    _wholesaleUsdController.dispose();
     super.dispose();
   }
 
@@ -394,6 +419,8 @@ class _DraftItemRowState extends State<_DraftItemRow> {
     final subtotal = qty * cost;
     final currentStock = (widget.item['currentStock'] as num?)?.toDouble() ?? 0.0;
     final code = widget.item['productCode'] as String?;
+    final currencySymbol = (widget.item['currencySymbol'] as String?) ?? AppCurrency.primarySymbol;
+    final currencyCode = (widget.item['currency'] as String?) ?? AppCurrency.primaryCode;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -437,6 +464,32 @@ class _DraftItemRowState extends State<_DraftItemRow> {
                         style: AppTheme.numericStyle(fontSize: 11, color: const Color(0xFF0284C7)),
                       ),
                     ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                      decoration: BoxDecoration(
+                        color: currencyCode == AppCurrency.secondaryCode
+                            ? const Color(0xFF10B981).withValues(alpha: 0.12)
+                            : AppColors.primary.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(
+                          color: currencyCode == AppCurrency.secondaryCode
+                              ? const Color(0xFF10B981).withValues(alpha: 0.3)
+                              : AppColors.primary.withValues(alpha: 0.25),
+                          width: 0.8,
+                        ),
+                      ),
+                      child: Text(
+                        currencySymbol,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: currencyCode == AppCurrency.secondaryCode
+                              ? const Color(0xFF059669)
+                              : AppColors.primary,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -468,81 +521,202 @@ class _DraftItemRowState extends State<_DraftItemRow> {
                   },
                 ),
               ),
-              const SizedBox(width: 10),
-              // Unit Cost (سعر الشراء)
+              const SizedBox(width: 8),
+              // Unit Cost SYP (سعر الشراء ل.س)
               Expanded(
-                flex: 2,
+                flex: 3,
                 child: AppTextField(
-                  label: 'suppliers.unit_cost'.tr(),
+                  label: 'suppliers.unit_cost_syp'.tr(),
                   controller: _costController,
+                  suffixIcon: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                    child: Text(
+                      AppCurrency.baseSymbol,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   onChanged: (val) {
                     final numVal = double.tryParse(val);
                     if (numVal != null && numVal >= 0) {
                       widget.item['unitCost'] = numVal;
+                      widget.item['unitCostSyp'] = numVal;
                       widget.onChanged();
                     }
                   },
                 ),
               ),
-              const SizedBox(width: 10),
-              // Retail Selling Price (سعر المفرق)
+              const SizedBox(width: 8),
+              // Unit Cost USD (سعر الشراء $)
               Expanded(
-                flex: 2,
+                flex: 3,
                 child: AppTextField(
-                  label: 'suppliers.retail_price'.tr(),
+                  label: 'suppliers.unit_cost_usd'.tr(),
                   hint: '0.00',
-                  controller: _retailPriceController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  onChanged: (val) {
-                    final numVal = double.tryParse(val);
-                    if (numVal != null && numVal >= 0) {
-                      widget.item['retailPrice'] = numVal;
-                    }
-                  },
-                ),
-              ),
-              const SizedBox(width: 10),
-              // Wholesale Selling Price (سعر الجملة)
-              Expanded(
-                flex: 2,
-                child: AppTextField(
-                  label: 'suppliers.wholesale_price'.tr(),
-                  hint: '0.00',
-                  controller: _wholesalePriceController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  onChanged: (val) {
-                    final numVal = double.tryParse(val);
-                    if (numVal != null && numVal >= 0) {
-                      widget.item['wholesalePrice'] = numVal;
-                    }
-                  },
-                ),
-              ),
-              const SizedBox(width: 14),
-              // Subtotal
-              Expanded(
-                flex: 2,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      'suppliers.item_subtotal'.tr(),
-                      style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${subtotal.toStringAsFixed(2)} ${'common.currency'.tr()}',
-                      style: AppTheme.numericStyle(
+                  controller: _costUsdController,
+                  suffixIcon: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                    child: Text(
+                      AppCurrency.secondarySymbol,
+                      style: const TextStyle(
+                        fontSize: 11,
                         fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        color: AppColors.primary,
+                        color: Color(0xFF059669),
                       ),
                     ),
-                  ],
+                  ),
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  onChanged: (val) {
+                    widget.item['unitCostUsd'] = double.tryParse(val) ?? 0.0;
+                  },
+                ),
+              ),
+              const SizedBox(width: 10),
+              // Subtotal
+              Expanded(
+                flex: 3,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceElevated,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'suppliers.item_subtotal'.tr(),
+                        style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                      ),
+                      Text(
+                        '${subtotal.toStringAsFixed(2)} ${AppCurrency.baseSymbol}',
+                        style: AppTheme.numericStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 8),
+          // Selling Prices Row (SYP & USD)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceElevated.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+            ),
+            child: Row(
+              children: [
+                // Retail SYP
+                Expanded(
+                  child: AppTextField(
+                    label: 'inventory.retail_price_syp'.tr(),
+                    hint: '0',
+                    controller: _retailSypController,
+                    suffixIcon: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
+                      child: Text(
+                        AppCurrency.baseSymbol,
+                        style: const TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ),
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    onChanged: (val) {
+                      widget.item['retailPriceSyp'] = double.tryParse(val);
+                      widget.item['retailPrice'] = double.tryParse(val) ?? 0.0;
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // Wholesale SYP
+                Expanded(
+                  child: AppTextField(
+                    label: 'inventory.wholesale_price_syp'.tr(),
+                    hint: '0',
+                    controller: _wholesaleSypController,
+                    suffixIcon: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
+                      child: Text(
+                        AppCurrency.baseSymbol,
+                        style: const TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ),
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    onChanged: (val) {
+                      widget.item['wholesalePriceSyp'] = double.tryParse(val);
+                      widget.item['wholesalePrice'] = double.tryParse(val) ?? 0.0;
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // Retail USD
+                Expanded(
+                  child: AppTextField(
+                    label: 'inventory.retail_price_usd'.tr(),
+                    hint: '0.00',
+                    controller: _retailUsdController,
+                    suffixIcon: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
+                      child: Text(
+                        AppCurrency.secondarySymbol,
+                        style: const TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF059669),
+                        ),
+                      ),
+                    ),
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    onChanged: (val) {
+                      widget.item['retailPriceUsd'] = double.tryParse(val);
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // Wholesale USD
+                Expanded(
+                  child: AppTextField(
+                    label: 'inventory.wholesale_price_usd'.tr(),
+                    hint: '0.00',
+                    controller: _wholesaleUsdController,
+                    suffixIcon: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
+                      child: Text(
+                        AppCurrency.secondarySymbol,
+                        style: const TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF059669),
+                        ),
+                      ),
+                    ),
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    onChanged: (val) {
+                      widget.item['wholesalePriceUsd'] = double.tryParse(val);
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),

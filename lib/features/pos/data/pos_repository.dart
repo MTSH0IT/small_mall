@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:small_mall/core/constants/app_currency.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/logging/app_logger.dart';
 import 'package:small_mall/core/logging/log_context.dart';
@@ -46,9 +47,10 @@ class POSRepository {
     required double totalAmount,
     required double discount,
     required String paymentType,
+    String currency = 'SYP',
     required List<Map<String, dynamic>> items,
   }) async {
-    _logger.info('Creating sale: amount=$totalAmount, payment=$paymentType, items=${items.length}',
+    _logger.info('Creating sale: amount=$totalAmount, currency=$currency, payment=$paymentType, items=${items.length}',
         context: LogContext.pos);
     final invoiceId = _uuid.v4();
     final now = DateTime.now();
@@ -63,6 +65,7 @@ class POSRepository {
         totalAmount: totalAmount,
         discount: discount,
         paymentType: paymentType,
+        currency: currency,
         createdAt: now,
       );
 
@@ -76,6 +79,7 @@ class POSRepository {
         final priceUsed = (item['priceUsed'] as num).toDouble();
         final qty = (item['quantity'] as num).toDouble();
         final itemDiscount = (item['discount'] as num).toDouble();
+        final itemCurrency = (item['currency'] as String?) ?? currency;
 
         final invItem = InvoiceItem(
           id: itemId,
@@ -84,6 +88,7 @@ class POSRepository {
           priceUsed: priceUsed,
           quantity: qty,
           discount: itemDiscount,
+          currency: itemCurrency,
         );
 
         await _db.into(_db.invoiceItems).insert(invItem);
@@ -103,18 +108,60 @@ class POSRepository {
       }
 
       if (paymentType == 'debt' && customerId != null) {
-        final debtId = _uuid.v4();
-        final debt = Debt(
-          id: debtId,
-          customerId: customerId,
-          invoiceId: invoiceId,
-          amount: totalAmount,
-          remainingAmount: totalAmount,
-          status: 'open',
-          createdAt: now,
-        );
+        final usdItems = items.where((i) => ((i['currency'] as String?) ?? currency) == AppCurrency.usdCode);
+        final sypItems = items.where((i) => ((i['currency'] as String?) ?? currency) != AppCurrency.usdCode);
 
-        await _db.into(_db.debts).insert(debt);
+        final totalUsd = usdItems.fold<double>(
+          0.0,
+          (sum, i) => sum + ((i['priceUsed'] as num).toDouble() * (i['quantity'] as num).toDouble() - (i['discount'] as num).toDouble()),
+        );
+        final rawTotalSyp = sypItems.fold<double>(
+          0.0,
+          (sum, i) => sum + ((i['priceUsed'] as num).toDouble() * (i['quantity'] as num).toDouble() - (i['discount'] as num).toDouble()),
+        );
+        final totalSyp = (rawTotalSyp - (usdItems.isNotEmpty ? discount : 0.0)).clamp(0.0, double.infinity);
+
+        if (usdItems.isNotEmpty && sypItems.isNotEmpty) {
+          if (totalUsd > 0) {
+            final debtUsd = Debt(
+              id: _uuid.v4(),
+              customerId: customerId,
+              invoiceId: invoiceId,
+              amount: totalUsd,
+              remainingAmount: totalUsd,
+              status: 'open',
+              currency: AppCurrency.usdCode,
+              createdAt: now,
+            );
+            await _db.into(_db.debts).insert(debtUsd);
+          }
+          if (totalSyp > 0) {
+            final debtSyp = Debt(
+              id: _uuid.v4(),
+              customerId: customerId,
+              invoiceId: invoiceId,
+              amount: totalSyp,
+              remainingAmount: totalSyp,
+              status: 'open',
+              currency: AppCurrency.sypCode,
+              createdAt: now,
+            );
+            await _db.into(_db.debts).insert(debtSyp);
+          }
+        } else {
+          final debtId = _uuid.v4();
+          final debt = Debt(
+            id: debtId,
+            customerId: customerId,
+            invoiceId: invoiceId,
+            amount: totalAmount,
+            remainingAmount: totalAmount,
+            status: 'open',
+            currency: currency,
+            createdAt: now,
+          );
+          await _db.into(_db.debts).insert(debt);
+        }
       }
     });
 
@@ -154,6 +201,7 @@ class POSRepository {
         totalAmount: totalReturnVal,
         discount: 0.0,
         paymentType: originalInvoice.paymentType,
+        currency: originalInvoice.currency,
         createdAt: now,
       );
 
@@ -166,6 +214,7 @@ class POSRepository {
         final prodId = item['productId'] as String;
         final qty = (item['quantity'] as num).toDouble();
         final priceUsed = (item['priceUsed'] as num).toDouble();
+        final itemCurrency = (item['currency'] as String?) ?? originalInvoice.currency;
 
         final invItem = InvoiceItem(
           id: itemId,
@@ -174,6 +223,7 @@ class POSRepository {
           priceUsed: priceUsed,
           quantity: qty,
           discount: 0.0,
+          currency: itemCurrency,
         );
 
         await _db.into(_db.invoiceItems).insert(invItem);
@@ -455,6 +505,7 @@ class POSRepository {
           priceUsed: priceUsed,
           quantity: qty,
           discount: itemDiscount,
+          currency: invoice.currency,
         );
         await _db.into(_db.invoiceItems).insert(invItem);
 
@@ -499,6 +550,7 @@ class POSRepository {
             remainingAmount: newTotalAmount,
             status: 'open',
             createdAt: now,
+            currency: invoice.currency,
           );
           await _db.into(_db.debts).insert(debt);
         }

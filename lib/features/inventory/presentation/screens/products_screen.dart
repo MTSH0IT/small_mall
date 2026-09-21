@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:small_mall/core/constants/app_currency.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/di/injection.dart';
 import 'package:small_mall/core/utils/theme.dart';
@@ -1003,8 +1004,19 @@ class _ProductsScreenState extends State<ProductsScreen> {
     final nameController = TextEditingController(
       text: existing?.product.name ?? '',
     );
-    final costController = TextEditingController(
-      text: existing?.product.costPrice.toString() ?? '',
+    final costSypController = TextEditingController(
+      text: (existing?.product.costPrice != null && existing!.product.costPrice > 0)
+          ? (existing.product.costPrice % 1 == 0
+              ? existing.product.costPrice.toInt().toString()
+              : existing.product.costPrice.toString())
+          : '',
+    );
+    final costUsdController = TextEditingController(
+      text: (existing?.product.costPriceUsd != null && existing!.product.costPriceUsd > 0)
+          ? (existing.product.costPriceUsd % 1 == 0
+              ? existing.product.costPriceUsd.toInt().toString()
+              : existing.product.costPriceUsd.toString())
+          : '',
     );
     final minStockController = TextEditingController(
       text: existing?.product.minStockAlert.toString() ?? '5',
@@ -1012,42 +1024,70 @@ class _ProductsScreenState extends State<ProductsScreen> {
     final initialStockController = TextEditingController(text: '0');
 
     String? selectedCatId = existing?.product.categoryId;
-    final retail = existing?.prices.firstWhere(
-      (p) => p.priceLabel == 'retail',
-      orElse: () => ProductPrice(
+    final retailSyp = existing?.prices.firstWhere(
+      (p) =>
+          p.priceLabel == 'retail' &&
+          (p.currency == 'SYP' || p.currency == null || p.currency!.isEmpty),
+      orElse: () => const ProductPrice(
         id: '',
         productId: '',
         priceLabel: 'retail',
         priceValue: 0.0,
       ),
     );
-    final wholesale = existing?.prices.firstWhere(
-      (p) => p.priceLabel == 'wholesale',
-      orElse: () => ProductPrice(
+    final wholesaleSyp = existing?.prices.firstWhere(
+      (p) =>
+          p.priceLabel == 'wholesale' &&
+          (p.currency == 'SYP' || p.currency == null || p.currency!.isEmpty),
+      orElse: () => const ProductPrice(
         id: '',
         productId: '',
         priceLabel: 'wholesale',
         priceValue: 0.0,
       ),
     );
-    final promo = existing?.prices.firstWhere(
-      (p) => p.priceLabel == 'promo',
-      orElse: () => ProductPrice(
+    final retailUsd = existing?.prices.firstWhere(
+      (p) => p.priceLabel == 'retail' && p.currency == 'USD',
+      orElse: () => const ProductPrice(
         id: '',
         productId: '',
-        priceLabel: 'promo',
+        priceLabel: 'retail',
+        priceValue: 0.0,
+      ),
+    );
+    final wholesaleUsd = existing?.prices.firstWhere(
+      (p) => p.priceLabel == 'wholesale' && p.currency == 'USD',
+      orElse: () => const ProductPrice(
+        id: '',
+        productId: '',
+        priceLabel: 'wholesale',
         priceValue: 0.0,
       ),
     );
 
-    final retailController = TextEditingController(
-      text: retail?.priceValue.toString() ?? '',
+    final retailSypController = TextEditingController(
+      text: (retailSyp != null && retailSyp.priceValue > 0)
+          ? (retailSyp.priceValue % 1 == 0
+              ? retailSyp.priceValue.toInt().toString()
+              : retailSyp.priceValue.toString())
+          : '',
     );
-    final wholesaleController = TextEditingController(
-      text: wholesale?.priceValue.toString() ?? '',
+    final wholesaleSypController = TextEditingController(
+      text: (wholesaleSyp != null && wholesaleSyp.priceValue > 0)
+          ? (wholesaleSyp.priceValue % 1 == 0
+              ? wholesaleSyp.priceValue.toInt().toString()
+              : wholesaleSyp.priceValue.toString())
+          : '',
     );
-    final promoController = TextEditingController(
-      text: promo?.priceValue.toString() ?? '',
+    final retailUsdController = TextEditingController(
+      text: (retailUsd != null && retailUsd.priceValue > 0)
+          ? retailUsd.priceValue.toString()
+          : '',
+    );
+    final wholesaleUsdController = TextEditingController(
+      text: (wholesaleUsd != null && wholesaleUsd.priceValue > 0)
+          ? wholesaleUsd.priceValue.toString()
+          : '',
     );
 
     if (!context.mounted) return;
@@ -1087,11 +1127,12 @@ class _ProductsScreenState extends State<ProductsScreen> {
             ],
           ),
           content: SizedBox(
-            width: 500,
+            width: 520,
             child: SingleChildScrollView(
               child: Form(
                 key: formKey,
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     AppTextField(
                       label: 'inventory.product_name'.tr(),
@@ -1257,19 +1298,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
                       children: [
                         Expanded(
                           child: AppTextField(
-                            label: 'inventory.cost_price'.tr(),
-                            controller: costController,
-                            keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true,
-                            ),
-                            validator: (val) => val == null || val.isEmpty
-                                ? 'common.required_field'.tr()
-                                : null,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: AppTextField(
                             label: 'inventory.alert_quantity'.tr(),
                             controller: minStockController,
                             keyboardType: TextInputType.number,
@@ -1278,64 +1306,254 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                 : null,
                           ),
                         ),
+                        if (existing == null) ...[
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: AppTextField(
+                              label: 'inventory.initial_stock'.tr(),
+                              controller: initialStockController,
+                              keyboardType: TextInputType.number,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
-                    if (existing == null) ...[
-                      const SizedBox(height: 12),
-                      AppTextField(
-                        label: 'inventory.initial_stock'.tr(),
-                        controller: initialStockController,
-                        keyboardType: TextInputType.number,
-                      ),
-                    ],
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 18),
                     const Divider(color: AppColors.border),
-                    Align(
-                      alignment: AlignmentDirectional.centerStart,
-                      child: Text(
-                        'inventory.selling_prices'.tr(),
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
                     Row(
                       children: [
-                        Expanded(
-                          child: AppTextField(
-                            label: 'inventory.retail_price'.tr(),
-                            controller: retailController,
-                            keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true,
-                            ),
-                            validator: (val) => val == null || val.isEmpty
-                                ? 'common.required_field'.tr()
-                                : null,
+                        const Icon(
+                          Icons.sell_outlined,
+                          size: 18,
+                          color: AppColors.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'inventory.selling_prices'.tr(),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: AppColors.primary,
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: AppTextField(
-                            label: 'inventory.wholesale_price'.tr(),
-                            controller: wholesaleController,
-                            keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true,
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text(
+                            'ل.س و \$',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primary,
                             ),
-                            validator: (val) => val == null || val.isEmpty
-                                ? 'common.required_field'.tr()
-                                : null,
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 12),
-                    AppTextField(
-                      label: 'inventory.promo_price'.tr(),
-                      controller: promoController,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
+
+                    // Section 1: أسعار الليرة السورية
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.03),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: AppColors.primary.withValues(alpha: 0.22),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.money, size: 16, color: AppColors.primary),
+                              const SizedBox(width: 6),
+                              Text(
+                                'inventory.syp_prices'.tr(),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12.5,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          AppTextField(
+                            label: 'inventory.cost_price_syp'.tr(),
+                            controller: costSypController,
+                            hint: '0',
+                            suffixIcon: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                              child: Text(
+                                AppCurrency.primarySymbol,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.primary,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: AppTextField(
+                                  label: 'inventory.retail_price_syp'.tr(),
+                                  controller: retailSypController,
+                                  hint: '0.0',
+                                  suffixIcon: Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                                    child: Text(
+                                      AppCurrency.primarySymbol,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.primary,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                  keyboardType: const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: AppTextField(
+                                  label: 'inventory.wholesale_price_syp'.tr(),
+                                  controller: wholesaleSypController,
+                                  hint: '0.0',
+                                  suffixIcon: Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                                    child: Text(
+                                      AppCurrency.primarySymbol,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.primary,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                  keyboardType: const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    // Section 2: أسعار الدولار الأمريكي
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF10B981).withValues(alpha: 0.03),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: const Color(0xFF10B981).withValues(alpha: 0.28),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.attach_money_rounded, size: 17, color: Color(0xFF059669)),
+                              const SizedBox(width: 4),
+                              Text(
+                                'inventory.usd_prices'.tr(),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12.5,
+                                  color: Color(0xFF059669),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          AppTextField(
+                            label: 'inventory.cost_price_usd'.tr(),
+                            controller: costUsdController,
+                            hint: '0.00',
+                            suffixIcon: const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                              child: Text(
+                                '\$',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF059669),
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: AppTextField(
+                                  label: 'inventory.retail_price_usd'.tr(),
+                                  controller: retailUsdController,
+                                  hint: '0.00',
+                                  suffixIcon: const Padding(
+                                    padding: EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                                    child: Text(
+                                      '\$',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF059669),
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ),
+                                  keyboardType: const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: AppTextField(
+                                  label: 'inventory.wholesale_price_usd'.tr(),
+                                  controller: wholesaleUsdController,
+                                  hint: '0.00',
+                                  suffixIcon: const Padding(
+                                    padding: EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                                    child: Text(
+                                      '\$',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF059669),
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ),
+                                  keyboardType: const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -1376,12 +1594,14 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   }
                   codeController.clear();
                   nameController.clear();
-                  costController.clear();
+                  costSypController.clear();
+                  costUsdController.clear();
                   minStockController.text = '5';
                   initialStockController.text = '0';
-                  retailController.clear();
-                  wholesaleController.clear();
-                  promoController.clear();
+                  retailSypController.clear();
+                  wholesaleSypController.clear();
+                  retailUsdController.clear();
+                  wholesaleUsdController.clear();
                 },
                 icon: const Icon(
                   Icons.clear_all,
@@ -1405,34 +1625,66 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   label: 'inventory.save_product'.tr(),
                   onPressed: () {
                     if (formKey.currentState?.validate() ?? false) {
-                      final retailPrice =
-                          double.tryParse(retailController.text) ?? 0.0;
-                      final wholesalePrice =
-                          double.tryParse(wholesaleController.text) ?? 0.0;
-                      final promoPrice = double.tryParse(promoController.text);
-                      final costPrice =
-                          double.tryParse(costController.text) ?? 0.0;
+                      final retailSypVal =
+                          double.tryParse(retailSypController.text) ?? 0.0;
+                      final wholesaleSypVal =
+                          double.tryParse(wholesaleSypController.text) ?? 0.0;
+                      final retailUsdVal =
+                          double.tryParse(retailUsdController.text) ?? 0.0;
+                      final wholesaleUsdVal =
+                          double.tryParse(wholesaleUsdController.text) ?? 0.0;
+
+                      if (retailSypVal <= 0 && retailUsdVal <= 0) {
+                        AppToast.warning(
+                          context,
+                          message: 'common.required_field'.tr(),
+                        );
+                        return;
+                      }
+
+                      final costSypVal =
+                          double.tryParse(costSypController.text) ?? 0.0;
+                      final costUsdVal =
+                          double.tryParse(costUsdController.text) ?? 0.0;
                       final minStock =
                           double.tryParse(minStockController.text) ?? 5.0;
                       final initialStock =
                           double.tryParse(initialStockController.text) ?? 0.0;
 
-                      final prices = [
-                        {'price_label': 'retail', 'price_value': retailPrice},
-                        {
-                          'price_label': 'wholesale',
-                          'price_value': wholesalePrice,
-                        },
-                      ];
-                      if (promoPrice != null && promoPrice > 0) {
+                      final prices = <Map<String, dynamic>>[];
+                      if (retailSypVal > 0) {
                         prices.add({
-                          'price_label': 'promo',
-                          'price_value': promoPrice,
+                          'price_label': 'retail',
+                          'price_value': retailSypVal,
+                          'currency': 'SYP',
+                        });
+                      }
+                      if (wholesaleSypVal > 0) {
+                        prices.add({
+                          'price_label': 'wholesale',
+                          'price_value': wholesaleSypVal,
+                          'currency': 'SYP',
+                        });
+                      }
+                      if (retailUsdVal > 0) {
+                        prices.add({
+                          'price_label': 'retail',
+                          'price_value': retailUsdVal,
+                          'currency': 'USD',
+                        });
+                      }
+                      if (wholesaleUsdVal > 0) {
+                        prices.add({
+                          'price_label': 'wholesale',
+                          'price_value': wholesaleUsdVal,
+                          'currency': 'USD',
                         });
                       }
 
                       final serialNumber = int.tryParse(idController.text.trim());
                       final customCode = codeController.text.trim();
+                      final primaryCurrency =
+                          (retailSypVal <= 0 && retailUsdVal > 0) ? 'USD' : 'SYP';
 
                       if (existing == null) {
                         cubit.addProduct(
@@ -1440,7 +1692,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
                           code: customCode.isNotEmpty ? customCode : null,
                           name: nameController.text.trim(),
                           categoryId: selectedCatId,
-                          costPrice: costPrice,
+                          costPrice: costSypVal,
+                          costPriceUsd: costUsdVal,
+                          currency: primaryCurrency,
                           minStockAlert: minStock,
                           prices: prices,
                           initialStock: initialStock,
@@ -1452,7 +1706,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
                           code: customCode.isNotEmpty ? customCode : null,
                           name: nameController.text.trim(),
                           categoryId: selectedCatId,
-                          costPrice: costPrice,
+                          costPrice: costSypVal,
+                          costPriceUsd: costUsdVal,
+                          currency: primaryCurrency,
                           minStockAlert: minStock,
                           prices: prices,
                         );

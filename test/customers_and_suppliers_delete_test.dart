@@ -47,6 +47,7 @@ void main() {
           remainingAmount: 500.0,
           status: 'open',
           createdAt: DateTime.now(),
+          currency: 'SYP',
         ),
       );
 
@@ -82,6 +83,7 @@ void main() {
           discount: 0.0,
           paymentType: 'cash',
           createdAt: DateTime.now(),
+          currency: 'SYP',
         ),
       );
 
@@ -94,6 +96,7 @@ void main() {
           remainingAmount: 0.0,
           status: 'paid',
           createdAt: DateTime.now(),
+          currency: 'SYP',
         ),
       );
       await db.into(db.debtPayments).insert(
@@ -102,6 +105,7 @@ void main() {
           debtId: 'debt-002',
           amountPaid: 100.0,
           paidAt: DateTime.now(),
+          currency: 'SYP',
         ),
       );
 
@@ -204,6 +208,7 @@ void main() {
           supplierId: supplier.id,
           totalAmount: 1200.0,
           createdAt: DateTime.now(),
+          currency: 'SYP',
         ),
       );
 

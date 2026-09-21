@@ -192,17 +192,17 @@ void main() {
       final sub2 = ExpenseCategory(id: 's2', parentId: 'c1', name: 'راتب علي', createdAt: now);
 
       final exp1 = ExpenseWithCategory(
-        expense: Expense(id: 'e1', categoryId: 'c1', subcategoryId: 's1', amount: 3000.0, createdAt: now),
+        expense: Expense(id: 'e1', categoryId: 'c1', subcategoryId: 's1', amount: 3000.0, createdAt: now, currency: 'SYP'),
         category: cat,
         subcategory: sub1,
       );
       final exp2 = ExpenseWithCategory(
-        expense: Expense(id: 'e2', categoryId: 'c1', subcategoryId: 's2', amount: 2000.0, createdAt: now),
+        expense: Expense(id: 'e2', categoryId: 'c1', subcategoryId: 's2', amount: 2000.0, createdAt: now, currency: 'SYP'),
         category: cat,
         subcategory: sub2,
       );
       final exp3 = ExpenseWithCategory(
-        expense: Expense(id: 'e3', categoryId: 'c1', subcategoryId: null, amount: 500.0, createdAt: now),
+        expense: Expense(id: 'e3', categoryId: 'c1', subcategoryId: null, amount: 500.0, createdAt: now, currency: 'SYP'),
         category: cat,
       );
 

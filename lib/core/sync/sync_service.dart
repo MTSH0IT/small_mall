@@ -247,8 +247,10 @@ class SyncService {
             'name': p.name,
             'category_id': p.categoryId,
             'cost_price': p.costPrice,
+            'cost_price_usd': p.costPriceUsd,
             'is_active': p.isActive,
             'min_stock_alert': p.minStockAlert,
+            'currency': p.currency,
             'created_at': p.createdAt.toIso8601String(),
             'updated_at': p.updatedAt.toIso8601String(),
           }).toList();
@@ -261,6 +263,7 @@ class SyncService {
               'product_id': pr.productId,
               'price_label': pr.priceLabel,
               'price_value': pr.priceValue,
+              'currency': pr.currency,
             }).toList());
           }
 
@@ -329,6 +332,7 @@ class SyncService {
             'total_amount': i.totalAmount,
             'discount': i.discount,
             'payment_type': i.paymentType,
+            'currency': i.currency,
             'created_at': i.createdAt.toIso8601String(),
           }).toList();
           await client.from('invoices').upsert(payload);
@@ -342,6 +346,7 @@ class SyncService {
               'price_used': it.priceUsed,
               'quantity': it.quantity,
               'discount': it.discount,
+              'currency': it.currency,
             }).toList());
           }
 
@@ -363,6 +368,7 @@ class SyncService {
             'id': p.id,
             'supplier_id': p.supplierId,
             'total_amount': p.totalAmount,
+            'currency': p.currency,
             'created_at': p.createdAt.toIso8601String(),
           }).toList();
           await client.from('purchase_invoices').upsert(payload);
@@ -375,6 +381,7 @@ class SyncService {
               'product_id': pi.productId,
               'quantity': pi.quantity,
               'unit_cost': pi.unitCost,
+              'currency': pi.currency,
             }).toList());
           }
 
@@ -422,6 +429,7 @@ class SyncService {
             'amount': d.amount,
             'remaining_amount': d.remainingAmount,
             'status': d.status,
+            'currency': d.currency,
             'created_at': d.createdAt.toIso8601String(),
           }).toList();
           await client.from('debts').upsert(payload);
@@ -444,6 +452,7 @@ class SyncService {
             'id': p.id,
             'debt_id': p.debtId,
             'amount_paid': p.amountPaid,
+            'currency': p.currency,
             'paid_at': p.paidAt.toIso8601String(),
           }).toList();
           await client.from('debt_payments').upsert(payload);
@@ -491,6 +500,7 @@ class SyncService {
             'subcategory_id': e.subcategoryId,
             'amount': e.amount,
             'notes': e.notes,
+            'currency': e.currency,
             'created_at': e.createdAt.toIso8601String(),
           }).toList();
           await client.from('expenses').upsert(payload);
@@ -658,10 +668,12 @@ class SyncService {
                   name: json['name'] as String,
                   categoryId: Value(json['category_id'] as String?),
                   costPrice: Value((json['cost_price'] as num).toDouble()),
+                  costPriceUsd: Value((json['cost_price_usd'] as num?)?.toDouble() ?? 0.0),
                   isActive: Value(json['is_active'] as bool? ?? true),
                   minStockAlert: Value(
                     (json['min_stock_alert'] as num?)?.toDouble() ?? 0,
                   ),
+                  currency: Value(json['currency'] as String? ?? 'SYP'),
                   createdAt: DateTime.parse(json['created_at'] as String),
                   updatedAt: json['updated_at'] != null
                       ? DateTime.parse(json['updated_at'] as String)
@@ -680,6 +692,7 @@ class SyncService {
                   productId: json['product_id'] as String,
                   priceLabel: json['price_label'] as String,
                   priceValue: (json['price_value'] as num).toDouble(),
+                  currency: Value(json['currency'] as String?),
                 ),
               );
         }
@@ -712,6 +725,7 @@ class SyncService {
                   totalAmount: (json['total_amount'] as num).toDouble(),
                   discount: Value((json['discount'] as num?)?.toDouble() ?? 0),
                   paymentType: json['payment_type'] as String,
+                  currency: Value(json['currency'] as String? ?? 'SYP'),
                   createdAt: DateTime.parse(json['created_at'] as String),
                   syncedAt: Value(now),
                 ),
@@ -729,6 +743,7 @@ class SyncService {
                   priceUsed: (json['price_used'] as num).toDouble(),
                   quantity: (json['quantity'] as num).toDouble(),
                   discount: Value((json['discount'] as num?)?.toDouble() ?? 0),
+                  currency: Value(json['currency'] as String? ?? 'SYP'),
                 ),
               );
         }
@@ -744,6 +759,7 @@ class SyncService {
                   amount: (json['amount'] as num).toDouble(),
                   remainingAmount: (json['remaining_amount'] as num).toDouble(),
                   status: json['status'] as String,
+                  currency: Value(json['currency'] as String? ?? 'SYP'),
                   createdAt: DateTime.parse(json['created_at'] as String),
                   syncedAt: Value(now),
                 ),
@@ -758,6 +774,7 @@ class SyncService {
                   id: json['id'] as String,
                   debtId: json['debt_id'] as String,
                   amountPaid: (json['amount_paid'] as num).toDouble(),
+                  currency: Value(json['currency'] as String? ?? 'SYP'),
                   paidAt: DateTime.parse(json['paid_at'] as String),
                   syncedAt: Value(now),
                 ),
@@ -772,6 +789,7 @@ class SyncService {
                   id: json['id'] as String,
                   supplierId: json['supplier_id'] as String,
                   totalAmount: (json['total_amount'] as num).toDouble(),
+                  currency: Value(json['currency'] as String? ?? 'SYP'),
                   createdAt: DateTime.parse(json['created_at'] as String),
                   syncedAt: Value(now),
                 ),
@@ -788,6 +806,7 @@ class SyncService {
                   productId: json['product_id'] as String,
                   quantity: (json['quantity'] as num).toDouble(),
                   unitCost: (json['unit_cost'] as num).toDouble(),
+                  currency: Value(json['currency'] as String? ?? 'SYP'),
                 ),
               );
         }
@@ -817,6 +836,7 @@ class SyncService {
                   subcategoryId: Value(json['subcategory_id'] as String?),
                   amount: (json['amount'] as num).toDouble(),
                   notes: Value(json['notes'] as String?),
+                  currency: Value(json['currency'] as String? ?? 'SYP'),
                   createdAt: DateTime.parse(json['created_at'] as String),
                   syncedAt: Value(now),
                 ),

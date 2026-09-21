@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:small_mall/core/constants/app_currency.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/features/invoices/data/invoices_repository.dart';
 import 'package:small_mall/features/invoices/presentation/cubit/invoices_cubit.dart';
@@ -119,6 +120,45 @@ class InvoiceDetailPanel extends StatelessWidget {
                     ),
                   ),
                 ],
+                const SizedBox(width: 8),
+                if (transaction.hasMultipleCurrencies)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0D9488).withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: const Color(0xFF0D9488).withValues(alpha: 0.3)),
+                    ),
+                    child: Text(
+                      'عملتان (${AppCurrency.sypSymbol} + ${AppCurrency.usdSymbol})',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                        color: Color(0xFF0D9488),
+                      ),
+                    ),
+                  )
+                else
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: (transaction.currency == AppCurrency.usdCode
+                              ? const Color(0xFF059669)
+                              : AppColors.primary)
+                          .withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      '${AppCurrency.fromCode(transaction.currency).nameAr} (${transaction.currencySymbol})',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                        color: transaction.currency == AppCurrency.usdCode
+                            ? const Color(0xFF059669)
+                            : AppColors.primary,
+                      ),
+                    ),
+                  ),
                 const Spacer(),
                 // Edit and Delete buttons for sales and return invoices
                 if (transaction.rawInvoice != null) ...[
@@ -182,6 +222,13 @@ class InvoiceDetailPanel extends StatelessWidget {
             _buildInfoRow(theme, 'invoices.global_serial_number'.tr(), globalText),
             _buildInfoRow(theme, 'invoices.type_serial_number'.tr(), '${transaction.typeLabel} $departmentSerialText'),
             _buildInfoRow(theme, 'invoices.invoice_date'.tr(), DateFormat('yyyy-MM-dd HH:mm').format(transaction.createdAt)),
+            _buildInfoRow(
+              theme,
+              'common.currency_select'.tr(),
+              transaction.hasMultipleCurrencies
+                  ? '${AppCurrency.primary.nameAr} (${AppCurrency.primary.symbol}) + ${AppCurrency.secondary.nameAr} (${AppCurrency.secondary.symbol})'
+                  : '${AppCurrency.fromCode(transaction.currency).nameAr} (${transaction.currencySymbol})',
+            ),
 
             if (transaction.isSale || transaction.isReturn || transaction.isDebtInvoice)
               _buildInfoRow(theme, 'invoices.customer'.tr(), transaction.partyName ?? 'pos.walk_in_customer'.tr()),
@@ -214,7 +261,13 @@ class InvoiceDetailPanel extends StatelessWidget {
               ...transaction.items.map((item) => _buildItemCard(theme, item, transaction.type)),
               const Divider(height: 24),
               if (transaction.discount > 0)
-                _buildSummaryRow(theme, 'pos.discount_amount'.tr(), -transaction.discount, color: AppColors.danger),
+                _buildSummaryRow(
+                  theme,
+                  'pos.discount_amount'.tr(),
+                  -transaction.discount,
+                  color: AppColors.danger,
+                  currencySymbol: transaction.currencySymbol,
+                ),
             ] else if (transaction.isExpense) ...[
               Container(
                 padding: const EdgeInsets.all(16),
@@ -264,13 +317,132 @@ class InvoiceDetailPanel extends StatelessWidget {
             ],
 
             // Total Amount
-            _buildSummaryRow(
-              theme,
-              'common.total'.tr(),
-              transaction.totalAmount,
-              isBold: true,
-              color: typeColor,
-            ),
+            if (transaction.hasMultipleCurrencies) ...[
+              Container(
+                margin: const EdgeInsets.only(top: 8),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: typeColor.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: typeColor.withValues(alpha: 0.2)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'common.total'.tr(),
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: typeColor,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF0D9488).withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Text(
+                            'عملتان منفصلتان',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF0D9488),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    if (transaction.totalUsd > 0)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                width: 8,
+                                height: 8,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFF059669),
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                '${'common.total'.tr()} (${AppCurrency.usdSymbol}):',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFF059669),
+                                ),
+                              ),
+                            ],
+                          ),
+                          Text(
+                            '${transaction.totalUsd.toStringAsFixed(2)} ${AppCurrency.usdSymbol}',
+                            style: AppTheme.numericStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                              color: const Color(0xFF059669),
+                            ),
+                          ),
+                        ],
+                      ),
+                    if (transaction.totalUsd > 0 && transaction.totalSyp > 0)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 8),
+                        child: Divider(height: 1, color: AppColors.border),
+                      ),
+                    if (transaction.totalSyp > 0)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                width: 8,
+                                height: 8,
+                                decoration: const BoxDecoration(
+                                  color: AppColors.primary,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                '${'common.total'.tr()} (${AppCurrency.sypSymbol}):',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Text(
+                            '${transaction.totalSyp.toStringAsFixed(2)} ${AppCurrency.sypSymbol}',
+                            style: AppTheme.numericStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
+              ),
+            ] else ...[
+              _buildSummaryRow(
+                theme,
+                'common.total'.tr(),
+                transaction.totalAmount,
+                isBold: true,
+                color: typeColor,
+                currencySymbol: transaction.currencySymbol,
+              ),
+            ],
           ],
         ),
       ),
@@ -318,12 +490,12 @@ class InvoiceDetailPanel extends StatelessWidget {
                   Text(
                     type == UnifiedTransactionType.adjustment
                         ? '${'invoices.adjusted_qty'.tr()}: ${qty > 0 ? "+$qty" : qty}'
-                        : '${qty.toStringAsFixed(0)} × ${price.toStringAsFixed(2)}',
+                        : '${qty.toStringAsFixed(0)} × ${price.toStringAsFixed(2)} ${item.currencySymbol}',
                     style: theme.textTheme.labelSmall,
                   ),
                   if (item.discount > 0)
                     Text(
-                      '${'common.discount'.tr()}: ${item.discount.toStringAsFixed(2)}',
+                      '${'common.discount'.tr()}: ${item.discount.toStringAsFixed(2)} ${item.currencySymbol}',
                       style: theme.textTheme.labelSmall?.copyWith(color: AppColors.danger),
                     ),
                 ],
@@ -332,7 +504,7 @@ class InvoiceDetailPanel extends StatelessWidget {
             Text(
               type == UnifiedTransactionType.adjustment
                   ? '${qty > 0 ? "+$qty" : qty} ${'inventory.pieces'.tr()}'
-                  : itemTotal.toStringAsFixed(2),
+                  : '${itemTotal.toStringAsFixed(2)} ${item.currencySymbol}',
               style: AppTheme.numericStyle(fontWeight: FontWeight.bold, fontSize: 14),
             ),
           ],
@@ -341,7 +513,14 @@ class InvoiceDetailPanel extends StatelessWidget {
     );
   }
 
-  Widget _buildSummaryRow(ThemeData theme, String label, double amount, {bool isBold = false, Color? color}) {
+  Widget _buildSummaryRow(
+    ThemeData theme,
+    String label,
+    double amount, {
+    bool isBold = false,
+    Color? color,
+    String? currencySymbol,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -355,7 +534,7 @@ class InvoiceDetailPanel extends StatelessWidget {
             ),
           ),
           Text(
-            amount.toStringAsFixed(2),
+            '${amount.toStringAsFixed(2)}${currencySymbol != null ? ' $currencySymbol' : ''}',
             style: AppTheme.numericStyle(
               fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
               fontSize: isBold ? 18 : 14,

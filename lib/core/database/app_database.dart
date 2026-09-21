@@ -24,11 +24,13 @@ class Products extends Table {
   TextColumn get name => text()();
   TextColumn get categoryId => text().nullable()();
   RealColumn get costPrice => real().withDefault(const Constant(0.0))();
+  RealColumn get costPriceUsd => real().withDefault(const Constant(0.0))();
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
   RealColumn get minStockAlert => real().withDefault(const Constant(0.0))();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
   DateTimeColumn get syncedAt => dateTime().nullable()();
+  TextColumn get currency => text().withDefault(const Constant('SYP'))();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -39,6 +41,7 @@ class ProductPrices extends Table {
   TextColumn get productId => text()();
   TextColumn get priceLabel => text()(); // e.g. wholesale, retail, promo
   RealColumn get priceValue => real()();
+  TextColumn get currency => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -79,6 +82,7 @@ class Invoices extends Table {
   TextColumn get paymentType => text()(); // cash, debt
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get syncedAt => dateTime().nullable()();
+  TextColumn get currency => text().withDefault(const Constant('SYP'))();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -91,6 +95,7 @@ class InvoiceItems extends Table {
   RealColumn get priceUsed => real()();
   RealColumn get quantity => real()();
   RealColumn get discount => real().withDefault(const Constant(0.0))();
+  TextColumn get currency => text().withDefault(const Constant('SYP'))();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -105,6 +110,7 @@ class Debts extends Table {
   TextColumn get status => text()(); // open, paid, partial
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get syncedAt => dateTime().nullable()();
+  TextColumn get currency => text().withDefault(const Constant('SYP'))();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -116,6 +122,7 @@ class DebtPayments extends Table {
   RealColumn get amountPaid => real()();
   DateTimeColumn get paidAt => dateTime()();
   DateTimeColumn get syncedAt => dateTime().nullable()();
+  TextColumn get currency => text().withDefault(const Constant('SYP'))();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -138,6 +145,7 @@ class PurchaseInvoices extends Table {
   RealColumn get totalAmount => real()();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get syncedAt => dateTime().nullable()();
+  TextColumn get currency => text().withDefault(const Constant('SYP'))();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -149,6 +157,7 @@ class PurchaseItems extends Table {
   TextColumn get productId => text()();
   RealColumn get quantity => real()();
   RealColumn get unitCost => real()();
+  TextColumn get currency => text().withDefault(const Constant('SYP'))();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -197,6 +206,7 @@ class Expenses extends Table {
   TextColumn get notes => text().nullable()();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get syncedAt => dateTime().nullable()();
+  TextColumn get currency => text().withDefault(const Constant('SYP'))();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -225,7 +235,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 12;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -307,6 +317,22 @@ class AppDatabase extends _$AppDatabase {
           if (from < 9) {
             await m.addColumn(expenseCategories, expenseCategories.parentId);
             await m.addColumn(expenses, expenses.subcategoryId);
+          }
+          if (from < 10) {
+            await m.addColumn(products, products.currency);
+            await m.addColumn(productPrices, productPrices.currency);
+          }
+          if (from < 11) {
+            await m.addColumn(products, products.costPriceUsd);
+          }
+          if (from < 12) {
+            await m.addColumn(invoices, invoices.currency);
+            await m.addColumn(invoiceItems, invoiceItems.currency);
+            await m.addColumn(purchaseInvoices, purchaseInvoices.currency);
+            await m.addColumn(purchaseItems, purchaseItems.currency);
+            await m.addColumn(debts, debts.currency);
+            await m.addColumn(debtPayments, debtPayments.currency);
+            await m.addColumn(expenses, expenses.currency);
           }
         },
       );

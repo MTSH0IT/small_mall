@@ -35,8 +35,10 @@ class FinancialOverviewView extends StatelessWidget {
               Expanded(
                 child: StatCard(
                   title: 'reports.net_profit'.tr(),
-                  value: '${profitData.netProfit.toStringAsFixed(2)} $currency',
+                  value: '${profitData.netProfit.toStringAsFixed(2)} ل.س',
+                  secondaryValue: '${profitData.netProfitUsd.toStringAsFixed(2)} \$',
                   color: profitData.netProfit >= 0 ? AppColors.success : AppColors.danger,
+                  secondaryColor: profitData.netProfitUsd >= 0 ? const Color(0xFF059669) : AppColors.danger,
                   subtitle: '${'reports.profit_margin'.tr()}: ${profitData.profitMargin.toStringAsFixed(1)}%',
                   icon: Icons.trending_up,
                 ),
@@ -45,7 +47,8 @@ class FinancialOverviewView extends StatelessWidget {
               Expanded(
                 child: StatCard(
                   title: 'reports.gross_sales'.tr(),
-                  value: '${profitData.grossSales.toStringAsFixed(2)} $currency',
+                  value: '${profitData.grossSales.toStringAsFixed(2)} ل.س',
+                  secondaryValue: '${profitData.grossSalesUsd.toStringAsFixed(2)} \$',
                   color: AppColors.primary,
                   subtitle: '${'reports.cash_sales'.tr()}: ${profitData.cashSales.toStringAsFixed(1)} | ${'reports.debt_sales_label'.tr()}: ${profitData.debtSales.toStringAsFixed(1)}',
                   icon: Icons.point_of_sale,
@@ -55,7 +58,8 @@ class FinancialOverviewView extends StatelessWidget {
               Expanded(
                 child: StatCard(
                   title: 'expenses.title'.tr(),
-                  value: '${profitData.totalExpenses.toStringAsFixed(2)} $currency',
+                  value: '${profitData.totalExpenses.toStringAsFixed(2)} ل.س',
+                  secondaryValue: '${profitData.totalExpensesUsd.toStringAsFixed(2)} \$',
                   color: AppColors.warning,
                   subtitle: '${profitData.expensesCount} ${'expenses.operations_count'.tr()}',
                   icon: Icons.receipt_long_outlined,
@@ -65,8 +69,10 @@ class FinancialOverviewView extends StatelessWidget {
               Expanded(
                 child: StatCard(
                   title: 'reports.net_cash_flow'.tr(),
-                  value: '${cashDrawerData.netCashFlow.toStringAsFixed(2)} $currency',
+                  value: '${cashDrawerData.netCashFlow.toStringAsFixed(2)} ل.س',
+                  secondaryValue: '${cashDrawerData.netCashFlowUsd.toStringAsFixed(2)} \$',
                   color: cashDrawerData.netCashFlow >= 0 ? AppColors.success : AppColors.danger,
+                  secondaryColor: cashDrawerData.netCashFlowUsd >= 0 ? const Color(0xFF059669) : AppColors.danger,
                   subtitle: '${'reports.cash_in'.tr()}: ${cashDrawerData.totalCashIn.toStringAsFixed(1)} | ${'reports.cash_out'.tr()}: ${cashDrawerData.totalCashOut.toStringAsFixed(1)}',
                   icon: Icons.account_balance_wallet_outlined,
                 ),
@@ -92,12 +98,14 @@ class FinancialOverviewView extends StatelessWidget {
                         _buildStatementRow(
                           title: 'reports.cash_sales_label'.tr(),
                           amount: profitData.cashSales,
+                          amountUsd: profitData.cashSalesUsd,
                           color: AppColors.textPrimary,
                           isSubItem: true,
                         ),
                         _buildStatementRow(
                           title: 'reports.debt_sales_label'.tr(),
                           amount: profitData.debtSales,
+                          amountUsd: profitData.debtSalesUsd,
                           color: AppColors.textPrimary,
                           isSubItem: true,
                         ),
@@ -105,42 +113,49 @@ class FinancialOverviewView extends StatelessWidget {
                         _buildStatementRow(
                           title: 'reports.gross_sales'.tr(),
                           amount: profitData.grossSales,
+                          amountUsd: profitData.grossSalesUsd,
                           color: AppColors.primary,
                           isBold: true,
                         ),
                         _buildStatementRow(
                           title: 'reports.returns_deduction'.tr(),
                           amount: -profitData.returnsAmount,
+                          amountUsd: -profitData.returnsAmountUsd,
                           color: AppColors.danger,
                         ),
                         const Divider(height: 16, color: AppColors.border),
                         _buildStatementRow(
                           title: 'reports.net_sales'.tr(),
                           amount: profitData.netSales,
+                          amountUsd: profitData.netSalesUsd,
                           color: AppColors.primary,
                           isBold: true,
                         ),
                         _buildStatementRow(
                           title: 'reports.cogs'.tr(),
                           amount: -profitData.costOfGoodsSold,
+                          amountUsd: -profitData.costOfGoodsSoldUsd,
                           color: AppColors.danger,
                         ),
                         const Divider(height: 16, color: AppColors.border),
                         _buildStatementRow(
                           title: 'reports.gross_profit_label'.tr(),
                           amount: profitData.grossProfit,
+                          amountUsd: profitData.grossProfitUsd,
                           color: profitData.grossProfit >= 0 ? AppColors.success : AppColors.danger,
                           isBold: true,
                         ),
                         _buildStatementRow(
                           title: 'reports.expenses_deduction'.tr(),
                           amount: -profitData.totalExpenses,
+                          amountUsd: -profitData.totalExpensesUsd,
                           color: AppColors.warning,
                         ),
-                        if (profitData.adjustmentsLoss > 0)
+                        if (profitData.adjustmentsLoss > 0 || profitData.adjustmentsLossUsd > 0)
                           _buildStatementRow(
                             title: 'reports.adjustments_loss'.tr(),
                             amount: -profitData.adjustmentsLoss,
+                            amountUsd: -profitData.adjustmentsLossUsd,
                             color: AppColors.danger,
                           ),
                         const Divider(height: 20, thickness: 1.5, color: AppColors.border),
@@ -166,13 +181,26 @@ class FinancialOverviewView extends StatelessWidget {
                                   color: profitData.netProfit >= 0 ? AppColors.success : AppColors.danger,
                                 ),
                               ),
-                              Text(
-                                '${profitData.netProfit.toStringAsFixed(2)} $currency',
-                                style: AppTheme.numericStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: profitData.netProfit >= 0 ? AppColors.success : AppColors.danger,
-                                ),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    '${profitData.netProfit.toStringAsFixed(2)} ل.س',
+                                    style: AppTheme.numericStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: profitData.netProfit >= 0 ? AppColors.success : AppColors.danger,
+                                    ),
+                                  ),
+                                  Text(
+                                    '${profitData.netProfitUsd.toStringAsFixed(2)} \$',
+                                    style: AppTheme.numericStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.bold,
+                                      color: profitData.netProfitUsd >= 0 ? const Color(0xFF059669) : AppColors.danger,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
@@ -264,12 +292,17 @@ class FinancialOverviewView extends StatelessWidget {
   Widget _buildStatementRow({
     required String title,
     required double amount,
+    double? amountUsd,
     required Color color,
     bool isBold = false,
     bool isSubItem = false,
   }) {
     final formatted = amount.abs().toStringAsFixed(2);
     final sign = amount < 0 ? '-' : (amount > 0 && !isSubItem ? '+' : '');
+
+    final hasUsd = amountUsd != null && amountUsd != 0;
+    final formattedUsd = hasUsd ? amountUsd.abs().toStringAsFixed(2) : null;
+    final signUsd = hasUsd ? (amountUsd < 0 ? '-' : (amountUsd > 0 && !isSubItem ? '+' : '')) : '';
 
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 4.0, horizontal: isSubItem ? 12.0 : 0.0),
@@ -284,13 +317,28 @@ class FinancialOverviewView extends StatelessWidget {
               color: isSubItem ? AppColors.textSecondary : AppColors.textPrimary,
             ),
           ),
-          Text(
-            '$sign$formatted',
-            style: AppTheme.numericStyle(
-              fontWeight: isBold ? FontWeight.bold : FontWeight.w600,
-              fontSize: isBold ? 14 : 13,
-              color: color,
-            ),
+          Row(
+            children: [
+              Text(
+                '$sign$formatted ل.س',
+                style: AppTheme.numericStyle(
+                  fontWeight: isBold ? FontWeight.bold : FontWeight.w600,
+                  fontSize: isBold ? 14 : 13,
+                  color: color,
+                ),
+              ),
+              if (hasUsd) ...[
+                const SizedBox(width: 6),
+                Text(
+                  '/ $signUsd$formattedUsd \$',
+                  style: AppTheme.numericStyle(
+                    fontWeight: isBold ? FontWeight.bold : FontWeight.w600,
+                    fontSize: isBold ? 13 : 12,
+                    color: const Color(0xFF059669),
+                  ),
+                ),
+              ],
+            ],
           ),
         ],
       ),

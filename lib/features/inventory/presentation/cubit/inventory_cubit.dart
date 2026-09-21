@@ -28,9 +28,11 @@ class InventoryCubit extends Cubit<InventoryState> {
     required String name,
     required String? categoryId,
     required double costPrice,
+    double costPriceUsd = 0.0,
     required double minStockAlert,
     required List<Map<String, dynamic>> prices,
     required double initialStock,
+    String? currency = 'SYP',
   }) async {
     try {
       await _repository.addProduct(
@@ -39,9 +41,11 @@ class InventoryCubit extends Cubit<InventoryState> {
         name: name,
         categoryId: categoryId,
         costPrice: costPrice,
+        costPriceUsd: costPriceUsd,
         minStockAlert: minStockAlert,
         prices: prices,
         initialStock: initialStock,
+        currency: currency,
       );
       await loadInventory();
     } catch (e) {
@@ -60,8 +64,10 @@ class InventoryCubit extends Cubit<InventoryState> {
     required String name,
     required String? categoryId,
     required double costPrice,
+    double costPriceUsd = 0.0,
     required double minStockAlert,
     required List<Map<String, dynamic>> prices,
+    String? currency,
   }) async {
     try {
       await _repository.updateProduct(
@@ -71,8 +77,10 @@ class InventoryCubit extends Cubit<InventoryState> {
         name: name,
         categoryId: categoryId,
         costPrice: costPrice,
+        costPriceUsd: costPriceUsd,
         minStockAlert: minStockAlert,
         prices: prices,
+        currency: currency,
       );
       await loadInventory();
     } catch (e) {

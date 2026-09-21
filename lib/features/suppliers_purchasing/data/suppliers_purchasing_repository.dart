@@ -162,10 +162,11 @@ class SuppliersPurchasingRepository {
   Future<void> recordPurchase({
     required String supplierId,
     required double totalAmount,
+    String currency = 'SYP',
     required List<Map<String, dynamic>> items,
   }) async {
     _logger.info(
-      'Recording purchase: supplier=$supplierId, amount=$totalAmount, items=${items.length}',
+      'Recording purchase: supplier=$supplierId, amount=$totalAmount, currency=$currency, items=${items.length}',
       context: LogContext.inventory,
     );
     final purchaseId = _uuid.v4();
@@ -176,6 +177,7 @@ class SuppliersPurchasingRepository {
         id: purchaseId,
         supplierId: supplierId,
         totalAmount: totalAmount,
+        currency: currency,
         createdAt: now,
       );
 
@@ -187,6 +189,8 @@ class SuppliersPurchasingRepository {
         final prodId = item['productId'] as String;
         final qty = (item['quantity'] as num).toDouble();
         final cost = (item['unitCost'] as num).toDouble();
+        final costUsd = (item['unitCostUsd'] as num?)?.toDouble();
+        final itemCurrency = (item['currency'] as String?) ?? currency;
 
         final purchaseItem = PurchaseItem(
           id: itemId,
@@ -194,6 +198,7 @@ class SuppliersPurchasingRepository {
           productId: prodId,
           quantity: qty,
           unitCost: cost,
+          currency: itemCurrency,
         );
 
         // Insert purchase item record
@@ -212,52 +217,72 @@ class SuppliersPurchasingRepository {
 
         await _db.into(_db.stockMovements).insert(movement);
 
-        // Update product's cost price (mark syncedAt null)
+        // Update product's cost price (both SYP and USD if provided, mark syncedAt null)
         await (_db.update(_db.products)..where((t) => t.id.equals(prodId))).write(
-          ProductsCompanion(costPrice: Value(cost), updatedAt: Value(now), syncedAt: const Value(null)),
+          ProductsCompanion(
+            costPrice: Value(cost),
+            costPriceUsd: costUsd != null ? Value(costUsd) : const Value.absent(),
+            updatedAt: Value(now),
+            syncedAt: const Value(null),
+          ),
         );
 
-        // Update retail selling price if provided
-        if (item.containsKey('retailPrice') && item['retailPrice'] != null) {
-          final retailPriceVal = (item['retailPrice'] as num).toDouble();
-          final existingRetailPrice = await (_db.select(_db.productPrices)
-                ..where((t) => t.productId.equals(prodId) & t.priceLabel.equals('retail')))
+        // Helper to update or insert price for a specific label and currency
+        Future<void> updateOrInsertPrice(String label, String curr, double val) async {
+          final existing = await (_db.select(_db.productPrices)
+                ..where((t) =>
+                    t.productId.equals(prodId) &
+                    t.priceLabel.equals(label) &
+                    (t.currency.equals(curr) | (t.currency.isNull() & Variable(curr == 'SYP')))))
               .getSingleOrNull();
-          if (existingRetailPrice != null) {
-            await (_db.update(_db.productPrices)..where((t) => t.id.equals(existingRetailPrice.id))).write(
-              ProductPricesCompanion(priceValue: Value(retailPriceVal)),
+
+          if (existing != null) {
+            await (_db.update(_db.productPrices)..where((t) => t.id.equals(existing.id))).write(
+              ProductPricesCompanion(
+                priceValue: Value(val),
+                currency: Value(curr),
+              ),
             );
           } else {
             await _db.into(_db.productPrices).insert(
               ProductPrice(
                 id: _uuid.v4(),
                 productId: prodId,
-                priceLabel: 'retail',
-                priceValue: retailPriceVal,
+                priceLabel: label,
+                priceValue: val,
+                currency: curr,
               ),
             );
           }
         }
 
-        // Update wholesale selling price if provided
-        if (item.containsKey('wholesalePrice') && item['wholesalePrice'] != null) {
+        // Update SYP & USD prices if provided
+        if (item['retailPriceSyp'] != null && (item['retailPriceSyp'] as num) > 0) {
+          await updateOrInsertPrice('retail', 'SYP', (item['retailPriceSyp'] as num).toDouble());
+        }
+        if (item['wholesalePriceSyp'] != null && (item['wholesalePriceSyp'] as num) > 0) {
+          await updateOrInsertPrice('wholesale', 'SYP', (item['wholesalePriceSyp'] as num).toDouble());
+        }
+        if (item['retailPriceUsd'] != null && (item['retailPriceUsd'] as num) > 0) {
+          await updateOrInsertPrice('retail', 'USD', (item['retailPriceUsd'] as num).toDouble());
+        }
+        if (item['wholesalePriceUsd'] != null && (item['wholesalePriceUsd'] as num) > 0) {
+          await updateOrInsertPrice('wholesale', 'USD', (item['wholesalePriceUsd'] as num).toDouble());
+        }
+
+        // Fallback for single legacy price fields
+        if (!item.containsKey('retailPriceSyp') && item.containsKey('retailPrice') && item['retailPrice'] != null) {
+          final retailPriceVal = (item['retailPrice'] as num).toDouble();
+          if (retailPriceVal > 0) {
+            final curr = (item['currency'] as String?) ?? 'SYP';
+            await updateOrInsertPrice('retail', curr, retailPriceVal);
+          }
+        }
+        if (!item.containsKey('wholesalePriceSyp') && item.containsKey('wholesalePrice') && item['wholesalePrice'] != null) {
           final wholesalePriceVal = (item['wholesalePrice'] as num).toDouble();
-          final existingWholesalePrice = await (_db.select(_db.productPrices)
-                ..where((t) => t.productId.equals(prodId) & t.priceLabel.equals('wholesale')))
-              .getSingleOrNull();
-          if (existingWholesalePrice != null) {
-            await (_db.update(_db.productPrices)..where((t) => t.id.equals(existingWholesalePrice.id))).write(
-              ProductPricesCompanion(priceValue: Value(wholesalePriceVal)),
-            );
-          } else {
-            await _db.into(_db.productPrices).insert(
-              ProductPrice(
-                id: _uuid.v4(),
-                productId: prodId,
-                priceLabel: 'wholesale',
-                priceValue: wholesalePriceVal,
-              ),
-            );
+          if (wholesalePriceVal > 0) {
+            final curr = (item['currency'] as String?) ?? 'SYP';
+            await updateOrInsertPrice('wholesale', curr, wholesalePriceVal);
           }
         }
       }

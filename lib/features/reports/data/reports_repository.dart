@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:small_mall/core/constants/app_currency.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/logging/app_logger.dart';
 import 'package:small_mall/core/logging/log_context.dart';
@@ -19,6 +20,20 @@ class ProfitReportData {
     this.debtPayments = 0.0,
     this.newDebts = 0.0,
     this.adjustmentsLoss = 0.0,
+    // USD metrics
+    this.cashSalesUsd = 0.0,
+    this.debtSalesUsd = 0.0,
+    this.grossSalesUsd = 0.0,
+    this.returnsAmountUsd = 0.0,
+    this.totalCostUsd = 0.0,
+    this.grossProfitUsd = 0.0,
+    this.totalExpensesUsd = 0.0,
+    this.totalPurchasesUsd = 0.0,
+    this.debtPaymentsUsd = 0.0,
+    this.newDebtsUsd = 0.0,
+    this.adjustmentsLossUsd = 0.0,
+    this.netProfitUsd = 0.0,
+    // Counts
     this.salesCount = 0,
     this.returnsCount = 0,
     this.purchasesCount = 0,
@@ -27,6 +42,7 @@ class ProfitReportData {
     this.adjustmentsCount = 0,
   });
 
+  // Base SYP values
   final double totalRevenue; // Actual cash sales (no debts added!)
   final double totalCost; // Cost of goods sold (COGS)
   final double grossProfit;
@@ -40,6 +56,21 @@ class ProfitReportData {
   final double debtPayments;
   final double newDebts;
   final double adjustmentsLoss;
+
+  // USD values
+  final double cashSalesUsd;
+  final double debtSalesUsd;
+  final double grossSalesUsd;
+  final double returnsAmountUsd;
+  final double totalCostUsd;
+  final double grossProfitUsd;
+  final double totalExpensesUsd;
+  final double totalPurchasesUsd;
+  final double debtPaymentsUsd;
+  final double newDebtsUsd;
+  final double adjustmentsLossUsd;
+  final double netProfitUsd;
+
   final int salesCount;
   final int returnsCount;
   final int purchasesCount;
@@ -47,14 +78,21 @@ class ProfitReportData {
   final int debtPaymentsCount;
   final int adjustmentsCount;
 
-  // Formula helpers: صافي الربح = (المبيعات + السداد) - (المصاريف + المشتريات)
+  // Formula helpers for SYP: صافي الربح = (المبيعات + السداد) - (المصاريف + المشتريات)
   double get netSales => totalRevenue;
   double get totalInflows => netSales + debtPayments;
   double get totalOutflows => totalExpenses + totalPurchases;
   double get formulaNetProfit => totalInflows - totalOutflows;
-
   double get costOfGoodsSold => totalCost;
   double get profitMargin => netSales > 0 ? (netProfit / netSales) * 100 : 0.0;
+
+  // Formula helpers for USD
+  double get netSalesUsd => cashSalesUsd;
+  double get totalInflowsUsd => cashSalesUsd + debtPaymentsUsd;
+  double get totalOutflowsUsd => totalExpensesUsd + totalPurchasesUsd;
+  double get formulaNetProfitUsd => totalInflowsUsd - totalOutflowsUsd;
+  double get costOfGoodsSoldUsd => totalCostUsd;
+  double get profitMarginUsd => netSalesUsd > 0 ? (netProfitUsd / netSalesUsd) * 100 : 0.0;
 
   // Backwards compatibility alias
   double get totalProfit => netProfit;
@@ -68,6 +106,7 @@ class CashMovementItem {
     required this.isCashIn,
     required this.amount,
     required this.date,
+    this.currency = AppCurrency.defaultCode,
     this.partyName,
     this.referenceNumber,
     this.notes,
@@ -79,9 +118,12 @@ class CashMovementItem {
   final bool isCashIn;
   final double amount;
   final DateTime date;
+  final String currency;
   final String? partyName;
   final String? referenceNumber;
   final String? notes;
+
+  String get currencySymbol => AppCurrency.getSymbol(currency);
 }
 
 class CashDrawerReportData {
@@ -94,6 +136,14 @@ class CashDrawerReportData {
     required this.cashPurchases,
     required this.totalCashOut,
     required this.netCashFlow,
+    this.cashSalesUsd = 0.0,
+    this.debtPaymentsCollectedUsd = 0.0,
+    this.totalCashInUsd = 0.0,
+    this.cashReturnsUsd = 0.0,
+    this.expensesPaidUsd = 0.0,
+    this.cashPurchasesUsd = 0.0,
+    this.totalCashOutUsd = 0.0,
+    this.netCashFlowUsd = 0.0,
     required this.movements,
   });
 
@@ -105,6 +155,16 @@ class CashDrawerReportData {
   final double cashPurchases;
   final double totalCashOut;
   final double netCashFlow;
+
+  final double cashSalesUsd;
+  final double debtPaymentsCollectedUsd;
+  final double totalCashInUsd;
+  final double cashReturnsUsd;
+  final double expensesPaidUsd;
+  final double cashPurchasesUsd;
+  final double totalCashOutUsd;
+  final double netCashFlowUsd;
+
   final List<CashMovementItem> movements;
 }
 
@@ -175,56 +235,86 @@ class ReportsRepository {
   Future<ProfitReportData> getProfitReport(DateTime start, DateTime end) async {
     _logger.debug('Fetching profit report: $start - $end', context: LogContext.inventory);
 
-    // Get operational expenses in period
-    final totalExpenses = await _db.getTotalExpensesInPeriod(start, end);
-
-    // Get all invoices in period
-    final invoices = await (_db.select(_db.invoices)
-          ..where((t) => t.createdAt.isBiggerOrEqualValue(start) & t.createdAt.isSmallerOrEqualValue(end)))
+    // 1. Operational expenses in period
+    final expenses = await (_db.select(_db.expenses)
+          ..where((t) =>
+              t.createdAt.isBiggerOrEqualValue(start) &
+              t.createdAt.isSmallerOrEqualValue(end)))
         .get();
 
-    // Get purchases in period
+    double totalExpensesSyp = 0.0;
+    double totalExpensesUsd = 0.0;
+    for (final exp in expenses) {
+      if (exp.currency == 'USD') {
+        totalExpensesUsd += exp.amount;
+      } else {
+        totalExpensesSyp += exp.amount;
+      }
+    }
+    final expensesCount = expenses.length;
+
+    // 2. Purchases in period
     final purchases = await (_db.select(_db.purchaseInvoices)
           ..where((t) =>
               t.createdAt.isBiggerOrEqualValue(start) &
               t.createdAt.isSmallerOrEqualValue(end)))
         .get();
-    final totalPurchases = purchases.fold<double>(0.0, (sum, p) => sum + p.totalAmount);
+
+    double totalPurchasesSyp = 0.0;
+    double totalPurchasesUsd = 0.0;
+    for (final p in purchases) {
+      if (p.currency == 'USD') {
+        totalPurchasesUsd += p.totalAmount;
+      } else {
+        totalPurchasesSyp += p.totalAmount;
+      }
+    }
     final purchasesCount = purchases.length;
 
-    // Get expenses count in period
-    final expensesCountQuery = _db.selectOnly(_db.expenses)
-      ..addColumns([_db.expenses.id.count()])
-      ..where(_db.expenses.createdAt.isBiggerOrEqualValue(start) &
-          _db.expenses.createdAt.isSmallerOrEqualValue(end));
-    final expensesCountRow = await expensesCountQuery.getSingleOrNull();
-    final expensesCount = expensesCountRow?.read(_db.expenses.id.count()) ?? 0;
-
-    // Get debt payments in period
+    // 3. Debt payments in period
     final debtPayments = await (_db.select(_db.debtPayments)
           ..where((t) =>
               t.paidAt.isBiggerOrEqualValue(start) &
               t.paidAt.isSmallerOrEqualValue(end)))
         .get();
-    final totalDebtPayments = debtPayments.fold<double>(0.0, (sum, dp) => sum + dp.amountPaid);
+
+    double totalDebtPaymentsSyp = 0.0;
+    double totalDebtPaymentsUsd = 0.0;
+    for (final dp in debtPayments) {
+      if (dp.currency == 'USD') {
+        totalDebtPaymentsUsd += dp.amountPaid;
+      } else {
+        totalDebtPaymentsSyp += dp.amountPaid;
+      }
+    }
     final debtPaymentsCount = debtPayments.length;
 
-    // Get new debts created in period
+    // 4. New debts created in period
     final newDebtsRows = await (_db.select(_db.debts)
           ..where((t) =>
               t.createdAt.isBiggerOrEqualValue(start) &
               t.createdAt.isSmallerOrEqualValue(end)))
         .get();
-    final totalNewDebts = newDebtsRows.fold<double>(0.0, (sum, d) => sum + d.amount);
 
-    // Adjustments in period
+    double totalNewDebtsSyp = 0.0;
+    double totalNewDebtsUsd = 0.0;
+    for (final d in newDebtsRows) {
+      if (d.currency == 'USD') {
+        totalNewDebtsUsd += d.amount;
+      } else {
+        totalNewDebtsSyp += d.amount;
+      }
+    }
+
+    // 5. Stock adjustments in period
     final adjustments = await (_db.select(_db.stockMovements)
           ..where((t) => t.type.equals('adjustment') &
               t.createdAt.isBiggerOrEqualValue(start) &
               t.createdAt.isSmallerOrEqualValue(end)))
         .get();
 
-    double adjustmentsLoss = 0.0;
+    double adjustmentsLossSyp = 0.0;
+    double adjustmentsLossUsd = 0.0;
     if (adjustments.isNotEmpty) {
       final adjProdIds = adjustments.map((a) => a.productId).toSet();
       final adjProds = await (_db.select(_db.products)..where((t) => t.id.isIn(adjProdIds))).get();
@@ -233,28 +323,53 @@ class ReportsRepository {
       for (final adj in adjustments) {
         if (adj.quantity < 0) {
           final prod = adjProdMap[adj.productId];
-          final cost = prod?.costPrice ?? 0.0;
-          adjustmentsLoss += adj.quantity.abs() * cost;
+          final costSyp = prod?.costPrice ?? 0.0;
+          final costUsd = prod?.costPriceUsd ?? 0.0;
+          if (prod?.currency == 'USD') {
+            adjustmentsLossUsd += adj.quantity.abs() * (costUsd > 0 ? costUsd : costSyp);
+          } else {
+            adjustmentsLossSyp += adj.quantity.abs() * costSyp;
+          }
         }
       }
     }
 
+    // 6. Invoices in period
+    final invoices = await (_db.select(_db.invoices)
+          ..where((t) => t.createdAt.isBiggerOrEqualValue(start) & t.createdAt.isSmallerOrEqualValue(end)))
+        .get();
+
     if (invoices.isEmpty) {
-      final netProfit = (0.0 + totalDebtPayments) - (totalExpenses + totalPurchases);
+      final netProfitSyp = (0.0 + totalDebtPaymentsSyp) - (totalExpensesSyp + totalPurchasesSyp);
+      final netProfitUsd = (0.0 + totalDebtPaymentsUsd) - (totalExpensesUsd + totalPurchasesUsd);
       return ProfitReportData(
         totalRevenue: 0.0,
         totalCost: 0.0,
         grossProfit: 0.0,
-        totalExpenses: totalExpenses,
-        netProfit: netProfit,
+        totalExpenses: totalExpensesSyp,
+        netProfit: netProfitSyp,
         cashSales: 0.0,
         debtSales: 0.0,
         grossSales: 0.0,
         returnsAmount: 0.0,
-        totalPurchases: totalPurchases,
-        debtPayments: totalDebtPayments,
-        newDebts: totalNewDebts,
-        adjustmentsLoss: adjustmentsLoss,
+        totalPurchases: totalPurchasesSyp,
+        debtPayments: totalDebtPaymentsSyp,
+        newDebts: totalNewDebtsSyp,
+        adjustmentsLoss: adjustmentsLossSyp,
+        // USD
+        cashSalesUsd: 0.0,
+        debtSalesUsd: 0.0,
+        grossSalesUsd: 0.0,
+        returnsAmountUsd: 0.0,
+        totalCostUsd: 0.0,
+        grossProfitUsd: 0.0,
+        totalExpensesUsd: totalExpensesUsd,
+        totalPurchasesUsd: totalPurchasesUsd,
+        debtPaymentsUsd: totalDebtPaymentsUsd,
+        newDebtsUsd: totalNewDebtsUsd,
+        adjustmentsLossUsd: adjustmentsLossUsd,
+        netProfitUsd: netProfitUsd,
+        // Counts
         salesCount: 0,
         returnsCount: 0,
         purchasesCount: purchasesCount,
@@ -275,61 +390,102 @@ class ReportsRepository {
         : await (_db.select(_db.products)..where((t) => t.id.isIn(productIds))).get();
     final productMap = {for (var p in products) p.id: p};
 
-    double cashSales = 0.0;
-    double debtSales = 0.0;
-    double grossSales = 0.0;
-    double returnsAmount = 0.0;
-    double totalCost = 0.0;
+    double cashSalesSyp = 0.0;
+    double debtSalesSyp = 0.0;
+    double grossSalesSyp = 0.0;
+    double returnsAmountSyp = 0.0;
+    double totalCostSyp = 0.0;
+
+    double cashSalesUsd = 0.0;
+    double debtSalesUsd = 0.0;
+    double grossSalesUsd = 0.0;
+    double returnsAmountUsd = 0.0;
+    double totalCostUsd = 0.0;
+
     int salesCount = 0;
     int returnsCount = 0;
 
     for (final inv in invoices) {
       final items = periodItems.where((i) => i.invoiceId == inv.id).toList();
+      final isUsd = inv.currency == 'USD';
 
       double invoiceCost = 0.0;
       for (final item in items) {
         final prod = productMap[item.productId];
         if (prod == null) continue;
-        invoiceCost += prod.costPrice * item.quantity;
+        final unitCost = isUsd
+            ? ((prod.costPriceUsd > 0) ? prod.costPriceUsd : prod.costPrice)
+            : prod.costPrice;
+        invoiceCost += unitCost * item.quantity;
       }
 
       if (inv.type == 'sale') {
-        grossSales += inv.totalAmount;
-        if (inv.paymentType == 'cash') {
-          cashSales += inv.totalAmount;
-          salesCount++;
+        salesCount++;
+        if (isUsd) {
+          grossSalesUsd += inv.totalAmount;
+          if (inv.paymentType == 'cash') {
+            cashSalesUsd += inv.totalAmount;
+          } else {
+            debtSalesUsd += inv.totalAmount;
+          }
+          totalCostUsd += invoiceCost;
         } else {
-          debtSales += inv.totalAmount;
+          grossSalesSyp += inv.totalAmount;
+          if (inv.paymentType == 'cash') {
+            cashSalesSyp += inv.totalAmount;
+          } else {
+            debtSalesSyp += inv.totalAmount;
+          }
+          totalCostSyp += invoiceCost;
         }
-        totalCost += invoiceCost;
       } else if (inv.type == 'return') {
         returnsCount++;
-        returnsAmount += inv.totalAmount;
-        totalCost -= invoiceCost;
+        if (isUsd) {
+          returnsAmountUsd += inv.totalAmount;
+          totalCostUsd -= invoiceCost;
+        } else {
+          returnsAmountSyp += inv.totalAmount;
+          totalCostSyp -= invoiceCost;
+        }
       }
     }
 
-    // Do NOT add debts to sales! Sales is strictly cash sales minus cash returns
-    final actualCashSales = cashSales - returnsAmount;
-    final grossProfit = actualCashSales - totalCost;
+    final actualCashSalesSyp = cashSalesSyp - returnsAmountSyp;
+    final grossProfitSyp = actualCashSalesSyp - totalCostSyp;
+    final formulaNetProfitSyp = (actualCashSalesSyp + totalDebtPaymentsSyp) - (totalExpensesSyp + totalPurchasesSyp);
 
-    // صافي الربح هو عبارة عن المبيعات والسداد مطروح منه المصاريف والمشتريات
-    final formulaNetProfit = (actualCashSales + totalDebtPayments) - (totalExpenses + totalPurchases);
+    final actualCashSalesUsd = cashSalesUsd - returnsAmountUsd;
+    final grossProfitUsd = actualCashSalesUsd - totalCostUsd;
+    final formulaNetProfitUsd = (actualCashSalesUsd + totalDebtPaymentsUsd) - (totalExpensesUsd + totalPurchasesUsd);
 
     return ProfitReportData(
-      totalRevenue: actualCashSales > 0 ? actualCashSales : 0.0,
-      totalCost: totalCost,
-      grossProfit: grossProfit,
-      totalExpenses: totalExpenses,
-      netProfit: formulaNetProfit,
-      cashSales: actualCashSales > 0 ? actualCashSales : 0.0,
-      debtSales: debtSales,
-      grossSales: grossSales,
-      returnsAmount: returnsAmount,
-      totalPurchases: totalPurchases,
-      debtPayments: totalDebtPayments,
-      newDebts: totalNewDebts > 0 ? totalNewDebts : debtSales,
-      adjustmentsLoss: adjustmentsLoss,
+      totalRevenue: actualCashSalesSyp > 0 ? actualCashSalesSyp : 0.0,
+      totalCost: totalCostSyp,
+      grossProfit: grossProfitSyp,
+      totalExpenses: totalExpensesSyp,
+      netProfit: formulaNetProfitSyp,
+      cashSales: actualCashSalesSyp > 0 ? actualCashSalesSyp : 0.0,
+      debtSales: debtSalesSyp,
+      grossSales: grossSalesSyp,
+      returnsAmount: returnsAmountSyp,
+      totalPurchases: totalPurchasesSyp,
+      debtPayments: totalDebtPaymentsSyp,
+      newDebts: totalNewDebtsSyp > 0 ? totalNewDebtsSyp : debtSalesSyp,
+      adjustmentsLoss: adjustmentsLossSyp,
+      // USD
+      cashSalesUsd: actualCashSalesUsd > 0 ? actualCashSalesUsd : 0.0,
+      debtSalesUsd: debtSalesUsd,
+      grossSalesUsd: grossSalesUsd,
+      returnsAmountUsd: returnsAmountUsd,
+      totalCostUsd: totalCostUsd,
+      grossProfitUsd: grossProfitUsd,
+      totalExpensesUsd: totalExpensesUsd,
+      totalPurchasesUsd: totalPurchasesUsd,
+      debtPaymentsUsd: totalDebtPaymentsUsd,
+      newDebtsUsd: totalNewDebtsUsd > 0 ? totalNewDebtsUsd : debtSalesUsd,
+      adjustmentsLossUsd: adjustmentsLossUsd,
+      netProfitUsd: formulaNetProfitUsd,
+      // Counts
       salesCount: salesCount,
       returnsCount: returnsCount,
       purchasesCount: purchasesCount,
@@ -397,9 +553,14 @@ class ReportsRepository {
     final suppliers = await _db.select(_db.suppliers).get();
     final supplierMap = {for (final s in suppliers) s.id: s.name};
 
-    double totalCashSales = 0.0;
+    double totalCashSalesSyp = 0.0;
+    double totalCashSalesUsd = 0.0;
     for (final inv in cashSalesInvoices) {
-      totalCashSales += inv.totalAmount;
+      if (inv.currency == 'USD') {
+        totalCashSalesUsd += inv.totalAmount;
+      } else {
+        totalCashSalesSyp += inv.totalAmount;
+      }
       final custName = inv.customerId != null ? customerMap[inv.customerId] : null;
       movements.add(CashMovementItem(
         id: inv.id,
@@ -408,14 +569,20 @@ class ReportsRepository {
         isCashIn: true,
         amount: inv.totalAmount,
         date: inv.createdAt,
+        currency: inv.currency,
         partyName: custName,
         referenceNumber: inv.serialNumber != null ? '#${inv.serialNumber}' : null,
       ));
     }
 
-    double totalDebtPayments = 0.0;
+    double totalDebtPaymentsSyp = 0.0;
+    double totalDebtPaymentsUsd = 0.0;
     for (final dp in debtPayments) {
-      totalDebtPayments += dp.amountPaid;
+      if (dp.currency == 'USD') {
+        totalDebtPaymentsUsd += dp.amountPaid;
+      } else {
+        totalDebtPaymentsSyp += dp.amountPaid;
+      }
       final debt = debtMap[dp.debtId];
       final custName = debt != null ? customerMap[debt.customerId] : null;
       movements.add(CashMovementItem(
@@ -425,13 +592,19 @@ class ReportsRepository {
         isCashIn: true,
         amount: dp.amountPaid,
         date: dp.paidAt,
+        currency: dp.currency,
         partyName: custName,
       ));
     }
 
-    double totalCashReturns = 0.0;
+    double totalCashReturnsSyp = 0.0;
+    double totalCashReturnsUsd = 0.0;
     for (final ret in returnsInvoices) {
-      totalCashReturns += ret.totalAmount;
+      if (ret.currency == 'USD') {
+        totalCashReturnsUsd += ret.totalAmount;
+      } else {
+        totalCashReturnsSyp += ret.totalAmount;
+      }
       final custName = ret.customerId != null ? customerMap[ret.customerId] : null;
       movements.add(CashMovementItem(
         id: ret.id,
@@ -440,14 +613,20 @@ class ReportsRepository {
         isCashIn: false,
         amount: ret.totalAmount,
         date: ret.createdAt,
+        currency: ret.currency,
         partyName: custName,
         referenceNumber: ret.serialNumber != null ? '#${ret.serialNumber}' : null,
       ));
     }
 
-    double totalExpenses = 0.0;
+    double totalExpensesSyp = 0.0;
+    double totalExpensesUsd = 0.0;
     for (final exp in expenses) {
-      totalExpenses += exp.amount;
+      if (exp.currency == 'USD') {
+        totalExpensesUsd += exp.amount;
+      } else {
+        totalExpensesSyp += exp.amount;
+      }
       final catName = categoryMap[exp.categoryId] ?? 'expenses.title'.tr();
       movements.add(CashMovementItem(
         id: exp.id,
@@ -456,14 +635,20 @@ class ReportsRepository {
         isCashIn: false,
         amount: exp.amount,
         date: exp.createdAt,
+        currency: exp.currency,
         partyName: catName,
         notes: exp.notes,
       ));
     }
 
-    double totalPurchases = 0.0;
+    double totalPurchasesSyp = 0.0;
+    double totalPurchasesUsd = 0.0;
     for (final pur in purchases) {
-      totalPurchases += pur.totalAmount;
+      if (pur.currency == 'USD') {
+        totalPurchasesUsd += pur.totalAmount;
+      } else {
+        totalPurchasesSyp += pur.totalAmount;
+      }
       final suppName = supplierMap[pur.supplierId];
       movements.add(CashMovementItem(
         id: pur.id,
@@ -472,6 +657,7 @@ class ReportsRepository {
         isCashIn: false,
         amount: pur.totalAmount,
         date: pur.createdAt,
+        currency: pur.currency,
         partyName: suppName,
       ));
     }
@@ -479,19 +665,32 @@ class ReportsRepository {
     // Sort movements by date descending (newest first)
     movements.sort((a, b) => b.date.compareTo(a.date));
 
-    final totalCashIn = totalCashSales + totalDebtPayments;
-    final totalCashOut = totalCashReturns + totalExpenses + totalPurchases;
-    final netCashFlow = totalCashIn - totalCashOut;
+    final totalCashInSyp = totalCashSalesSyp + totalDebtPaymentsSyp;
+    final totalCashInUsd = totalCashSalesUsd + totalDebtPaymentsUsd;
+
+    final totalCashOutSyp = totalCashReturnsSyp + totalExpensesSyp + totalPurchasesSyp;
+    final totalCashOutUsd = totalCashReturnsUsd + totalExpensesUsd + totalPurchasesUsd;
+
+    final netCashFlowSyp = totalCashInSyp - totalCashOutSyp;
+    final netCashFlowUsd = totalCashInUsd - totalCashOutUsd;
 
     return CashDrawerReportData(
-      cashSales: totalCashSales,
-      debtPaymentsCollected: totalDebtPayments,
-      totalCashIn: totalCashIn,
-      cashReturns: totalCashReturns,
-      expensesPaid: totalExpenses,
-      cashPurchases: totalPurchases,
-      totalCashOut: totalCashOut,
-      netCashFlow: netCashFlow,
+      cashSales: totalCashSalesSyp,
+      debtPaymentsCollected: totalDebtPaymentsSyp,
+      totalCashIn: totalCashInSyp,
+      cashReturns: totalCashReturnsSyp,
+      expensesPaid: totalExpensesSyp,
+      cashPurchases: totalPurchasesSyp,
+      totalCashOut: totalCashOutSyp,
+      netCashFlow: netCashFlowSyp,
+      cashSalesUsd: totalCashSalesUsd,
+      debtPaymentsCollectedUsd: totalDebtPaymentsUsd,
+      totalCashInUsd: totalCashInUsd,
+      cashReturnsUsd: totalCashReturnsUsd,
+      expensesPaidUsd: totalExpensesUsd,
+      cashPurchasesUsd: totalPurchasesUsd,
+      totalCashOutUsd: totalCashOutUsd,
+      netCashFlowUsd: netCashFlowUsd,
       movements: movements,
     );
   }
@@ -607,6 +806,8 @@ class ReportsRepository {
         name: 'Unknown',
         categoryId: null,
         costPrice: 0,
+        costPriceUsd: 0,
+        currency: 'SYP',
         isActive: false,
         minStockAlert: 0,
         createdAt: DateTime.now(),

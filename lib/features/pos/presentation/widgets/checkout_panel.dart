@@ -1,5 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:small_mall/core/constants/app_currency.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/core/widgets/app_searchable_dropdown.dart';
@@ -71,17 +72,23 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
     final isDebt = state.paymentType == 'debt';
     final hasNoCustomerOnDebt = isDebt && state.selectedCustomer == null;
 
+    final totalSummary = state.hasMultipleCurrencies
+        ? '${state.totalUsd > 0 ? '${state.totalUsd.toStringAsFixed(2)} ${AppCurrency.usdSymbol}' : ''}'
+          '${state.totalUsd > 0 && state.totalSyp > 0 ? ' + ' : ''}'
+          '${state.totalSyp > 0 ? '${state.totalSyp.toStringAsFixed(2)} ${AppCurrency.sypSymbol}' : ''}'
+        : '${state.totalAmount.toStringAsFixed(2)} ${state.cartCurrencySymbol}';
+
     String checkoutButtonLabel;
     if (isDebt) {
       if (state.selectedCustomer != null) {
         checkoutButtonLabel =
-            '${'pos.checkout_debt'.tr()} (${state.totalAmount.toStringAsFixed(2)})';
+            '${'pos.checkout_debt'.tr()} ($totalSummary)';
       } else {
         checkoutButtonLabel = 'pos.select_customer_first'.tr();
       }
     } else {
       checkoutButtonLabel =
-          '${'pos.checkout_cash'.tr()} (${state.totalAmount.toStringAsFixed(2)})';
+          '${'pos.checkout_cash'.tr()} ($totalSummary)';
     }
 
     return Container(
@@ -105,19 +112,54 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
             child: Column(
               children: [
                 // Subtotal
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '${'pos.subtotal'.tr()}:',
-                      style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
-                    ),
-                    Text(
-                      state.cartSubtotal.toStringAsFixed(2),
-                      style: AppTheme.numericStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                    ),
-                  ],
-                ),
+                if (state.hasMultipleCurrencies)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${'pos.subtotal'.tr()}:',
+                        style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          if (state.subtotalUsd > 0)
+                            Text(
+                              '${state.subtotalUsd.toStringAsFixed(2)} ${AppCurrency.usdSymbol}',
+                              style: AppTheme.numericStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                                color: const Color(0xFF059669),
+                              ),
+                            ),
+                          if (state.subtotalSyp > 0)
+                            Text(
+                              '${state.subtotalSyp.toStringAsFixed(2)} ${AppCurrency.sypSymbol}',
+                              style: AppTheme.numericStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
+                  )
+                else
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '${'pos.subtotal'.tr()}:',
+                        style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+                      ),
+                      Text(
+                        '${state.cartSubtotal.toStringAsFixed(2)} ${state.cartCurrencySymbol}',
+                        style: AppTheme.numericStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      ),
+                    ],
+                  ),
                 const SizedBox(height: 6),
 
                 // Extra Invoice Discount
@@ -125,7 +167,9 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      '${'pos.invoice_discount'.tr()}:',
+                      state.hasMultipleCurrencies
+                          ? '${'pos.invoice_discount'.tr()} (${AppCurrency.sypSymbol}):'
+                          : '${'pos.invoice_discount'.tr()}:',
                       style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
                     ),
                     SizedBox(
@@ -161,26 +205,64 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                 const Divider(height: 16, color: AppColors.border),
 
                 // Net Total
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '${'pos.net_total'.tr()}:',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
+                if (state.hasMultipleCurrencies)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${'pos.net_total'.tr()}:',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                        ),
                       ),
-                    ),
-                    Text(
-                      state.totalAmount.toStringAsFixed(2),
-                      style: AppTheme.numericStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          if (state.totalUsd > 0)
+                            Text(
+                              '${state.totalUsd.toStringAsFixed(2)} ${AppCurrency.usdSymbol}',
+                              style: AppTheme.numericStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF059669),
+                              ),
+                            ),
+                          if (state.totalSyp > 0)
+                            Text(
+                              '${state.totalSyp.toStringAsFixed(2)} ${AppCurrency.sypSymbol}',
+                              style: AppTheme.numericStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                        ],
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  )
+                else
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '${'pos.net_total'.tr()}:',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                      Text(
+                        '${state.totalAmount.toStringAsFixed(2)} ${state.cartCurrencySymbol}',
+                        style: AppTheme.numericStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ],
+                  ),
               ],
             ),
           ),

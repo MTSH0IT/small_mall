@@ -282,10 +282,12 @@ class ExpensesRepository {
     required double amount,
     String? notes,
     DateTime? createdAt,
+    String? currency,
   }) async {
     _logger.info('Adding expense: $amount under category $categoryId, subcategory: $subcategoryId', context: LogContext.expenses);
     final id = _uuid.v4();
     final now = createdAt ?? DateTime.now();
+    final curr = currency ?? 'SYP';
 
     final companion = ExpensesCompanion.insert(
       id: id,
@@ -293,6 +295,7 @@ class ExpensesRepository {
       subcategoryId: Value(subcategoryId),
       amount: amount,
       notes: Value(notes),
+      currency: Value(curr),
       createdAt: now,
     );
 
@@ -307,6 +310,7 @@ class ExpensesRepository {
       subcategoryId: subcategoryId,
       amount: amount,
       notes: notes,
+      currency: curr,
       createdAt: now,
     );
   }
@@ -318,6 +322,7 @@ class ExpensesRepository {
     required double amount,
     String? notes,
     DateTime? createdAt,
+    String? currency,
   }) async {
     _logger.info('Updating expense: $id', context: LogContext.expenses);
 
@@ -327,6 +332,7 @@ class ExpensesRepository {
         subcategoryId: Value(subcategoryId),
         amount: Value(amount),
         notes: Value(notes),
+        currency: currency != null ? Value(currency) : const Value.absent(),
         createdAt: createdAt != null ? Value(createdAt) : const Value.absent(),
         syncedAt: const Value(null),
       ),
