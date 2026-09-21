@@ -6,7 +6,11 @@ import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/features/invoices/data/invoices_repository.dart';
 import 'package:small_mall/features/invoices/presentation/cubit/invoices_cubit.dart';
 import 'package:small_mall/features/invoices/presentation/widgets/delete_invoice_dialog.dart';
+import 'package:small_mall/features/invoices/presentation/widgets/edit_adjustment_dialog.dart';
+import 'package:small_mall/features/invoices/presentation/widgets/edit_debt_payment_dialog.dart';
+import 'package:small_mall/features/invoices/presentation/widgets/edit_expense_dialog.dart';
 import 'package:small_mall/features/invoices/presentation/widgets/edit_invoice_dialog.dart';
+import 'package:small_mall/features/invoices/presentation/widgets/edit_purchase_invoice_dialog.dart';
 
 class InvoiceDetailPanel extends StatelessWidget {
   const InvoiceDetailPanel({
@@ -51,6 +55,30 @@ class InvoiceDetailPanel extends StatelessWidget {
         return Icons.request_quote;
       case UnifiedTransactionType.adjustment:
         return Icons.tune;
+    }
+  }
+
+  void _openEditDialog(BuildContext context, InvoicesCubit cubit) {
+    switch (transaction.type) {
+      case UnifiedTransactionType.sale:
+      case UnifiedTransactionType.returnSale:
+      case UnifiedTransactionType.debtInvoice:
+        if (transaction.rawInvoice != null) {
+          EditInvoiceDialog.show(context, transaction.rawInvoice!, cubit);
+        }
+        break;
+      case UnifiedTransactionType.purchase:
+        EditPurchaseInvoiceDialog.show(context, transaction, cubit);
+        break;
+      case UnifiedTransactionType.expense:
+        EditExpenseDialog.show(context, transaction, cubit);
+        break;
+      case UnifiedTransactionType.debtPayment:
+        EditDebtPaymentDialog.show(context, transaction, cubit);
+        break;
+      case UnifiedTransactionType.adjustment:
+        EditAdjustmentDialog.show(context, transaction, cubit);
+        break;
     }
   }
 
@@ -160,30 +188,28 @@ class InvoiceDetailPanel extends StatelessWidget {
                     ),
                   ),
                 const Spacer(),
-                // Edit and Delete buttons for sales and return invoices
-                if (transaction.rawInvoice != null) ...[
-                  OutlinedButton.icon(
-                    onPressed: () => EditInvoiceDialog.show(context, transaction.rawInvoice!, cubit),
-                    icon: const Icon(Icons.edit_outlined, size: 16),
-                    label: Text('invoices.edit_invoice'.tr()),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      visualDensity: VisualDensity.compact,
-                    ),
+                // Universal Edit and Delete buttons for ALL transaction types
+                OutlinedButton.icon(
+                  onPressed: () => _openEditDialog(context, cubit),
+                  icon: const Icon(Icons.edit_outlined, size: 16),
+                  label: Text('common.edit'.tr()),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    visualDensity: VisualDensity.compact,
                   ),
-                  const SizedBox(width: 8),
-                  OutlinedButton.icon(
-                    onPressed: () => DeleteInvoiceDialog.show(context, transaction.rawInvoice!, cubit),
-                    icon: const Icon(Icons.delete_outline, size: 16),
-                    label: Text('invoices.delete_invoice'.tr()),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.danger,
-                      side: BorderSide(color: AppColors.danger.withValues(alpha: 0.5)),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      visualDensity: VisualDensity.compact,
-                    ),
+                ),
+                const SizedBox(width: 8),
+                OutlinedButton.icon(
+                  onPressed: () => DeleteTransactionDialog.show(context, transaction, cubit),
+                  icon: const Icon(Icons.delete_outline, size: 16),
+                  label: Text('common.delete'.tr()),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.danger,
+                    side: BorderSide(color: AppColors.danger.withValues(alpha: 0.5)),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    visualDensity: VisualDensity.compact,
                   ),
-                ],
+                ),
               ],
             ),
             const SizedBox(height: 16),

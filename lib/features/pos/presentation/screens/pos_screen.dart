@@ -786,7 +786,8 @@ class _POSScreenState extends State<POSScreen> {
                     CheckoutPanel(
                       state: state,
                       isLoading: state.isCheckingOut,
-                      onInvoiceDiscountChanged: (disc) => cubit.setInvoiceDiscount(disc),
+                      onCustomTotalChanged: ({double? syp, double? usd, bool clearSyp = false, bool clearUsd = false}) =>
+                          cubit.setCustomTotal(syp: syp, usd: usd, clearSyp: clearSyp, clearUsd: clearUsd),
                       onPaymentTypeChanged: (type) => cubit.setPaymentType(type),
                       onCustomerChanged: (cust) => cubit.selectCustomer(cust),
                       onAddCustomerPressed: () => _showAddCustomerDialog(context, cubit),

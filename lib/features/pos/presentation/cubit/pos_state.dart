@@ -55,9 +55,11 @@ class POSLoaded extends POSState {
     required this.customers,
     required this.cart,
     this.selectedCustomer,
-    required this.invoiceDiscount,
+    this.invoiceDiscount = 0.0,
     required this.paymentType,
     this.isCheckingOut = false,
+    this.customTotalSyp,
+    this.customTotalUsd,
   });
   final List<ProductWithDetails> products;
   final List<CustomerWithDebts> customers;
@@ -66,6 +68,8 @@ class POSLoaded extends POSState {
   final double invoiceDiscount;
   final String paymentType;
   final bool isCheckingOut;
+  final double? customTotalSyp;
+  final double? customTotalUsd;
 
   bool get hasMultipleCurrencies {
     if (cart.isEmpty) return false;
@@ -81,22 +85,19 @@ class POSLoaded extends POSState {
       .where((item) => item.currency == AppCurrency.usdCode)
       .fold<double>(0.0, (sum, item) => sum + item.subtotal);
 
-  double get totalSyp {
-    if (!hasMultipleCurrencies) {
-      return cartCurrency != AppCurrency.usdCode ? totalAmount : 0.0;
-    }
-    return (subtotalSyp - invoiceDiscount).clamp(0.0, double.infinity);
-  }
+  bool get hasCustomTotalSyp => customTotalSyp != null && customTotalSyp != subtotalSyp;
+  bool get hasCustomTotalUsd => customTotalUsd != null && customTotalUsd != subtotalUsd;
 
-  double get totalUsd {
-    if (!hasMultipleCurrencies) {
-      return cartCurrency == AppCurrency.usdCode ? totalAmount : 0.0;
-    }
-    return subtotalUsd;
-  }
+  double get totalSyp => customTotalSyp ?? (subtotalSyp - ((hasMultipleCurrencies || cartCurrency != AppCurrency.usdCode) ? invoiceDiscount : 0.0)).clamp(0.0, double.infinity);
+  double get totalUsd => customTotalUsd ?? (subtotalUsd - (!hasMultipleCurrencies && cartCurrency == AppCurrency.usdCode ? invoiceDiscount : 0.0)).clamp(0.0, double.infinity);
 
   double get cartSubtotal => cart.fold<double>(0.0, (sum, item) => sum + item.subtotal);
-  double get totalAmount => (cartSubtotal - invoiceDiscount).clamp(0.0, double.infinity);
+  double get totalAmount {
+    if (hasMultipleCurrencies) {
+      return (totalSyp + totalUsd).clamp(0.0, double.infinity);
+    }
+    return cartCurrency == AppCurrency.usdCode ? totalUsd : totalSyp;
+  }
 
   String get cartCurrency => cart.isNotEmpty ? cart.first.currency : AppCurrency.defaultCode;
   String get cartCurrencySymbol => AppCurrency.getSymbol(cartCurrency);
@@ -110,6 +111,10 @@ class POSLoaded extends POSState {
     double? invoiceDiscount,
     String? paymentType,
     bool? isCheckingOut,
+    double? customTotalSyp,
+    bool clearCustomTotalSyp = false,
+    double? customTotalUsd,
+    bool clearCustomTotalUsd = false,
   }) {
     return POSLoaded(
       products: products ?? this.products,
@@ -119,6 +124,8 @@ class POSLoaded extends POSState {
       invoiceDiscount: invoiceDiscount ?? this.invoiceDiscount,
       paymentType: paymentType ?? this.paymentType,
       isCheckingOut: isCheckingOut ?? this.isCheckingOut,
+      customTotalSyp: clearCustomTotalSyp ? null : (customTotalSyp ?? this.customTotalSyp),
+      customTotalUsd: clearCustomTotalUsd ? null : (customTotalUsd ?? this.customTotalUsd),
     );
   }
 }

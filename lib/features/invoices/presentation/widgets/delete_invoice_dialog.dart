@@ -1,35 +1,42 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:small_mall/core/constants/app_currency.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/core/widgets/app_toast.dart';
+import 'package:small_mall/features/invoices/data/invoices_repository.dart';
 import 'package:small_mall/features/invoices/presentation/cubit/invoices_cubit.dart';
-import 'package:small_mall/features/pos/data/pos_repository.dart';
 
-class DeleteInvoiceDialog extends StatefulWidget {
-  const DeleteInvoiceDialog({
+class DeleteTransactionDialog extends StatefulWidget {
+  const DeleteTransactionDialog({
     super.key,
-    required this.invoiceData,
+    required this.transaction,
     required this.cubit,
   });
 
-  final InvoiceWithDetails invoiceData;
+  final UnifiedTransactionRecord transaction;
   final InvoicesCubit cubit;
 
-  static Future<void> show(BuildContext context, InvoiceWithDetails invoiceData, InvoicesCubit cubit) {
+  static Future<void> show(
+    BuildContext context,
+    UnifiedTransactionRecord transaction,
+    InvoicesCubit cubit,
+  ) {
     return showDialog(
       context: context,
-      builder: (context) => DeleteInvoiceDialog(
-        invoiceData: invoiceData,
+      builder: (context) => DeleteTransactionDialog(
+        transaction: transaction,
         cubit: cubit,
       ),
     );
   }
 
   @override
-  State<DeleteInvoiceDialog> createState() => _DeleteInvoiceDialogState();
+  State<DeleteTransactionDialog> createState() => _DeleteTransactionDialogState();
 }
 
-class _DeleteInvoiceDialogState extends State<DeleteInvoiceDialog> {
+typedef DeleteInvoiceDialog = DeleteTransactionDialog;
+
+class _DeleteTransactionDialogState extends State<DeleteTransactionDialog> {
   bool _isLoading = false;
   bool _canDelete = true;
   String? _blockedReason;
@@ -42,7 +49,7 @@ class _DeleteInvoiceDialogState extends State<DeleteInvoiceDialog> {
 
   Future<void> _checkCanDelete() async {
     try {
-      final res = await widget.cubit.checkCanDelete(widget.invoiceData.invoice.id);
+      final res = await widget.cubit.checkCanDeleteTransaction(widget.transaction);
       if (mounted) {
         setState(() {
           _canDelete = res['canDelete'] == true;
@@ -57,7 +64,7 @@ class _DeleteInvoiceDialogState extends State<DeleteInvoiceDialog> {
   Future<void> _handleDelete() async {
     setState(() => _isLoading = true);
     try {
-      await widget.cubit.deleteInvoice(widget.invoiceData.invoice.id);
+      await widget.cubit.deleteTransaction(widget.transaction);
       if (mounted) {
         Navigator.of(context).pop();
         AppToast.success(context, message: 'invoices.invoice_deleted_success'.tr());
@@ -70,10 +77,34 @@ class _DeleteInvoiceDialogState extends State<DeleteInvoiceDialog> {
     }
   }
 
+  String _getTitle(UnifiedTransactionType type) {
+    switch (type) {
+      case UnifiedTransactionType.sale:
+      case UnifiedTransactionType.debtInvoice:
+        return 'invoices.delete_invoice_confirm_title'.tr();
+      case UnifiedTransactionType.returnSale:
+        return 'تأكيد حذف فاتورة المردود';
+      case UnifiedTransactionType.purchase:
+        return 'تأكيد حذف فاتورة الشراء';
+      case UnifiedTransactionType.expense:
+        return 'تأكيد حذف المصروف';
+      case UnifiedTransactionType.debtPayment:
+        return 'تأكيد حذف دفعة الدين';
+      case UnifiedTransactionType.adjustment:
+        return 'تأكيد حذف تسوية الجرد';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final inv = widget.invoiceData.invoice;
-    final displayId = inv.serialNumber != null ? '${inv.serialNumber}' : inv.id.substring(0, 8);
+    final tr = widget.transaction;
+    final displayId = tr.globalSerialNumber != null
+        ? '#${tr.globalSerialNumber}'
+        : (tr.serialNumber != null ? '#${tr.serialNumber}' : '#${tr.id.substring(0, 8)}');
+
+    final amountText = tr.hasMultipleCurrencies
+        ? '${tr.totalSyp.toStringAsFixed(2)} ${AppCurrency.sypSymbol}  |  ${tr.totalUsd.toStringAsFixed(2)} ${AppCurrency.usdSymbol}'
+        : '${tr.totalAmount.toStringAsFixed(2)} ${tr.currencySymbol}';
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -99,7 +130,7 @@ class _DeleteInvoiceDialogState extends State<DeleteInvoiceDialog> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'invoices.delete_invoice_confirm_title'.tr(),
+                    _getTitle(tr.type),
                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                   ),
                 ),
@@ -149,16 +180,17 @@ class _DeleteInvoiceDialogState extends State<DeleteInvoiceDialog> {
               ),
               child: Column(
                 children: [
-                  _buildDetailRow('invoices.invoice_id'.tr(), '#$displayId'),
+                  _buildDetailRow('الرقم / المعرّف', displayId),
                   const SizedBox(height: 6),
-                  _buildDetailRow(
-                    'invoices.customer'.tr(),
-                    widget.invoiceData.customerName ?? 'pos.walk_in_customer'.tr(),
-                  ),
+                  _buildDetailRow('نوع العملية', tr.typeLabel),
+                  if (tr.partyName != null && tr.partyName!.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    _buildDetailRow('الطرف / البيان', tr.partyName!),
+                  ],
                   const SizedBox(height: 6),
                   _buildDetailRow(
                     'common.total'.tr(),
-                    inv.totalAmount.toStringAsFixed(2),
+                    amountText,
                     isAmount: true,
                   ),
                 ],

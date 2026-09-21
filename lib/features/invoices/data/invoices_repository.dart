@@ -4,7 +4,9 @@ import 'package:small_mall/core/constants/app_currency.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/logging/app_logger.dart';
 import 'package:small_mall/core/logging/log_context.dart';
+import 'package:small_mall/core/sync/sync_service.dart';
 import 'package:small_mall/features/pos/data/pos_repository.dart';
+import 'package:uuid/uuid.dart';
 
 enum UnifiedTransactionType {
   sale,
@@ -205,11 +207,14 @@ class UnifiedTransactionRecord {
 }
 
 class InvoicesRepository {
-  InvoicesRepository(this._db, this._posRepository, this._logger);
+  InvoicesRepository(this._db, this._posRepository, this._logger, [SyncService? sync])
+      : _sync = sync;
 
   final AppDatabase _db;
   final POSRepository _posRepository;
   final AppLogger _logger;
+  final SyncService? _sync;
+  final _uuid = const Uuid();
 
   Future<List<UnifiedTransactionRecord>> getAllTransactions() async {
     _logger.debug('Fetching all unified transactions', context: LogContext.pos);
@@ -448,12 +453,136 @@ class InvoicesRepository {
     }).toList();
   }
 
-  // Pass-through functions for POS sales & returns management
+  // Universal Transaction Management (Sale, Purchase, Expense, Debt Payment, Adjustment)
   Future<Map<String, dynamic>> canDeleteInvoice(String invoiceId) =>
       _posRepository.canDeleteInvoice(invoiceId);
 
   Future<void> deleteInvoice(String invoiceId) =>
       _posRepository.deleteInvoice(invoiceId);
+
+  Future<Map<String, dynamic>> canDeleteTransaction(UnifiedTransactionRecord transaction) async {
+    if (transaction.isSale || transaction.isReturn || transaction.isDebtInvoice) {
+      return _posRepository.canDeleteInvoice(transaction.id);
+    }
+    return {'canDelete': true};
+  }
+
+  Future<void> deleteTransaction(UnifiedTransactionRecord transaction) async {
+    final now = DateTime.now();
+
+    if (transaction.isSale || transaction.isReturn || transaction.isDebtInvoice) {
+      await _posRepository.deleteInvoice(transaction.id);
+      return;
+    }
+
+    if (transaction.isPurchase) {
+      final purchaseId = transaction.id;
+      await _db.transaction(() async {
+        final movements = await (_db.select(_db.stockMovements)..where((t) => t.referenceId.equals(purchaseId))).get();
+        for (final m in movements) {
+          await (_db.delete(_db.stockMovements)..where((t) => t.id.equals(m.id))).go();
+          await _db.into(_db.deletedRecords).insert(
+                DeletedRecordsCompanion.insert(
+                  id: _uuid.v4(),
+                  targetTable: 'stock_movements',
+                  recordId: m.id,
+                  createdAt: now,
+                ),
+              );
+        }
+
+        final items = await (_db.select(_db.purchaseItems)..where((t) => t.purchaseInvoiceId.equals(purchaseId))).get();
+        for (final item in items) {
+          await (_db.delete(_db.purchaseItems)..where((t) => t.id.equals(item.id))).go();
+          await _db.into(_db.deletedRecords).insert(
+                DeletedRecordsCompanion.insert(
+                  id: _uuid.v4(),
+                  targetTable: 'purchase_items',
+                  recordId: item.id,
+                  createdAt: now,
+                ),
+              );
+        }
+
+        await (_db.delete(_db.purchaseInvoices)..where((t) => t.id.equals(purchaseId))).go();
+        await _db.into(_db.deletedRecords).insert(
+              DeletedRecordsCompanion.insert(
+                id: _uuid.v4(),
+                targetTable: 'purchase_invoices',
+                recordId: purchaseId,
+                createdAt: now,
+              ),
+            );
+      });
+      _sync?.updatePendingCount();
+      _sync?.sync();
+      return;
+    }
+
+    if (transaction.isExpense) {
+      final expenseId = transaction.id;
+      await _db.into(_db.deletedRecords).insert(
+            DeletedRecordsCompanion.insert(
+              id: _uuid.v4(),
+              targetTable: 'expenses',
+              recordId: expenseId,
+              createdAt: now,
+            ),
+          );
+      await (_db.delete(_db.expenses)..where((t) => t.id.equals(expenseId))).go();
+      _sync?.updatePendingCount();
+      _sync?.sync();
+      return;
+    }
+
+    if (transaction.isDebtPayment) {
+      final paymentId = transaction.id;
+      await _db.transaction(() async {
+        final payment = await (_db.select(_db.debtPayments)..where((t) => t.id.equals(paymentId))).getSingleOrNull();
+        if (payment != null) {
+          final debt = await (_db.select(_db.debts)..where((t) => t.id.equals(payment.debtId))).getSingleOrNull();
+          if (debt != null) {
+            final newRemaining = (debt.remainingAmount + payment.amountPaid).clamp(0.0, debt.amount);
+            await (_db.update(_db.debts)..where((t) => t.id.equals(debt.id))).write(
+                  DebtsCompanion(
+                    remainingAmount: Value(newRemaining),
+                    status: const Value('open'),
+                    syncedAt: const Value(null),
+                  ),
+                );
+          }
+          await (_db.delete(_db.debtPayments)..where((t) => t.id.equals(payment.id))).go();
+          await _db.into(_db.deletedRecords).insert(
+                DeletedRecordsCompanion.insert(
+                  id: _uuid.v4(),
+                  targetTable: 'debt_payments',
+                  recordId: payment.id,
+                  createdAt: now,
+                ),
+              );
+        }
+      });
+      _sync?.updatePendingCount();
+      _sync?.sync();
+      return;
+    }
+
+    if (transaction.isAdjustment) {
+      final movementId = transaction.id;
+      await (_db.delete(_db.stockMovements)..where((t) => t.id.equals(movementId))).go();
+      await _db.into(_db.deletedRecords).insert(
+            DeletedRecordsCompanion.insert(
+              id: _uuid.v4(),
+              targetTable: 'stock_movements',
+              recordId: movementId,
+              createdAt: now,
+            ),
+          );
+      _sync?.updatePendingCount();
+      _sync?.sync();
+      return;
+    }
+  }
 
   Future<void> updateInvoice({
     required String invoiceId,
@@ -469,4 +598,185 @@ class InvoicesRepository {
         discount: discount,
         items: items,
       );
+
+  Future<List<PurchaseItem>> getPurchaseItems(String purchaseInvoiceId) async {
+    return (_db.select(_db.purchaseItems)..where((t) => t.purchaseInvoiceId.equals(purchaseInvoiceId))).get();
+  }
+
+  Future<List<Supplier>> getSuppliers() async {
+    return (_db.select(_db.suppliers)..orderBy([(t) => OrderingTerm.asc(t.name)])).get();
+  }
+
+  Future<List<ExpenseCategory>> getExpenseCategories() async {
+    return (_db.select(_db.expenseCategories)..orderBy([(t) => OrderingTerm.asc(t.name)])).get();
+  }
+
+  Future<void> updatePurchaseInvoice({
+    required String purchaseInvoiceId,
+    required String supplierId,
+    required List<Map<String, dynamic>> items,
+  }) async {
+    final now = DateTime.now();
+    await _db.transaction(() async {
+      double totalAmount = 0.0;
+      for (final it in items) {
+        final q = (it['quantity'] as num).toDouble();
+        final c = (it['unitCost'] as num).toDouble();
+        totalAmount += (q * c);
+      }
+
+      await (_db.update(_db.purchaseInvoices)..where((t) => t.id.equals(purchaseInvoiceId))).write(
+            PurchaseInvoicesCompanion(
+              supplierId: Value(supplierId),
+              totalAmount: Value(totalAmount),
+              syncedAt: const Value(null),
+            ),
+          );
+
+      final existingItems = await (_db.select(_db.purchaseItems)
+            ..where((t) => t.purchaseInvoiceId.equals(purchaseInvoiceId)))
+          .get();
+      final existingIds = existingItems.map((e) => e.id).toSet();
+      final keptIds = items.map((e) => e['id'] as String?).whereType<String>().toSet();
+
+      final toDelete = existingIds.difference(keptIds);
+      for (final delId in toDelete) {
+        final delItem = existingItems.firstWhere((e) => e.id == delId);
+        await (_db.delete(_db.stockMovements)
+              ..where((t) => t.referenceId.equals(purchaseInvoiceId) & t.productId.equals(delItem.productId)))
+            .go();
+        await (_db.delete(_db.purchaseItems)..where((t) => t.id.equals(delId))).go();
+        await _db.into(_db.deletedRecords).insert(
+              DeletedRecordsCompanion.insert(
+                id: _uuid.v4(),
+                targetTable: 'purchase_items',
+                recordId: delId,
+                createdAt: now,
+              ),
+            );
+      }
+
+      for (final it in items) {
+        final itemId = it['id'] as String?;
+        final prodId = it['productId'] as String;
+        final qty = (it['quantity'] as num).toDouble();
+        final cost = (it['unitCost'] as num).toDouble();
+        final curr = (it['currency'] as String?) ?? AppCurrency.defaultCode;
+
+        if (itemId != null && existingIds.contains(itemId)) {
+          await (_db.update(_db.purchaseItems)..where((t) => t.id.equals(itemId))).write(
+                PurchaseItemsCompanion(
+                  quantity: Value(qty),
+                  unitCost: Value(cost),
+                  currency: Value(curr),
+                ),
+              );
+          await (_db.update(_db.stockMovements)
+                ..where((t) => t.referenceId.equals(purchaseInvoiceId) & t.productId.equals(prodId)))
+              .write(
+                StockMovementsCompanion(
+                  quantity: Value(qty),
+                ),
+              );
+        } else {
+          final newId = _uuid.v4();
+          await _db.into(_db.purchaseItems).insert(
+                PurchaseItem(
+                  id: newId,
+                  purchaseInvoiceId: purchaseInvoiceId,
+                  productId: prodId,
+                  quantity: qty,
+                  unitCost: cost,
+                  currency: curr,
+                ),
+              );
+          await _db.into(_db.stockMovements).insert(
+                StockMovement(
+                  id: _uuid.v4(),
+                  productId: prodId,
+                  type: 'purchase',
+                  quantity: qty,
+                  createdAt: now,
+                  referenceId: purchaseInvoiceId,
+                ),
+              );
+        }
+      }
+    });
+
+    _sync?.updatePendingCount();
+    _sync?.sync();
+  }
+
+  Future<void> updateExpense({
+    required String expenseId,
+    required String categoryId,
+    required double amount,
+    required String currency,
+    String? notes,
+    required DateTime createdAt,
+  }) async {
+    await (_db.update(_db.expenses)..where((t) => t.id.equals(expenseId))).write(
+          ExpensesCompanion(
+            categoryId: Value(categoryId),
+            amount: Value(amount),
+            currency: Value(currency),
+            notes: Value(notes),
+            createdAt: Value(createdAt),
+            syncedAt: const Value(null),
+          ),
+        );
+    _sync?.updatePendingCount();
+    _sync?.sync();
+  }
+
+  Future<void> updateDebtPayment({
+    required String paymentId,
+    required double newAmount,
+    required DateTime paidAt,
+  }) async {
+    await _db.transaction(() async {
+      final payment = await (_db.select(_db.debtPayments)..where((t) => t.id.equals(paymentId))).getSingleOrNull();
+      if (payment == null) return;
+
+      final debt = await (_db.select(_db.debts)..where((t) => t.id.equals(payment.debtId))).getSingleOrNull();
+      if (debt != null) {
+        final diff = newAmount - payment.amountPaid;
+        final newRemaining = (debt.remainingAmount - diff).clamp(0.0, debt.amount);
+        final newStatus = newRemaining <= 0.001 ? 'paid' : 'open';
+        await (_db.update(_db.debts)..where((t) => t.id.equals(debt.id))).write(
+              DebtsCompanion(
+                remainingAmount: Value(newRemaining),
+                status: Value(newStatus),
+                syncedAt: const Value(null),
+              ),
+            );
+      }
+
+      await (_db.update(_db.debtPayments)..where((t) => t.id.equals(paymentId))).write(
+            DebtPaymentsCompanion(
+              amountPaid: Value(newAmount),
+              paidAt: Value(paidAt),
+              syncedAt: const Value(null),
+            ),
+          );
+    });
+    _sync?.updatePendingCount();
+    _sync?.sync();
+  }
+
+  Future<void> updateAdjustment({
+    required String movementId,
+    required double quantity,
+    String? reason,
+  }) async {
+    await (_db.update(_db.stockMovements)..where((t) => t.id.equals(movementId))).write(
+          StockMovementsCompanion(
+            quantity: Value(quantity),
+            referenceId: Value(reason),
+          ),
+        );
+    _sync?.updatePendingCount();
+    _sync?.sync();
+  }
 }

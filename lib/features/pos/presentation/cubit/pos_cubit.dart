@@ -131,7 +131,20 @@ class POSCubit extends Cubit<POSState> {
       cart: [],
       clearCustomer: true,
       invoiceDiscount: 0.0,
+      clearCustomTotalSyp: true,
+      clearCustomTotalUsd: true,
       paymentType: 'cash',
+    ));
+  }
+
+  void setCustomTotal({double? syp, double? usd, bool clearSyp = false, bool clearUsd = false}) {
+    if (state is! POSLoaded) return;
+    final loaded = state as POSLoaded;
+    emit(loaded.copyWith(
+      customTotalSyp: syp,
+      clearCustomTotalSyp: clearSyp,
+      customTotalUsd: usd,
+      clearCustomTotalUsd: clearUsd,
     ));
   }
 
@@ -205,12 +218,16 @@ class POSCubit extends Cubit<POSState> {
             'currency': item.currency,
           }).toList();
 
+      final effectiveDiscount = (loaded.cartSubtotal - loaded.totalAmount).clamp(0.0, double.infinity);
+
       await _posRepository.createSale(
         customerId: loaded.selectedCustomer?.id,
         totalAmount: loaded.totalAmount,
-        discount: loaded.invoiceDiscount,
+        discount: effectiveDiscount,
         paymentType: loaded.paymentType,
         currency: loaded.cartCurrency,
+        customTotalSyp: loaded.customTotalSyp,
+        customTotalUsd: loaded.customTotalUsd,
         items: items,
       );
 

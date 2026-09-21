@@ -48,6 +48,8 @@ class POSRepository {
     required double discount,
     required String paymentType,
     String currency = 'SYP',
+    double? customTotalSyp,
+    double? customTotalUsd,
     required List<Map<String, dynamic>> items,
   }) async {
     _logger.info('Creating sale: amount=$totalAmount, currency=$currency, payment=$paymentType, items=${items.length}',
@@ -119,29 +121,30 @@ class POSRepository {
           0.0,
           (sum, i) => sum + ((i['priceUsed'] as num).toDouble() * (i['quantity'] as num).toDouble() - (i['discount'] as num).toDouble()),
         );
-        final totalSyp = (rawTotalSyp - (usdItems.isNotEmpty ? discount : 0.0)).clamp(0.0, double.infinity);
+        final finalTotalUsd = customTotalUsd ?? totalUsd;
+        final finalTotalSyp = customTotalSyp ?? (rawTotalSyp - (usdItems.isNotEmpty ? discount : 0.0)).clamp(0.0, double.infinity);
 
         if (usdItems.isNotEmpty && sypItems.isNotEmpty) {
-          if (totalUsd > 0) {
+          if (finalTotalUsd > 0) {
             final debtUsd = Debt(
               id: _uuid.v4(),
               customerId: customerId,
               invoiceId: invoiceId,
-              amount: totalUsd,
-              remainingAmount: totalUsd,
+              amount: finalTotalUsd,
+              remainingAmount: finalTotalUsd,
               status: 'open',
               currency: AppCurrency.usdCode,
               createdAt: now,
             );
             await _db.into(_db.debts).insert(debtUsd);
           }
-          if (totalSyp > 0) {
+          if (finalTotalSyp > 0) {
             final debtSyp = Debt(
               id: _uuid.v4(),
               customerId: customerId,
               invoiceId: invoiceId,
-              amount: totalSyp,
-              remainingAmount: totalSyp,
+              amount: finalTotalSyp,
+              remainingAmount: finalTotalSyp,
               status: 'open',
               currency: AppCurrency.sypCode,
               createdAt: now,
@@ -505,7 +508,7 @@ class POSRepository {
           priceUsed: priceUsed,
           quantity: qty,
           discount: itemDiscount,
-          currency: invoice.currency,
+          currency: (item['currency'] as String?) ?? invoice.currency,
         );
         await _db.into(_db.invoiceItems).insert(invItem);
 

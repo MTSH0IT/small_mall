@@ -1,7 +1,7 @@
 import 'package:drift/drift.dart' show OrderingTerm;
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:small_mall/core/constants/app_currency.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/di/injection.dart';
 import 'package:small_mall/core/utils/theme.dart';
@@ -42,6 +42,7 @@ class _EditableItem {
     required this.priceUsed,
     required this.quantity,
     required this.discount,
+    required this.currency,
   });
 
   final String productId;
@@ -49,13 +50,14 @@ class _EditableItem {
   double priceUsed;
   double quantity;
   double discount;
+  String currency;
 
+  String get currencySymbol => AppCurrency.getSymbol(currency);
   double get total => (priceUsed * quantity) - discount;
 }
 
 class _EditInvoiceDialogState extends State<EditInvoiceDialog> {
   final _formKey = GlobalKey<FormState>();
-  final _discountController = TextEditingController();
 
   String? _selectedCustomerId;
   String _selectedPaymentType = 'cash';
@@ -71,7 +73,6 @@ class _EditInvoiceDialogState extends State<EditInvoiceDialog> {
     final inv = widget.invoiceData.invoice;
     _selectedCustomerId = inv.customerId;
     _selectedPaymentType = inv.paymentType;
-    _discountController.text = inv.discount > 0 ? inv.discount.toStringAsFixed(2) : '0';
 
     _items = widget.invoiceData.items.map((it) {
       return _EditableItem(
@@ -80,16 +81,11 @@ class _EditInvoiceDialogState extends State<EditInvoiceDialog> {
         priceUsed: it.invoiceItem.priceUsed,
         quantity: it.invoiceItem.quantity,
         discount: it.invoiceItem.discount,
+        currency: it.invoiceItem.currency,
       );
     }).toList();
 
     _loadCustomers();
-  }
-
-  @override
-  void dispose() {
-    _discountController.dispose();
-    super.dispose();
   }
 
   Future<void> _loadCustomers() async {
@@ -111,12 +107,121 @@ class _EditInvoiceDialogState extends State<EditInvoiceDialog> {
 
   double get _subtotal => _items.fold<double>(0.0, (sum, it) => sum + it.total);
 
-  double get _discount {
-    final parsed = double.tryParse(_discountController.text.trim()) ?? 0.0;
-    return parsed.clamp(0.0, _subtotal);
-  }
+  double get _subtotalUsd => _items
+      .where((it) => it.currency == AppCurrency.usdCode)
+      .fold<double>(0.0, (sum, it) => sum + it.total);
 
-  double get _netTotal => (_subtotal - _discount).clamp(0.0, double.infinity);
+  double get _subtotalSyp => _items
+      .where((it) => it.currency != AppCurrency.usdCode)
+      .fold<double>(0.0, (sum, it) => sum + it.total);
+
+  bool get _hasMultipleCurrencies => _subtotalUsd > 0 && _subtotalSyp > 0;
+
+  Future<void> _showEditItemPriceDialog(_EditableItem item) async {
+    final qty = item.quantity;
+    final unitPriceController = TextEditingController(text: item.priceUsed.toStringAsFixed(2));
+    final lineTotalController = TextEditingController(text: item.total.toStringAsFixed(2));
+    bool isUpdating = false;
+
+    await showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.edit_outlined, color: AppColors.primary, size: 20),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('pos.edit_price_title'.tr(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    Text(item.productName, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: unitPriceController,
+                autofocus: true,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                style: AppTheme.numericStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                decoration: InputDecoration(
+                  labelText: 'pos.unit_price'.tr(),
+                  prefixIcon: const Icon(Icons.sell_outlined, size: 18),
+                  suffixText: item.currencySymbol,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                onChanged: (val) {
+                  if (isUpdating) return;
+                  isUpdating = true;
+                  final parsedUnit = double.tryParse(val) ?? 0.0;
+                  lineTotalController.text = (parsedUnit * qty).toStringAsFixed(2);
+                  isUpdating = false;
+                },
+              ),
+              const SizedBox(height: 14),
+              TextField(
+                controller: lineTotalController,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                style: AppTheme.numericStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                decoration: InputDecoration(
+                  labelText: 'pos.final_line_price'.tr(),
+                  helperText: '(${qty.toStringAsFixed(qty % 1 == 0 ? 0 : 1)} ${'pos.units_count'.tr(namedArgs: {'count': ''}).trim()})',
+                  prefixIcon: const Icon(Icons.calculate_outlined, size: 18),
+                  suffixText: item.currencySymbol,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                onChanged: (val) {
+                  if (isUpdating) return;
+                  isUpdating = true;
+                  final parsedTotal = double.tryParse(val) ?? 0.0;
+                  final computedUnit = qty > 0 ? parsedTotal / qty : parsedTotal;
+                  unitPriceController.text = computedUnit.toStringAsFixed(2);
+                  isUpdating = false;
+                },
+              ),
+            ],
+          ),
+          actionsAlignment: MainAxisAlignment.spaceBetween,
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('common.cancel'.tr()),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              onPressed: () {
+                final newPrice = double.tryParse(unitPriceController.text.trim());
+                if (newPrice != null && newPrice >= 0) {
+                  setState(() {
+                    item.priceUsed = newPrice;
+                  });
+                }
+                Navigator.pop(ctx);
+              },
+              child: Text('common.save'.tr()),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   Future<void> _handleSave() async {
     if (!_formKey.currentState!.validate()) return;
@@ -139,13 +244,14 @@ class _EditInvoiceDialogState extends State<EditInvoiceDialog> {
         'priceUsed': it.priceUsed,
         'quantity': it.quantity,
         'discount': it.discount,
+        'currency': it.currency,
       }).toList();
 
       await widget.cubit.updateInvoice(
         invoiceId: widget.invoiceData.invoice.id,
         customerId: _selectedCustomerId,
         paymentType: _selectedPaymentType,
-        discount: _discount,
+        discount: 0.0,
         items: itemsPayload,
       );
 
@@ -313,10 +419,29 @@ class _EditInvoiceDialogState extends State<EditInvoiceDialog> {
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(item.productName, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          '${item.priceUsed.toStringAsFixed(2)} × ${item.quantity.toStringAsFixed(0)}',
-                                          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                                        const SizedBox(height: 4),
+                                        InkWell(
+                                          onTap: () => _showEditItemPriceDialog(item),
+                                          borderRadius: BorderRadius.circular(4),
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: AppColors.surface,
+                                              borderRadius: BorderRadius.circular(4),
+                                              border: Border.all(color: AppColors.border),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Text(
+                                                  '${item.priceUsed.toStringAsFixed(2)} ${item.currencySymbol}',
+                                                  style: AppTheme.numericStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                                                ),
+                                                const SizedBox(width: 4),
+                                                const Icon(Icons.edit_outlined, size: 12, color: AppColors.textSecondary),
+                                              ],
+                                            ),
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -356,9 +481,9 @@ class _EditInvoiceDialogState extends State<EditInvoiceDialog> {
                                   const SizedBox(width: 12),
                                   // Line Total
                                   SizedBox(
-                                    width: 75,
+                                    width: 85,
                                     child: Text(
-                                      item.total.toStringAsFixed(2),
+                                      '${item.total.toStringAsFixed(2)} ${item.currencySymbol}',
                                       textAlign: TextAlign.end,
                                       style: AppTheme.numericStyle(fontWeight: FontWeight.bold, fontSize: 13),
                                     ),
@@ -382,71 +507,58 @@ class _EditInvoiceDialogState extends State<EditInvoiceDialog> {
                       ),
                       const SizedBox(height: 16),
 
-                      // 3. Discount Field & Summary
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: TextFormField(
-                              controller: _discountController,
-                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                              inputFormatters: [
-                                FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
-                              ],
-                              decoration: InputDecoration(
-                                labelText: 'pos.invoice_discount'.tr(),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                                prefixIcon: const Icon(Icons.discount_outlined, size: 18),
-                              ),
-                              onChanged: (_) => setState(() {}),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          // Summary Box
-                          Expanded(
-                            child: Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: AppColors.surface,
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: AppColors.border),
-                              ),
-                              child: Column(
+                      // 3. Summary Box (Without Discount Field, with Currencies)
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AppColors.border),
+                        ),
+                        child: Column(
+                          children: [
+                            if (_hasMultipleCurrencies) ...[
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text('pos.subtotal'.tr(), style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                                      Text(_subtotal.toStringAsFixed(2), style: AppTheme.numericStyle(fontSize: 12)),
-                                    ],
+                                  Text(
+                                    '${'common.total'.tr()} (${AppCurrency.usdSymbol}):',
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF059669)),
                                   ),
-                                  if (_discount > 0) ...[
-                                    const SizedBox(height: 4),
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text('pos.discount_amount'.tr(), style: const TextStyle(fontSize: 12, color: AppColors.danger)),
-                                        Text('-${_discount.toStringAsFixed(2)}', style: AppTheme.numericStyle(fontSize: 12, color: AppColors.danger)),
-                                      ],
-                                    ),
-                                  ],
-                                  const Divider(height: 12),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text('common.total'.tr(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                                      Text(
-                                        _netTotal.toStringAsFixed(2),
-                                        style: AppTheme.numericStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.primary),
-                                      ),
-                                    ],
+                                  Text(
+                                    '${_subtotalUsd.toStringAsFixed(2)} ${AppCurrency.usdSymbol}',
+                                    style: AppTheme.numericStyle(fontWeight: FontWeight.bold, fontSize: 15, color: const Color(0xFF059669)),
                                   ),
                                 ],
                               ),
-                            ),
-                          ),
-                        ],
+                              const SizedBox(height: 8),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    '${'common.total'.tr()} (${AppCurrency.sypSymbol}):',
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary),
+                                  ),
+                                  Text(
+                                    '${_subtotalSyp.toStringAsFixed(2)} ${AppCurrency.sypSymbol}',
+                                    style: AppTheme.numericStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.primary),
+                                  ),
+                                ],
+                              ),
+                            ] else ...[
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text('common.total'.tr(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                  Text(
+                                    '${_subtotal.toStringAsFixed(2)} ${AppCurrency.getSymbol(_items.isNotEmpty ? _items.first.currency : widget.invoiceData.invoice.currency)}',
+                                    style: AppTheme.numericStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.primary),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ],
+                        ),
                       ),
                     ],
                   ),

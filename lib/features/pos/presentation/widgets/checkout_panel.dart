@@ -7,12 +7,13 @@ import 'package:small_mall/core/widgets/app_searchable_dropdown.dart';
 import 'package:small_mall/core/widgets/primary_button.dart';
 import 'package:small_mall/features/pos/presentation/cubit/pos_state.dart';
 
-class CheckoutPanel extends StatefulWidget {
+class CheckoutPanel extends StatelessWidget {
   const CheckoutPanel({
     super.key,
     required this.state,
     required this.isLoading,
-    required this.onInvoiceDiscountChanged,
+    this.onInvoiceDiscountChanged,
+    this.onCustomTotalChanged,
     required this.onPaymentTypeChanged,
     required this.onCustomerChanged,
     required this.onAddCustomerPressed,
@@ -22,53 +23,224 @@ class CheckoutPanel extends StatefulWidget {
 
   final POSLoaded state;
   final bool isLoading;
-  final ValueChanged<double> onInvoiceDiscountChanged;
+  final ValueChanged<double>? onInvoiceDiscountChanged;
+  final void Function({double? syp, double? usd, bool clearSyp, bool clearUsd})? onCustomTotalChanged;
   final ValueChanged<String> onPaymentTypeChanged;
   final ValueChanged<Customer?> onCustomerChanged;
   final VoidCallback onAddCustomerPressed;
   final void Function(Customer)? onEditCustomerPressed;
   final VoidCallback? onCheckoutPressed;
 
-  @override
-  State<CheckoutPanel> createState() => _CheckoutPanelState();
-}
+  Future<void> _showEditTotalDialog({
+    required BuildContext context,
+    required String currencyCode,
+    required double originalSubtotal,
+    required double currentTotal,
+    required bool hasCustomTotal,
+  }) async {
+    final isSyp = currencyCode == AppCurrency.sypCode;
+    final currencySymbol = AppCurrency.getSymbol(currencyCode);
+    final currencyName = AppCurrency.fromCode(currencyCode).nameAr;
+    final controller = TextEditingController(text: currentTotal.toStringAsFixed(2));
 
-class _CheckoutPanelState extends State<CheckoutPanel> {
-  late TextEditingController _discountController;
-
-  @override
-  void initState() {
-    super.initState();
-    _discountController = TextEditingController(
-      text: widget.state.invoiceDiscount > 0
-          ? widget.state.invoiceDiscount.toStringAsFixed(2)
-          : '',
+    await showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.edit_outlined, color: AppColors.primary, size: 20),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'تعديل المجموع النهائي ($currencyName)',
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'المجموع الأصلي: ${originalSubtotal.toStringAsFixed(2)} $currencySymbol',
+                      style: AppTheme.numericStyle(color: AppColors.textSecondary, fontSize: 13),
+                    ),
+                    if (hasCustomTotal)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(color: Colors.amber.shade700, width: 0.8),
+                        ),
+                        child: Text(
+                          'pos.modified_price'.tr(),
+                          style: TextStyle(
+                            color: Colors.amber.shade800,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: controller,
+                autofocus: true,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                style: AppTheme.numericStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                decoration: InputDecoration(
+                  labelText: 'المبلغ النهائي المطلوب',
+                  prefixIcon: const Icon(Icons.calculate_outlined, size: 20),
+                  suffixText: currencySymbol,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+              ),
+            ],
+          ),
+          actionsAlignment: MainAxisAlignment.spaceBetween,
+          actions: [
+            if (hasCustomTotal)
+              TextButton.icon(
+                style: TextButton.styleFrom(foregroundColor: AppColors.textSecondary),
+                icon: const Icon(Icons.restore_rounded, size: 16),
+                label: const Text('استعادة الأصلي'),
+                onPressed: () {
+                  if (isSyp) {
+                    onCustomTotalChanged?.call(clearSyp: true);
+                  } else {
+                    onCustomTotalChanged?.call(clearUsd: true);
+                  }
+                  Navigator.pop(ctx);
+                },
+              )
+            else
+              const SizedBox.shrink(),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: Text('common.cancel'.tr()),
+                ),
+                const SizedBox(width: 8),
+                FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  onPressed: () {
+                    final val = double.tryParse(controller.text.trim());
+                    if (val != null && val >= 0) {
+                      if (isSyp) {
+                        onCustomTotalChanged?.call(syp: val);
+                      } else {
+                        onCustomTotalChanged?.call(usd: val);
+                      }
+                    }
+                    Navigator.pop(ctx);
+                  },
+                  child: Text('common.save'.tr()),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
     );
   }
 
-  @override
-  void didUpdateWidget(covariant CheckoutPanel oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.state.invoiceDiscount != widget.state.invoiceDiscount) {
-      final current = double.tryParse(_discountController.text) ?? 0.0;
-      if (current != widget.state.invoiceDiscount) {
-        _discountController.text = widget.state.invoiceDiscount > 0
-            ? widget.state.invoiceDiscount.toStringAsFixed(2)
-            : '';
-      }
-    }
-  }
+  Widget _buildEditableTotalChip({
+    required BuildContext context,
+    required String currencyCode,
+    required double originalSubtotal,
+    required double currentTotal,
+    required bool hasCustomTotal,
+  }) {
+    final isUsd = currencyCode == AppCurrency.usdCode;
+    final currencySymbol = AppCurrency.getSymbol(currencyCode);
+    final defaultColor = isUsd ? const Color(0xFF059669) : AppColors.primary;
 
-  @override
-  void dispose() {
-    _discountController.dispose();
-    super.dispose();
+    return InkWell(
+      onTap: () => _showEditTotalDialog(
+        context: context,
+        currencyCode: currencyCode,
+        originalSubtotal: originalSubtotal,
+        currentTotal: currentTotal,
+        hasCustomTotal: hasCustomTotal,
+      ),
+      borderRadius: BorderRadius.circular(6),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: hasCustomTotal
+              ? Colors.amber.withValues(alpha: 0.12)
+              : defaultColor.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: hasCustomTotal
+                ? Colors.amber.shade700
+                : defaultColor.withValues(alpha: 0.3),
+            width: 1.0,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (hasCustomTotal) ...[
+              Text(
+                '${originalSubtotal.toStringAsFixed(2)} ',
+                style: AppTheme.numericStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 12,
+                ).copyWith(decoration: TextDecoration.lineThrough),
+              ),
+            ],
+            Text(
+              '${currentTotal.toStringAsFixed(2)} $currencySymbol',
+              style: AppTheme.numericStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: hasCustomTotal ? Colors.amber.shade900 : defaultColor,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Icon(
+              Icons.edit_outlined,
+              size: 14,
+              color: hasCustomTotal ? Colors.amber.shade800 : defaultColor,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final state = widget.state;
     final isDebt = state.paymentType == 'debt';
     final hasNoCustomerOnDebt = isDebt && state.selectedCustomer == null;
 
@@ -160,48 +332,6 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                       ),
                     ],
                   ),
-                const SizedBox(height: 6),
-
-                // Extra Invoice Discount
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      state.hasMultipleCurrencies
-                          ? '${'pos.invoice_discount'.tr()} (${AppCurrency.sypSymbol}):'
-                          : '${'pos.invoice_discount'.tr()}:',
-                      style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
-                    ),
-                    SizedBox(
-                      width: 100,
-                      height: 32,
-                      child: TextField(
-                        controller: _discountController,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        textAlign: TextAlign.end,
-                        style: AppTheme.numericStyle(fontSize: 13),
-                        decoration: InputDecoration(
-                          hintText: '0.00',
-                          filled: true,
-                          fillColor: AppColors.surfaceElevated,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(6),
-                            borderSide: const BorderSide(color: AppColors.border),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(6),
-                            borderSide: const BorderSide(color: AppColors.border),
-                          ),
-                        ),
-                        onChanged: (val) {
-                          final discount = double.tryParse(val) ?? 0.0;
-                          widget.onInvoiceDiscountChanged(discount);
-                        },
-                      ),
-                    ),
-                  ],
-                ),
                 const Divider(height: 16, color: AppColors.border),
 
                 // Net Total
@@ -210,33 +340,37 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        '${'pos.net_total'.tr()}:',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          '${'pos.net_total'.tr()}:',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primary,
+                          ),
                         ),
                       ),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          if (state.totalUsd > 0)
-                            Text(
-                              '${state.totalUsd.toStringAsFixed(2)} ${AppCurrency.usdSymbol}',
-                              style: AppTheme.numericStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: const Color(0xFF059669),
-                              ),
+                          if (state.subtotalUsd > 0 || state.hasCustomTotalUsd)
+                            _buildEditableTotalChip(
+                              context: context,
+                              currencyCode: AppCurrency.usdCode,
+                              originalSubtotal: state.subtotalUsd,
+                              currentTotal: state.totalUsd,
+                              hasCustomTotal: state.hasCustomTotalUsd,
                             ),
-                          if (state.totalSyp > 0)
-                            Text(
-                              '${state.totalSyp.toStringAsFixed(2)} ${AppCurrency.sypSymbol}',
-                              style: AppTheme.numericStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.primary,
-                              ),
+                          if ((state.subtotalUsd > 0 || state.hasCustomTotalUsd) &&
+                              (state.subtotalSyp > 0 || state.hasCustomTotalSyp))
+                            const SizedBox(height: 6),
+                          if (state.subtotalSyp > 0 || state.hasCustomTotalSyp)
+                            _buildEditableTotalChip(
+                              context: context,
+                              currencyCode: AppCurrency.sypCode,
+                              originalSubtotal: state.subtotalSyp,
+                              currentTotal: state.totalSyp,
+                              hasCustomTotal: state.hasCustomTotalSyp,
                             ),
                         ],
                       ),
@@ -253,13 +387,12 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                           color: AppColors.primary,
                         ),
                       ),
-                      Text(
-                        '${state.totalAmount.toStringAsFixed(2)} ${state.cartCurrencySymbol}',
-                        style: AppTheme.numericStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
-                        ),
+                      _buildEditableTotalChip(
+                        context: context,
+                        currencyCode: state.cartCurrency,
+                        originalSubtotal: state.cartSubtotal,
+                        currentTotal: state.cartCurrency == AppCurrency.usdCode ? state.totalUsd : state.totalSyp,
+                        hasCustomTotal: state.cartCurrency == AppCurrency.usdCode ? state.hasCustomTotalUsd : state.hasCustomTotalSyp,
                       ),
                     ],
                   ),
@@ -286,7 +419,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
               ],
               selected: {state.paymentType},
               onSelectionChanged: (selection) {
-                widget.onPaymentTypeChanged(selection.first);
+                onPaymentTypeChanged(selection.first);
               },
               style: SegmentedButton.styleFrom(
                 selectedBackgroundColor: AppColors.primary,
@@ -313,7 +446,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                   ),
                   if (state.selectedCustomer != null)
                     InkWell(
-                      onTap: () => widget.onCustomerChanged(null),
+                      onTap: () => onCustomerChanged(null),
                       borderRadius: BorderRadius.circular(4),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
@@ -477,11 +610,11 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                           );
                         }),
                       ],
-                      onChanged: widget.onCustomerChanged,
+                      onChanged: onCustomerChanged,
                     ),
                   ),
                   const SizedBox(width: 8),
-                  if (state.selectedCustomer != null && widget.onEditCustomerPressed != null)
+                  if (state.selectedCustomer != null && onEditCustomerPressed != null)
                     IconButton(
                       tooltip: 'customers.edit_customer'.tr(),
                       icon: const Icon(Icons.edit_outlined, color: AppColors.primary),
@@ -490,7 +623,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                         side: const BorderSide(color: AppColors.border),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       ),
-                      onPressed: () => widget.onEditCustomerPressed!(state.selectedCustomer!),
+                      onPressed: () => onEditCustomerPressed!(state.selectedCustomer!),
                     )
                   else
                     IconButton(
@@ -501,7 +634,7 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
                         side: const BorderSide(color: AppColors.border),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       ),
-                      onPressed: widget.onAddCustomerPressed,
+                      onPressed: onAddCustomerPressed,
                     ),
                 ],
               ),
@@ -561,8 +694,8 @@ class _CheckoutPanelState extends State<CheckoutPanel> {
           PrimaryButton(
             label: checkoutButtonLabel,
             icon: isDebt ? Icons.assignment_turned_in_rounded : Icons.check_circle_outline_rounded,
-            onPressed: (state.cart.isEmpty || hasNoCustomerOnDebt) ? null : widget.onCheckoutPressed,
-            isLoading: widget.isLoading,
+            onPressed: (state.cart.isEmpty || hasNoCustomerOnDebt) ? null : onCheckoutPressed,
+            isLoading: isLoading,
           ),
         ],
       ),

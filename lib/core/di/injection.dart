@@ -28,7 +28,7 @@ Future<void> setupDependencyInjection() async {
   // Repositories
   getIt.registerLazySingleton<InventoryRepository>(() => InventoryRepository(database, syncService, logger));
   getIt.registerLazySingleton<POSRepository>(() => POSRepository(database, syncService, logger));
-  getIt.registerLazySingleton<InvoicesRepository>(() => InvoicesRepository(database, getIt<POSRepository>(), logger));
+  getIt.registerLazySingleton<InvoicesRepository>(() => InvoicesRepository(database, getIt<POSRepository>(), logger, syncService));
   getIt.registerLazySingleton<CustomersDebtsRepository>(() => CustomersDebtsRepository(database, syncService, logger));
   getIt.registerLazySingleton<SuppliersPurchasingRepository>(() => SuppliersPurchasingRepository(database, syncService, logger));
   getIt.registerLazySingleton<ExpensesRepository>(() => ExpensesRepository(database, syncService, logger));
