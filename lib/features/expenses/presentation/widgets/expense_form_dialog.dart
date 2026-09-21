@@ -11,16 +11,23 @@ class ExpenseFormDialog extends StatefulWidget {
   const ExpenseFormDialog({
     super.key,
     required this.categories,
+    this.subcategories = const [],
     this.initialExpense,
     this.preselectedCategoryId,
+    this.preselectedSubcategoryId,
+    this.onQuickAddSubcategory,
     required this.onSave,
   });
 
   final List<ExpenseCategory> categories;
+  final List<ExpenseCategory> subcategories;
   final Expense? initialExpense;
   final String? preselectedCategoryId;
+  final String? preselectedSubcategoryId;
+  final Future<ExpenseCategory?> Function(String parentId)? onQuickAddSubcategory;
   final Future<void> Function({
     required String categoryId,
+    String? subcategoryId,
     required double amount,
     String? notes,
     required DateTime createdAt,
@@ -35,6 +42,8 @@ class _ExpenseFormDialogState extends State<ExpenseFormDialog> {
   late final TextEditingController _amountController;
   late final TextEditingController _notesController;
   String? _selectedCategoryId;
+  String? _selectedSubcategoryId;
+  late List<ExpenseCategory> _localSubcategories;
   late DateTime _selectedDate;
   bool _isLoading = false;
 
@@ -51,6 +60,8 @@ class _ExpenseFormDialogState extends State<ExpenseFormDialog> {
     _selectedCategoryId = expense?.categoryId ??
         widget.preselectedCategoryId ??
         (widget.categories.isNotEmpty ? widget.categories.first.id : null);
+    _selectedSubcategoryId = expense?.subcategoryId ?? widget.preselectedSubcategoryId;
+    _localSubcategories = List<ExpenseCategory>.from(widget.subcategories);
     _selectedDate = expense?.createdAt ?? DateTime.now();
   }
 
@@ -59,6 +70,11 @@ class _ExpenseFormDialogState extends State<ExpenseFormDialog> {
     _amountController.dispose();
     _notesController.dispose();
     super.dispose();
+  }
+
+  List<ExpenseCategory> get _availableSubcategories {
+    if (_selectedCategoryId == null) return [];
+    return _localSubcategories.where((s) => s.parentId == _selectedCategoryId).toList();
   }
 
   Future<void> _pickDate() async {
@@ -71,6 +87,19 @@ class _ExpenseFormDialogState extends State<ExpenseFormDialog> {
     );
     if (picked != null) {
       setState(() => _selectedDate = picked);
+    }
+  }
+
+  Future<void> _handleQuickAddSubcategory() async {
+    if (_selectedCategoryId == null) return;
+    if (widget.onQuickAddSubcategory != null) {
+      final newSub = await widget.onQuickAddSubcategory!(_selectedCategoryId!);
+      if (newSub != null && mounted) {
+        setState(() {
+          _localSubcategories.add(newSub);
+          _selectedSubcategoryId = newSub.id;
+        });
+      }
     }
   }
 
@@ -101,6 +130,7 @@ class _ExpenseFormDialogState extends State<ExpenseFormDialog> {
     try {
       await widget.onSave(
         categoryId: _selectedCategoryId!,
+        subcategoryId: _selectedSubcategoryId,
         amount: amount,
         notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
         createdAt: _selectedDate,
@@ -119,6 +149,7 @@ class _ExpenseFormDialogState extends State<ExpenseFormDialog> {
   @override
   Widget build(BuildContext context) {
     final isEdit = widget.initialExpense != null;
+    final availableSubs = _availableSubcategories;
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -158,7 +189,7 @@ class _ExpenseFormDialogState extends State<ExpenseFormDialog> {
               ),
               const SizedBox(height: 20),
 
-              // Category Selector
+              // Main Category Selector
               AppSearchableDropdown<String>(
                 label: 'expenses.category'.tr(),
                 value: _selectedCategoryId,
@@ -174,8 +205,67 @@ class _ExpenseFormDialogState extends State<ExpenseFormDialog> {
                     child: Text(cat.name),
                   );
                 }).toList(),
-                onChanged: (val) => setState(() => _selectedCategoryId = val),
+                onChanged: (val) {
+                  setState(() {
+                    _selectedCategoryId = val;
+                    // Reset subcategory if it does not belong to new category
+                    if (_selectedSubcategoryId != null) {
+                      final exists = _localSubcategories.any((s) => s.id == _selectedSubcategoryId && s.parentId == val);
+                      if (!exists) {
+                        _selectedSubcategoryId = null;
+                      }
+                    }
+                  });
+                },
                 validator: (val) => val == null ? 'common.required_field'.tr() : null,
+              ),
+              const SizedBox(height: 16),
+
+              // Subcategory Selector (Optional)
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(
+                    child: AppSearchableDropdown<String?>(
+                      label: 'expenses.optional_subcategory'.tr(),
+                      value: _selectedSubcategoryId,
+                      hint: 'expenses.no_subcategory'.tr(),
+                      prefixIcon: const Icon(Icons.subdirectory_arrow_left_rounded, size: 18, color: AppColors.textSecondary),
+                      itemSearchText: (subId) {
+                        if (subId == null || subId.isEmpty) return 'expenses.no_subcategory'.tr();
+                        final sub = availableSubs.where((s) => s.id == subId).firstOrNull;
+                        return sub?.name ?? '';
+                      },
+                      items: [
+                        DropdownMenuItem<String?>(
+                          value: null,
+                          child: Text(
+                            'expenses.no_subcategory'.tr(),
+                            style: const TextStyle(color: AppColors.textSecondary),
+                          ),
+                        ),
+                        ...availableSubs.map((sub) {
+                          return DropdownMenuItem<String?>(
+                            value: sub.id,
+                            child: Text(sub.name),
+                          );
+                        }),
+                      ],
+                      onChanged: (val) => setState(() => _selectedSubcategoryId = val),
+                    ),
+                  ),
+                  if (widget.onQuickAddSubcategory != null && _selectedCategoryId != null) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 2),
+                      child: IconButton.filledTonal(
+                        tooltip: 'expenses.add_subcategory'.tr(),
+                        icon: const Icon(Icons.add, size: 20),
+                        onPressed: _handleQuickAddSubcategory,
+                      ),
+                    ),
+                  ],
+                ],
               ),
               const SizedBox(height: 16),
 

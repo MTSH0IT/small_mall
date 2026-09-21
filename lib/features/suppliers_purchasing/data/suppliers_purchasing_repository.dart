@@ -216,6 +216,50 @@ class SuppliersPurchasingRepository {
         await (_db.update(_db.products)..where((t) => t.id.equals(prodId))).write(
           ProductsCompanion(costPrice: Value(cost), updatedAt: Value(now), syncedAt: const Value(null)),
         );
+
+        // Update retail selling price if provided
+        if (item.containsKey('retailPrice') && item['retailPrice'] != null) {
+          final retailPriceVal = (item['retailPrice'] as num).toDouble();
+          final existingRetailPrice = await (_db.select(_db.productPrices)
+                ..where((t) => t.productId.equals(prodId) & t.priceLabel.equals('retail')))
+              .getSingleOrNull();
+          if (existingRetailPrice != null) {
+            await (_db.update(_db.productPrices)..where((t) => t.id.equals(existingRetailPrice.id))).write(
+              ProductPricesCompanion(priceValue: Value(retailPriceVal)),
+            );
+          } else {
+            await _db.into(_db.productPrices).insert(
+              ProductPrice(
+                id: _uuid.v4(),
+                productId: prodId,
+                priceLabel: 'retail',
+                priceValue: retailPriceVal,
+              ),
+            );
+          }
+        }
+
+        // Update wholesale selling price if provided
+        if (item.containsKey('wholesalePrice') && item['wholesalePrice'] != null) {
+          final wholesalePriceVal = (item['wholesalePrice'] as num).toDouble();
+          final existingWholesalePrice = await (_db.select(_db.productPrices)
+                ..where((t) => t.productId.equals(prodId) & t.priceLabel.equals('wholesale')))
+              .getSingleOrNull();
+          if (existingWholesalePrice != null) {
+            await (_db.update(_db.productPrices)..where((t) => t.id.equals(existingWholesalePrice.id))).write(
+              ProductPricesCompanion(priceValue: Value(wholesalePriceVal)),
+            );
+          } else {
+            await _db.into(_db.productPrices).insert(
+              ProductPrice(
+                id: _uuid.v4(),
+                productId: prodId,
+                priceLabel: 'wholesale',
+                priceValue: wholesalePriceVal,
+              ),
+            );
+          }
+        }
       }
     });
 

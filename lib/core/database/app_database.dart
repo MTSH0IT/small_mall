@@ -181,6 +181,7 @@ class ExpenseCategories extends Table {
   TextColumn get id => text()();
   TextColumn get name => text()();
   TextColumn get description => text().nullable()();
+  TextColumn get parentId => text().nullable()();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get syncedAt => dateTime().nullable()();
 
@@ -191,6 +192,7 @@ class ExpenseCategories extends Table {
 class Expenses extends Table {
   TextColumn get id => text()();
   TextColumn get categoryId => text()();
+  TextColumn get subcategoryId => text().nullable()();
   RealColumn get amount => real()();
   TextColumn get notes => text().nullable()();
   DateTimeColumn get createdAt => dateTime()();
@@ -223,7 +225,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -301,6 +303,10 @@ class AppDatabase extends _$AppDatabase {
                     .write(CategoriesCompanion(serialNumber: Value(i + 1)));
               }
             }
+          }
+          if (from < 9) {
+            await m.addColumn(expenseCategories, expenseCategories.parentId);
+            await m.addColumn(expenses, expenses.subcategoryId);
           }
         },
       );

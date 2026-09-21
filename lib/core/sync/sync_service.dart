@@ -466,6 +466,7 @@ class SyncService {
             'id': c.id,
             'name': c.name,
             'description': c.description,
+            'parent_id': c.parentId,
             'created_at': c.createdAt.toIso8601String(),
           }).toList();
           await client.from('expense_categories').upsert(payload);
@@ -487,6 +488,7 @@ class SyncService {
           final payload = unsynced.map((e) => {
             'id': e.id,
             'category_id': e.categoryId,
+            'subcategory_id': e.subcategoryId,
             'amount': e.amount,
             'notes': e.notes,
             'created_at': e.createdAt.toIso8601String(),
@@ -798,6 +800,7 @@ class SyncService {
                   id: json['id'] as String,
                   name: json['name'] as String,
                   description: Value(json['description'] as String?),
+                  parentId: Value(json['parent_id'] as String?),
                   createdAt: DateTime.parse(json['created_at'] as String),
                   syncedAt: Value(now),
                 ),
@@ -811,6 +814,7 @@ class SyncService {
                 ExpensesCompanion.insert(
                   id: json['id'] as String,
                   categoryId: json['category_id'] as String,
+                  subcategoryId: Value(json['subcategory_id'] as String?),
                   amount: (json['amount'] as num).toDouble(),
                   notes: Value(json['notes'] as String?),
                   createdAt: DateTime.parse(json['created_at'] as String),

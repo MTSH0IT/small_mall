@@ -18,15 +18,6 @@ class $CategoriesTable extends Categories
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _nameMeta = const VerificationMeta('name');
-  @override
-  late final GeneratedColumn<String> name = GeneratedColumn<String>(
-    'name',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
   static const VerificationMeta _serialNumberMeta = const VerificationMeta(
     'serialNumber',
   );
@@ -37,6 +28,15 @@ class $CategoriesTable extends Categories
     true,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
   );
   static const VerificationMeta _syncedAtMeta = const VerificationMeta(
     'syncedAt',
@@ -130,7 +130,12 @@ class Category extends DataClass implements Insertable<Category> {
   final int? serialNumber;
   final String name;
   final DateTime? syncedAt;
-  const Category({required this.id, required this.name, this.syncedAt, this.serialNumber});
+  const Category({
+    required this.id,
+    this.serialNumber,
+    required this.name,
+    this.syncedAt,
+  });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -5934,6 +5939,17 @@ class $ExpenseCategoriesTable extends ExpenseCategories
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _parentIdMeta = const VerificationMeta(
+    'parentId',
+  );
+  @override
+  late final GeneratedColumn<String> parentId = GeneratedColumn<String>(
+    'parent_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -5961,6 +5977,7 @@ class $ExpenseCategoriesTable extends ExpenseCategories
     id,
     name,
     description,
+    parentId,
     createdAt,
     syncedAt,
   ];
@@ -5998,6 +6015,12 @@ class $ExpenseCategoriesTable extends ExpenseCategories
         ),
       );
     }
+    if (data.containsKey('parent_id')) {
+      context.handle(
+        _parentIdMeta,
+        parentId.isAcceptableOrUnknown(data['parent_id']!, _parentIdMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -6033,6 +6056,10 @@ class $ExpenseCategoriesTable extends ExpenseCategories
         DriftSqlType.string,
         data['${effectivePrefix}description'],
       ),
+      parentId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}parent_id'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -6054,12 +6081,14 @@ class ExpenseCategory extends DataClass implements Insertable<ExpenseCategory> {
   final String id;
   final String name;
   final String? description;
+  final String? parentId;
   final DateTime createdAt;
   final DateTime? syncedAt;
   const ExpenseCategory({
     required this.id,
     required this.name,
     this.description,
+    this.parentId,
     required this.createdAt,
     this.syncedAt,
   });
@@ -6070,6 +6099,9 @@ class ExpenseCategory extends DataClass implements Insertable<ExpenseCategory> {
     map['name'] = Variable<String>(name);
     if (!nullToAbsent || description != null) {
       map['description'] = Variable<String>(description);
+    }
+    if (!nullToAbsent || parentId != null) {
+      map['parent_id'] = Variable<String>(parentId);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
     if (!nullToAbsent || syncedAt != null) {
@@ -6085,6 +6117,9 @@ class ExpenseCategory extends DataClass implements Insertable<ExpenseCategory> {
       description: description == null && nullToAbsent
           ? const Value.absent()
           : Value(description),
+      parentId: parentId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(parentId),
       createdAt: Value(createdAt),
       syncedAt: syncedAt == null && nullToAbsent
           ? const Value.absent()
@@ -6101,6 +6136,7 @@ class ExpenseCategory extends DataClass implements Insertable<ExpenseCategory> {
       id: serializer.fromJson<String>(json['id']),
       name: serializer.fromJson<String>(json['name']),
       description: serializer.fromJson<String?>(json['description']),
+      parentId: serializer.fromJson<String?>(json['parentId']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       syncedAt: serializer.fromJson<DateTime?>(json['syncedAt']),
     );
@@ -6112,6 +6148,7 @@ class ExpenseCategory extends DataClass implements Insertable<ExpenseCategory> {
       'id': serializer.toJson<String>(id),
       'name': serializer.toJson<String>(name),
       'description': serializer.toJson<String?>(description),
+      'parentId': serializer.toJson<String?>(parentId),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'syncedAt': serializer.toJson<DateTime?>(syncedAt),
     };
@@ -6121,12 +6158,14 @@ class ExpenseCategory extends DataClass implements Insertable<ExpenseCategory> {
     String? id,
     String? name,
     Value<String?> description = const Value.absent(),
+    Value<String?> parentId = const Value.absent(),
     DateTime? createdAt,
     Value<DateTime?> syncedAt = const Value.absent(),
   }) => ExpenseCategory(
     id: id ?? this.id,
     name: name ?? this.name,
     description: description.present ? description.value : this.description,
+    parentId: parentId.present ? parentId.value : this.parentId,
     createdAt: createdAt ?? this.createdAt,
     syncedAt: syncedAt.present ? syncedAt.value : this.syncedAt,
   );
@@ -6137,6 +6176,7 @@ class ExpenseCategory extends DataClass implements Insertable<ExpenseCategory> {
       description: data.description.present
           ? data.description.value
           : this.description,
+      parentId: data.parentId.present ? data.parentId.value : this.parentId,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       syncedAt: data.syncedAt.present ? data.syncedAt.value : this.syncedAt,
     );
@@ -6148,6 +6188,7 @@ class ExpenseCategory extends DataClass implements Insertable<ExpenseCategory> {
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('description: $description, ')
+          ..write('parentId: $parentId, ')
           ..write('createdAt: $createdAt, ')
           ..write('syncedAt: $syncedAt')
           ..write(')'))
@@ -6155,7 +6196,8 @@ class ExpenseCategory extends DataClass implements Insertable<ExpenseCategory> {
   }
 
   @override
-  int get hashCode => Object.hash(id, name, description, createdAt, syncedAt);
+  int get hashCode =>
+      Object.hash(id, name, description, parentId, createdAt, syncedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -6163,6 +6205,7 @@ class ExpenseCategory extends DataClass implements Insertable<ExpenseCategory> {
           other.id == this.id &&
           other.name == this.name &&
           other.description == this.description &&
+          other.parentId == this.parentId &&
           other.createdAt == this.createdAt &&
           other.syncedAt == this.syncedAt);
 }
@@ -6171,6 +6214,7 @@ class ExpenseCategoriesCompanion extends UpdateCompanion<ExpenseCategory> {
   final Value<String> id;
   final Value<String> name;
   final Value<String?> description;
+  final Value<String?> parentId;
   final Value<DateTime> createdAt;
   final Value<DateTime?> syncedAt;
   final Value<int> rowid;
@@ -6178,6 +6222,7 @@ class ExpenseCategoriesCompanion extends UpdateCompanion<ExpenseCategory> {
     this.id = const Value.absent(),
     this.name = const Value.absent(),
     this.description = const Value.absent(),
+    this.parentId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.syncedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -6186,6 +6231,7 @@ class ExpenseCategoriesCompanion extends UpdateCompanion<ExpenseCategory> {
     required String id,
     required String name,
     this.description = const Value.absent(),
+    this.parentId = const Value.absent(),
     required DateTime createdAt,
     this.syncedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -6196,6 +6242,7 @@ class ExpenseCategoriesCompanion extends UpdateCompanion<ExpenseCategory> {
     Expression<String>? id,
     Expression<String>? name,
     Expression<String>? description,
+    Expression<String>? parentId,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? syncedAt,
     Expression<int>? rowid,
@@ -6204,6 +6251,7 @@ class ExpenseCategoriesCompanion extends UpdateCompanion<ExpenseCategory> {
       if (id != null) 'id': id,
       if (name != null) 'name': name,
       if (description != null) 'description': description,
+      if (parentId != null) 'parent_id': parentId,
       if (createdAt != null) 'created_at': createdAt,
       if (syncedAt != null) 'synced_at': syncedAt,
       if (rowid != null) 'rowid': rowid,
@@ -6214,6 +6262,7 @@ class ExpenseCategoriesCompanion extends UpdateCompanion<ExpenseCategory> {
     Value<String>? id,
     Value<String>? name,
     Value<String?>? description,
+    Value<String?>? parentId,
     Value<DateTime>? createdAt,
     Value<DateTime?>? syncedAt,
     Value<int>? rowid,
@@ -6222,6 +6271,7 @@ class ExpenseCategoriesCompanion extends UpdateCompanion<ExpenseCategory> {
       id: id ?? this.id,
       name: name ?? this.name,
       description: description ?? this.description,
+      parentId: parentId ?? this.parentId,
       createdAt: createdAt ?? this.createdAt,
       syncedAt: syncedAt ?? this.syncedAt,
       rowid: rowid ?? this.rowid,
@@ -6239,6 +6289,9 @@ class ExpenseCategoriesCompanion extends UpdateCompanion<ExpenseCategory> {
     }
     if (description.present) {
       map['description'] = Variable<String>(description.value);
+    }
+    if (parentId.present) {
+      map['parent_id'] = Variable<String>(parentId.value);
     }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
@@ -6258,6 +6311,7 @@ class ExpenseCategoriesCompanion extends UpdateCompanion<ExpenseCategory> {
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('description: $description, ')
+          ..write('parentId: $parentId, ')
           ..write('createdAt: $createdAt, ')
           ..write('syncedAt: $syncedAt, ')
           ..write('rowid: $rowid')
@@ -6290,6 +6344,17 @@ class $ExpensesTable extends Expenses with TableInfo<$ExpensesTable, Expense> {
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+  );
+  static const VerificationMeta _subcategoryIdMeta = const VerificationMeta(
+    'subcategoryId',
+  );
+  @override
+  late final GeneratedColumn<String> subcategoryId = GeneratedColumn<String>(
+    'subcategory_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
   );
   static const VerificationMeta _amountMeta = const VerificationMeta('amount');
   @override
@@ -6335,6 +6400,7 @@ class $ExpensesTable extends Expenses with TableInfo<$ExpensesTable, Expense> {
   List<GeneratedColumn> get $columns => [
     id,
     categoryId,
+    subcategoryId,
     amount,
     notes,
     createdAt,
@@ -6364,6 +6430,15 @@ class $ExpensesTable extends Expenses with TableInfo<$ExpensesTable, Expense> {
       );
     } else if (isInserting) {
       context.missing(_categoryIdMeta);
+    }
+    if (data.containsKey('subcategory_id')) {
+      context.handle(
+        _subcategoryIdMeta,
+        subcategoryId.isAcceptableOrUnknown(
+          data['subcategory_id']!,
+          _subcategoryIdMeta,
+        ),
+      );
     }
     if (data.containsKey('amount')) {
       context.handle(
@@ -6410,6 +6485,10 @@ class $ExpensesTable extends Expenses with TableInfo<$ExpensesTable, Expense> {
         DriftSqlType.string,
         data['${effectivePrefix}category_id'],
       )!,
+      subcategoryId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}subcategory_id'],
+      ),
       amount: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
         data['${effectivePrefix}amount'],
@@ -6438,6 +6517,7 @@ class $ExpensesTable extends Expenses with TableInfo<$ExpensesTable, Expense> {
 class Expense extends DataClass implements Insertable<Expense> {
   final String id;
   final String categoryId;
+  final String? subcategoryId;
   final double amount;
   final String? notes;
   final DateTime createdAt;
@@ -6445,6 +6525,7 @@ class Expense extends DataClass implements Insertable<Expense> {
   const Expense({
     required this.id,
     required this.categoryId,
+    this.subcategoryId,
     required this.amount,
     this.notes,
     required this.createdAt,
@@ -6455,6 +6536,9 @@ class Expense extends DataClass implements Insertable<Expense> {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
     map['category_id'] = Variable<String>(categoryId);
+    if (!nullToAbsent || subcategoryId != null) {
+      map['subcategory_id'] = Variable<String>(subcategoryId);
+    }
     map['amount'] = Variable<double>(amount);
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
@@ -6470,6 +6554,9 @@ class Expense extends DataClass implements Insertable<Expense> {
     return ExpensesCompanion(
       id: Value(id),
       categoryId: Value(categoryId),
+      subcategoryId: subcategoryId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(subcategoryId),
       amount: Value(amount),
       notes: notes == null && nullToAbsent
           ? const Value.absent()
@@ -6489,6 +6576,7 @@ class Expense extends DataClass implements Insertable<Expense> {
     return Expense(
       id: serializer.fromJson<String>(json['id']),
       categoryId: serializer.fromJson<String>(json['categoryId']),
+      subcategoryId: serializer.fromJson<String?>(json['subcategoryId']),
       amount: serializer.fromJson<double>(json['amount']),
       notes: serializer.fromJson<String?>(json['notes']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
@@ -6501,6 +6589,7 @@ class Expense extends DataClass implements Insertable<Expense> {
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
       'categoryId': serializer.toJson<String>(categoryId),
+      'subcategoryId': serializer.toJson<String?>(subcategoryId),
       'amount': serializer.toJson<double>(amount),
       'notes': serializer.toJson<String?>(notes),
       'createdAt': serializer.toJson<DateTime>(createdAt),
@@ -6511,6 +6600,7 @@ class Expense extends DataClass implements Insertable<Expense> {
   Expense copyWith({
     String? id,
     String? categoryId,
+    Value<String?> subcategoryId = const Value.absent(),
     double? amount,
     Value<String?> notes = const Value.absent(),
     DateTime? createdAt,
@@ -6518,6 +6608,9 @@ class Expense extends DataClass implements Insertable<Expense> {
   }) => Expense(
     id: id ?? this.id,
     categoryId: categoryId ?? this.categoryId,
+    subcategoryId: subcategoryId.present
+        ? subcategoryId.value
+        : this.subcategoryId,
     amount: amount ?? this.amount,
     notes: notes.present ? notes.value : this.notes,
     createdAt: createdAt ?? this.createdAt,
@@ -6529,6 +6622,9 @@ class Expense extends DataClass implements Insertable<Expense> {
       categoryId: data.categoryId.present
           ? data.categoryId.value
           : this.categoryId,
+      subcategoryId: data.subcategoryId.present
+          ? data.subcategoryId.value
+          : this.subcategoryId,
       amount: data.amount.present ? data.amount.value : this.amount,
       notes: data.notes.present ? data.notes.value : this.notes,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
@@ -6541,6 +6637,7 @@ class Expense extends DataClass implements Insertable<Expense> {
     return (StringBuffer('Expense(')
           ..write('id: $id, ')
           ..write('categoryId: $categoryId, ')
+          ..write('subcategoryId: $subcategoryId, ')
           ..write('amount: $amount, ')
           ..write('notes: $notes, ')
           ..write('createdAt: $createdAt, ')
@@ -6550,14 +6647,22 @@ class Expense extends DataClass implements Insertable<Expense> {
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, categoryId, amount, notes, createdAt, syncedAt);
+  int get hashCode => Object.hash(
+    id,
+    categoryId,
+    subcategoryId,
+    amount,
+    notes,
+    createdAt,
+    syncedAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Expense &&
           other.id == this.id &&
           other.categoryId == this.categoryId &&
+          other.subcategoryId == this.subcategoryId &&
           other.amount == this.amount &&
           other.notes == this.notes &&
           other.createdAt == this.createdAt &&
@@ -6567,6 +6672,7 @@ class Expense extends DataClass implements Insertable<Expense> {
 class ExpensesCompanion extends UpdateCompanion<Expense> {
   final Value<String> id;
   final Value<String> categoryId;
+  final Value<String?> subcategoryId;
   final Value<double> amount;
   final Value<String?> notes;
   final Value<DateTime> createdAt;
@@ -6575,6 +6681,7 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
   const ExpensesCompanion({
     this.id = const Value.absent(),
     this.categoryId = const Value.absent(),
+    this.subcategoryId = const Value.absent(),
     this.amount = const Value.absent(),
     this.notes = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -6584,6 +6691,7 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
   ExpensesCompanion.insert({
     required String id,
     required String categoryId,
+    this.subcategoryId = const Value.absent(),
     required double amount,
     this.notes = const Value.absent(),
     required DateTime createdAt,
@@ -6596,6 +6704,7 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
   static Insertable<Expense> custom({
     Expression<String>? id,
     Expression<String>? categoryId,
+    Expression<String>? subcategoryId,
     Expression<double>? amount,
     Expression<String>? notes,
     Expression<DateTime>? createdAt,
@@ -6605,6 +6714,7 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (categoryId != null) 'category_id': categoryId,
+      if (subcategoryId != null) 'subcategory_id': subcategoryId,
       if (amount != null) 'amount': amount,
       if (notes != null) 'notes': notes,
       if (createdAt != null) 'created_at': createdAt,
@@ -6616,6 +6726,7 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
   ExpensesCompanion copyWith({
     Value<String>? id,
     Value<String>? categoryId,
+    Value<String?>? subcategoryId,
     Value<double>? amount,
     Value<String?>? notes,
     Value<DateTime>? createdAt,
@@ -6625,6 +6736,7 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
     return ExpensesCompanion(
       id: id ?? this.id,
       categoryId: categoryId ?? this.categoryId,
+      subcategoryId: subcategoryId ?? this.subcategoryId,
       amount: amount ?? this.amount,
       notes: notes ?? this.notes,
       createdAt: createdAt ?? this.createdAt,
@@ -6641,6 +6753,9 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
     }
     if (categoryId.present) {
       map['category_id'] = Variable<String>(categoryId.value);
+    }
+    if (subcategoryId.present) {
+      map['subcategory_id'] = Variable<String>(subcategoryId.value);
     }
     if (amount.present) {
       map['amount'] = Variable<double>(amount.value);
@@ -6665,6 +6780,7 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
     return (StringBuffer('ExpensesCompanion(')
           ..write('id: $id, ')
           ..write('categoryId: $categoryId, ')
+          ..write('subcategoryId: $subcategoryId, ')
           ..write('amount: $amount, ')
           ..write('notes: $notes, ')
           ..write('createdAt: $createdAt, ')
@@ -6724,6 +6840,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
 typedef $$CategoriesTableCreateCompanionBuilder =
     CategoriesCompanion Function({
       required String id,
+      Value<int?> serialNumber,
       required String name,
       Value<DateTime?> syncedAt,
       Value<int> rowid,
@@ -6731,6 +6848,7 @@ typedef $$CategoriesTableCreateCompanionBuilder =
 typedef $$CategoriesTableUpdateCompanionBuilder =
     CategoriesCompanion Function({
       Value<String> id,
+      Value<int?> serialNumber,
       Value<String> name,
       Value<DateTime?> syncedAt,
       Value<int> rowid,
@@ -6747,6 +6865,11 @@ class $$CategoriesTableFilterComposer
   });
   ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get serialNumber => $composableBuilder(
+    column: $table.serialNumber,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6775,6 +6898,11 @@ class $$CategoriesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get serialNumber => $composableBuilder(
+    column: $table.serialNumber,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get name => $composableBuilder(
     column: $table.name,
     builder: (column) => ColumnOrderings(column),
@@ -6797,6 +6925,11 @@ class $$CategoriesTableAnnotationComposer
   });
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get serialNumber => $composableBuilder(
+    column: $table.serialNumber,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get name =>
       $composableBuilder(column: $table.name, builder: (column) => column);
@@ -6834,11 +6967,13 @@ class $$CategoriesTableTableManager
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
+                Value<int?> serialNumber = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<DateTime?> syncedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CategoriesCompanion(
                 id: id,
+                serialNumber: serialNumber,
                 name: name,
                 syncedAt: syncedAt,
                 rowid: rowid,
@@ -6846,11 +6981,13 @@ class $$CategoriesTableTableManager
           createCompanionCallback:
               ({
                 required String id,
+                Value<int?> serialNumber = const Value.absent(),
                 required String name,
                 Value<DateTime?> syncedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CategoriesCompanion.insert(
                 id: id,
+                serialNumber: serialNumber,
                 name: name,
                 syncedAt: syncedAt,
                 rowid: rowid,
@@ -9820,6 +9957,7 @@ typedef $$ExpenseCategoriesTableCreateCompanionBuilder =
       required String id,
       required String name,
       Value<String?> description,
+      Value<String?> parentId,
       required DateTime createdAt,
       Value<DateTime?> syncedAt,
       Value<int> rowid,
@@ -9829,6 +9967,7 @@ typedef $$ExpenseCategoriesTableUpdateCompanionBuilder =
       Value<String> id,
       Value<String> name,
       Value<String?> description,
+      Value<String?> parentId,
       Value<DateTime> createdAt,
       Value<DateTime?> syncedAt,
       Value<int> rowid,
@@ -9855,6 +9994,11 @@ class $$ExpenseCategoriesTableFilterComposer
 
   ColumnFilters<String> get description => $composableBuilder(
     column: $table.description,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get parentId => $composableBuilder(
+    column: $table.parentId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -9893,6 +10037,11 @@ class $$ExpenseCategoriesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get parentId => $composableBuilder(
+    column: $table.parentId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -9923,6 +10072,9 @@ class $$ExpenseCategoriesTableAnnotationComposer
     column: $table.description,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get parentId =>
+      $composableBuilder(column: $table.parentId, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -9974,6 +10126,7 @@ class $$ExpenseCategoriesTableTableManager
                 Value<String> id = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<String?> description = const Value.absent(),
+                Value<String?> parentId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime?> syncedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -9981,6 +10134,7 @@ class $$ExpenseCategoriesTableTableManager
                 id: id,
                 name: name,
                 description: description,
+                parentId: parentId,
                 createdAt: createdAt,
                 syncedAt: syncedAt,
                 rowid: rowid,
@@ -9990,6 +10144,7 @@ class $$ExpenseCategoriesTableTableManager
                 required String id,
                 required String name,
                 Value<String?> description = const Value.absent(),
+                Value<String?> parentId = const Value.absent(),
                 required DateTime createdAt,
                 Value<DateTime?> syncedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -9997,6 +10152,7 @@ class $$ExpenseCategoriesTableTableManager
                 id: id,
                 name: name,
                 description: description,
+                parentId: parentId,
                 createdAt: createdAt,
                 syncedAt: syncedAt,
                 rowid: rowid,
@@ -10030,6 +10186,7 @@ typedef $$ExpensesTableCreateCompanionBuilder =
     ExpensesCompanion Function({
       required String id,
       required String categoryId,
+      Value<String?> subcategoryId,
       required double amount,
       Value<String?> notes,
       required DateTime createdAt,
@@ -10040,6 +10197,7 @@ typedef $$ExpensesTableUpdateCompanionBuilder =
     ExpensesCompanion Function({
       Value<String> id,
       Value<String> categoryId,
+      Value<String?> subcategoryId,
       Value<double> amount,
       Value<String?> notes,
       Value<DateTime> createdAt,
@@ -10063,6 +10221,11 @@ class $$ExpensesTableFilterComposer
 
   ColumnFilters<String> get categoryId => $composableBuilder(
     column: $table.categoryId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get subcategoryId => $composableBuilder(
+    column: $table.subcategoryId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -10106,6 +10269,11 @@ class $$ExpensesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get subcategoryId => $composableBuilder(
+    column: $table.subcategoryId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<double> get amount => $composableBuilder(
     column: $table.amount,
     builder: (column) => ColumnOrderings(column),
@@ -10141,6 +10309,11 @@ class $$ExpensesTableAnnotationComposer
 
   GeneratedColumn<String> get categoryId => $composableBuilder(
     column: $table.categoryId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get subcategoryId => $composableBuilder(
+    column: $table.subcategoryId,
     builder: (column) => column,
   );
 
@@ -10187,6 +10360,7 @@ class $$ExpensesTableTableManager
               ({
                 Value<String> id = const Value.absent(),
                 Value<String> categoryId = const Value.absent(),
+                Value<String?> subcategoryId = const Value.absent(),
                 Value<double> amount = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
@@ -10195,6 +10369,7 @@ class $$ExpensesTableTableManager
               }) => ExpensesCompanion(
                 id: id,
                 categoryId: categoryId,
+                subcategoryId: subcategoryId,
                 amount: amount,
                 notes: notes,
                 createdAt: createdAt,
@@ -10205,6 +10380,7 @@ class $$ExpensesTableTableManager
               ({
                 required String id,
                 required String categoryId,
+                Value<String?> subcategoryId = const Value.absent(),
                 required double amount,
                 Value<String?> notes = const Value.absent(),
                 required DateTime createdAt,
@@ -10213,6 +10389,7 @@ class $$ExpensesTableTableManager
               }) => ExpensesCompanion.insert(
                 id: id,
                 categoryId: categoryId,
+                subcategoryId: subcategoryId,
                 amount: amount,
                 notes: notes,
                 createdAt: createdAt,

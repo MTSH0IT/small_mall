@@ -343,7 +343,10 @@
     "view_invoice": "View Invoice",
     "all_operations": "All Operations",
     "supplier_info": "Supplier Info",
-    "unit_cost": "Unit Cost"
+    "unit_cost": "Unit Cost",
+    "retail_price": "Retail Price",
+    "wholesale_price": "Wholesale Price",
+    "selling_prices": "Selling Prices"
   },
   "reports": {
     "title": "Financial & Sales Reports",
@@ -517,6 +520,19 @@
     "total_spent_in_selection": "Total Filtered Expenses",
     "no_expenses": "No expenses recorded",
     "no_expenses_desc": "No expenses recorded in this period or under this category.",
-    "uncategorized": "Uncategorized"
+    "uncategorized": "Uncategorized",
+    "subcategories": "Subcategories",
+    "subcategory": "Subcategory",
+    "add_subcategory": "Add Subcategory",
+    "edit_subcategory": "Edit Subcategory",
+    "delete_subcategory": "Delete Subcategory",
+    "confirm_delete_subcategory": "Are you sure you want to delete subcategory \"{}\"?",
+    "subcategory_name": "Subcategory Name",
+    "subcategory_name_hint": "e.g., Ahmed's salary, Ali's salary...",
+    "optional_subcategory": "Subcategory (Optional)",
+    "no_subcategory": "None (General)",
+    "subcategories_count": "subcategories",
+    "cannot_delete_category_has_subcategories": "Cannot delete category because it has {} subcategories. Please delete them first.",
+    "cannot_delete_subcategory_has_expenses": "Cannot delete subcategory because it has {} linked expenses."
   }
 }

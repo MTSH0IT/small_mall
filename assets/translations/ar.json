@@ -343,7 +343,10 @@
     "view_invoice": "عرض الفاتورة",
     "all_operations": "كافة العمليات",
     "supplier_info": "بيانات المورد",
-    "unit_cost": "تكلفة الوحدة"
+    "unit_cost": "تكلفة الوحدة",
+    "retail_price": "سعر المفرق",
+    "wholesale_price": "سعر الجملة",
+    "selling_prices": "أسعار المبيع"
   },
   "reports": {
     "title": "التقارير المالية والمبيعات",
@@ -517,6 +520,19 @@
     "total_spent_in_selection": "إجمالي المصاريف المحددة",
     "no_expenses": "لا توجد مصاريف مسجلة",
     "no_expenses_desc": "لم يتم تسجيل أي مصاريف في هذه الفترة أو تحت هذا البند.",
-    "uncategorized": "بدون بند"
+    "uncategorized": "بدون بند",
+    "subcategories": "البنود الفرعية",
+    "subcategory": "البند الفرعي",
+    "add_subcategory": "إضافة بند فرعي",
+    "edit_subcategory": "تعديل البند الفرعي",
+    "delete_subcategory": "حذف البند الفرعي",
+    "confirm_delete_subcategory": "هل أنت متأكد من حذف البند الفرعي \"{}\"؟",
+    "subcategory_name": "اسم البند الفرعي",
+    "subcategory_name_hint": "مثال: راتب أحمد، راتب علي...",
+    "optional_subcategory": "بند فرعي (اختياري)",
+    "no_subcategory": "بدون بند فرعي (عام)",
+    "subcategories_count": "بنود فرعية",
+    "cannot_delete_category_has_subcategories": "لا يمكن حذف البند الرئيسي لوجود {} بنود فرعية مرتبطة به. يرجى حذفها أولاً.",
+    "cannot_delete_subcategory_has_expenses": "لا يمكن حذف البند الفرعي لوجود {} مصاريف مرتبطة به."
   }
 }

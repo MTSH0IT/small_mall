@@ -90,11 +90,78 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
     );
   }
 
+  void _showAddSubcategoryDialog(
+    BuildContext context,
+    ExpensesCubit cubit,
+    ExpenseCategory parentCategory,
+  ) {
+    showDialog(
+      context: context,
+      builder: (_) => CategoryFormDialog(
+        parentId: parentCategory.id,
+        parentName: parentCategory.name,
+        onSave: ({required name, description}) =>
+            cubit.addSubcategory(parentId: parentCategory.id, name: name, description: description),
+      ),
+    );
+  }
+
+  void _showEditSubcategoryDialog(
+    BuildContext context,
+    ExpensesCubit cubit,
+    ExpenseCategory subcategory,
+    ExpenseCategory parentCategory,
+  ) {
+    showDialog(
+      context: context,
+      builder: (_) => CategoryFormDialog(
+        initialCategory: subcategory,
+        parentId: parentCategory.id,
+        parentName: parentCategory.name,
+        onSave: ({required name, description}) =>
+            cubit.updateCategory(id: subcategory.id, name: name, description: description),
+      ),
+    );
+  }
+
+  void _showDeleteSubcategoryDialog(
+    BuildContext context,
+    ExpensesCubit cubit,
+    ExpenseCategory subcategory,
+  ) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('expenses.delete_subcategory'.tr(),
+            style: const TextStyle(color: AppColors.danger)),
+        content: Text(
+          'expenses.confirm_delete_subcategory'.tr(args: [subcategory.name]),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text('common.cancel'.tr()),
+          ),
+          PrimaryButton(
+            label: 'common.delete'.tr(),
+            backgroundColor: AppColors.danger,
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+              await cubit.deleteCategory(subcategory.id);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showAddExpenseDialog(
     BuildContext context,
     ExpensesCubit cubit,
     List<ExpenseCategory> categories,
+    List<ExpenseCategory> subcategories,
     String? preselectedCategoryId,
+    String? preselectedSubcategoryId,
   ) {
     if (categories.isEmpty) {
       AppToast.error(context, message: 'expenses.no_categories_warning'.tr());
@@ -105,15 +172,45 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
       context: context,
       builder: (_) => ExpenseFormDialog(
         categories: categories,
+        subcategories: subcategories,
         preselectedCategoryId: preselectedCategoryId,
+        preselectedSubcategoryId: preselectedSubcategoryId,
+        onQuickAddSubcategory: (parentId) async {
+          String? createdName;
+          String? createdDesc;
+          await showDialog(
+            context: context,
+            builder: (_) => CategoryFormDialog(
+              parentId: parentId,
+              parentName: categories.where((c) => c.id == parentId).firstOrNull?.name,
+              onSave: ({required name, description}) async {
+                createdName = name;
+                createdDesc = description;
+              },
+            ),
+          );
+          if (createdName != null) {
+            final repo = getIt<ExpensesRepository>();
+            final newSub = await repo.addSubcategory(
+              parentId: parentId,
+              name: createdName!,
+              description: createdDesc,
+            );
+            cubit.loadExpenses();
+            return newSub;
+          }
+          return null;
+        },
         onSave: ({
           required categoryId,
+          subcategoryId,
           required amount,
           notes,
           required createdAt,
         }) =>
             cubit.addExpense(
           categoryId: categoryId,
+          subcategoryId: subcategoryId,
           amount: amount,
           notes: notes,
           createdAt: createdAt,
@@ -126,15 +223,46 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
     BuildContext context,
     ExpensesCubit cubit,
     List<ExpenseCategory> categories,
+    List<ExpenseCategory> subcategories,
     ExpenseWithCategory item,
   ) {
     showDialog(
       context: context,
       builder: (_) => ExpenseFormDialog(
         categories: categories,
+        subcategories: subcategories,
         initialExpense: item.expense,
+        preselectedCategoryId: item.expense.categoryId,
+        preselectedSubcategoryId: item.expense.subcategoryId,
+        onQuickAddSubcategory: (parentId) async {
+          String? createdName;
+          String? createdDesc;
+          await showDialog(
+            context: context,
+            builder: (_) => CategoryFormDialog(
+              parentId: parentId,
+              parentName: categories.where((c) => c.id == parentId).firstOrNull?.name,
+              onSave: ({required name, description}) async {
+                createdName = name;
+                createdDesc = description;
+              },
+            ),
+          );
+          if (createdName != null) {
+            final repo = getIt<ExpensesRepository>();
+            final newSub = await repo.addSubcategory(
+              parentId: parentId,
+              name: createdName!,
+              description: createdDesc,
+            );
+            cubit.loadExpenses();
+            return newSub;
+          }
+          return null;
+        },
         onSave: ({
           required categoryId,
+          subcategoryId,
           required amount,
           notes,
           required createdAt,
@@ -142,6 +270,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
             cubit.updateExpense(
           id: item.expense.id,
           categoryId: categoryId,
+          subcategoryId: subcategoryId,
           amount: amount,
           notes: notes,
           createdAt: createdAt,
@@ -373,125 +502,358 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                       final summary = summariesMap[cat.id];
                       final catTotal = summary?.totalAmount ?? 0.0;
                       final catCount = summary?.count ?? 0;
+                      final subcategories = state.getSubcategoriesFor(cat.id);
 
-                      return InkWell(
-                        onTap: () => cubit.selectCategory(cat.id),
-                        borderRadius: BorderRadius.circular(12),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
+                      return Container(
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? AppColors.primary.withValues(alpha: 0.06)
+                              : Theme.of(context).cardColor,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
                             color: isSelected
-                                ? AppColors.primary.withValues(alpha: 0.1)
-                                : Theme.of(context).cardColor,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: isSelected
-                                  ? AppColors.primary
-                                  : Colors.grey.shade200,
-                              width: isSelected ? 2 : 1,
-                            ),
+                                ? AppColors.primary
+                                : Colors.grey.shade200,
+                            width: isSelected ? 2 : 1,
                           ),
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: (isSelected
-                                          ? AppColors.primary
-                                          : Colors.grey.shade400)
-                                      .withValues(alpha: 0.15),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Icon(
-                                  Icons.account_balance_wallet_outlined,
-                                  size: 20,
-                                  color: isSelected
-                                      ? AppColors.primary
-                                      : AppColors.textSecondary,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            InkWell(
+                              onTap: () {
+                                if (isSelected && state.selectedSubcategoryId != null) {
+                                  cubit.selectSubcategory(null);
+                                } else {
+                                  cubit.selectCategory(cat.id);
+                                }
+                              },
+                              borderRadius: BorderRadius.circular(12),
+                              child: Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: Row(
                                   children: [
-                                    Text(
-                                      cat.name,
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.bold,
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: (isSelected
+                                                ? AppColors.primary
+                                                : Colors.grey.shade400)
+                                            .withValues(alpha: 0.15),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Icon(
+                                        Icons.account_balance_wallet_outlined,
+                                        size: 20,
                                         color: isSelected
                                             ? AppColors.primary
-                                            : AppColors.textPrimary,
+                                            : AppColors.textSecondary,
                                       ),
                                     ),
-                                    if (cat.description != null &&
-                                        cat.description!.isNotEmpty)
-                                      Text(
-                                        cat.description!,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
-                                          fontSize: 11,
-                                          color: AppColors.textSecondary,
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            cat.name,
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.bold,
+                                              color: isSelected
+                                                  ? AppColors.primary
+                                                  : AppColors.textPrimary,
+                                            ),
+                                          ),
+                                          if (cat.description != null &&
+                                              cat.description!.isNotEmpty)
+                                            Text(
+                                              cat.description!,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(
+                                                fontSize: 11,
+                                                color: AppColors.textSecondary,
+                                              ),
+                                            ),
+                                          Row(
+                                            children: [
+                                              Text(
+                                                '$catCount ${'expenses.operations_count'.tr()}',
+                                                style: const TextStyle(
+                                                  fontSize: 11,
+                                                  color: AppColors.textSecondary,
+                                                ),
+                                              ),
+                                              if (subcategories.isNotEmpty) ...[
+                                                const SizedBox(width: 6),
+                                                Text(
+                                                  '• ${subcategories.length} ${'expenses.subcategories'.tr()}',
+                                                  style: TextStyle(
+                                                    fontSize: 11,
+                                                    color: isSelected
+                                                        ? AppColors.primary
+                                                        : AppColors.textSecondary,
+                                                    fontWeight: isSelected
+                                                        ? FontWeight.w600
+                                                        : FontWeight.normal,
+                                                  ),
+                                                ),
+                                              ],
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.end,
+                                      children: [
+                                        Text(
+                                          catTotal.toStringAsFixed(2),
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
+                                            color: isSelected
+                                                ? AppColors.primary
+                                                : AppColors.textPrimary,
+                                          ),
                                         ),
-                                      ),
-                                    Text(
-                                      '$catCount ${'expenses.operations_count'.tr()}',
-                                      style: const TextStyle(
-                                        fontSize: 11,
-                                        color: AppColors.textSecondary,
-                                      ),
+                                        const SizedBox(height: 2),
+                                        Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            IconButton(
+                                              icon: const Icon(Icons.add_circle_outline, size: 16),
+                                              padding: EdgeInsets.zero,
+                                              constraints: const BoxConstraints(),
+                                              color: AppColors.primary,
+                                              tooltip: 'expenses.add_subcategory'.tr(),
+                                              onPressed: () => _showAddSubcategoryDialog(
+                                                context,
+                                                cubit,
+                                                cat,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            IconButton(
+                                              icon: const Icon(Icons.edit_outlined, size: 16),
+                                              padding: EdgeInsets.zero,
+                                              constraints: const BoxConstraints(),
+                                              color: AppColors.textSecondary,
+                                              tooltip: 'common.edit'.tr(),
+                                              onPressed: () => _showEditCategoryDialog(
+                                                context,
+                                                cubit,
+                                                cat,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            IconButton(
+                                              icon: const Icon(Icons.delete_outline, size: 16),
+                                              padding: EdgeInsets.zero,
+                                              constraints: const BoxConstraints(),
+                                              color: AppColors.danger,
+                                              tooltip: 'common.delete'.tr(),
+                                              onPressed: () => _showDeleteCategoryDialog(
+                                                context,
+                                                cubit,
+                                                cat,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),
                               ),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Text(
-                                    catTotal.toStringAsFixed(2),
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                      color: isSelected
-                                          ? AppColors.primary
-                                          : AppColors.textPrimary,
-                                    ),
-                                  ),
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      IconButton(
-                                        icon: const Icon(Icons.edit_outlined, size: 16),
-                                        padding: EdgeInsets.zero,
-                                        constraints: const BoxConstraints(),
-                                        color: AppColors.textSecondary,
-                                        onPressed: () => _showEditCategoryDialog(
-                                          context,
-                                          cubit,
-                                          cat,
+                            ),
+                            if (isSelected) ...[
+                              const Divider(height: 1),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                color: Colors.grey.shade50,
+                                child: subcategories.isEmpty
+                                    ? Padding(
+                                        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+                                        child: Row(
+                                          children: [
+                                            Icon(
+                                              Icons.subdirectory_arrow_right,
+                                              size: 14,
+                                              color: AppColors.textSecondary.withValues(alpha: 0.6),
+                                            ),
+                                            const SizedBox(width: 6),
+                                            Expanded(
+                                              child: Text(
+                                                'expenses.no_subcategory'.tr(),
+                                                style: TextStyle(
+                                                  fontSize: 11,
+                                                  color: AppColors.textSecondary.withValues(alpha: 0.7),
+                                                  fontStyle: FontStyle.italic,
+                                                ),
+                                              ),
+                                            ),
+                                            TextButton.icon(
+                                              style: TextButton.styleFrom(
+                                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                                minimumSize: Size.zero,
+                                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                              ),
+                                              icon: const Icon(Icons.add, size: 12),
+                                              label: Text(
+                                                'expenses.add_subcategory'.tr(),
+                                                style: const TextStyle(fontSize: 11),
+                                              ),
+                                              onPressed: () => _showAddSubcategoryDialog(
+                                                context,
+                                                cubit,
+                                                cat,
+                                              ),
+                                            ),
+                                          ],
                                         ),
+                                      )
+                                    : Column(
+                                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                                        children: [
+                                          if (state.selectedSubcategoryId != null)
+                                            InkWell(
+                                              onTap: () => cubit.selectSubcategory(null),
+                                              borderRadius: BorderRadius.circular(6),
+                                              child: Padding(
+                                                padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 6),
+                                                child: Row(
+                                                  children: [
+                                                    const Icon(Icons.filter_alt_off_outlined, size: 13, color: AppColors.primary),
+                                                    const SizedBox(width: 6),
+                                                    Text(
+                                                      'expenses.all_categories'.tr(),
+                                                      style: const TextStyle(
+                                                        fontSize: 11,
+                                                        color: AppColors.primary,
+                                                        fontWeight: FontWeight.w600,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ...subcategories.map((sub) {
+                                            final isSubSelected = state.selectedSubcategoryId == sub.id;
+                                            final subSummary = summary?.subcategories.where((s) => s.category.id == sub.id).firstOrNull;
+                                            final subTotal = subSummary?.totalAmount ?? 0.0;
+                                            final subCount = subSummary?.count ?? 0;
+
+                                            return Container(
+                                              margin: const EdgeInsets.only(top: 4),
+                                              decoration: BoxDecoration(
+                                                color: isSubSelected
+                                                    ? AppColors.primary.withValues(alpha: 0.12)
+                                                    : Colors.white,
+                                                borderRadius: BorderRadius.circular(8),
+                                                border: Border.all(
+                                                  color: isSubSelected
+                                                      ? AppColors.primary
+                                                      : Colors.grey.shade200,
+                                                  width: isSubSelected ? 1.5 : 1,
+                                                ),
+                                              ),
+                                              child: InkWell(
+                                                borderRadius: BorderRadius.circular(8),
+                                                onTap: () {
+                                                  if (isSubSelected) {
+                                                    cubit.selectSubcategory(null);
+                                                  } else {
+                                                    cubit.selectSubcategory(sub.id);
+                                                  }
+                                                },
+                                                child: Padding(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                                  child: Row(
+                                                    children: [
+                                                      Icon(
+                                                        Icons.subdirectory_arrow_right,
+                                                        size: 14,
+                                                        color: isSubSelected
+                                                            ? AppColors.primary
+                                                            : AppColors.textSecondary,
+                                                      ),
+                                                      const SizedBox(width: 6),
+                                                      Expanded(
+                                                        child: Column(
+                                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                                          children: [
+                                                            Text(
+                                                              sub.name,
+                                                              style: TextStyle(
+                                                                fontSize: 12,
+                                                                fontWeight: isSubSelected
+                                                                    ? FontWeight.bold
+                                                                    : FontWeight.w500,
+                                                                color: isSubSelected
+                                                                    ? AppColors.primary
+                                                                    : AppColors.textPrimary,
+                                                              ),
+                                                            ),
+                                                            Text(
+                                                              '$subCount ${'expenses.operations_count'.tr()}',
+                                                              style: TextStyle(
+                                                                fontSize: 10,
+                                                                color: AppColors.textSecondary.withValues(alpha: 0.8),
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                      Text(
+                                                        subTotal.toStringAsFixed(2),
+                                                        style: TextStyle(
+                                                          fontSize: 12,
+                                                          fontWeight: FontWeight.bold,
+                                                          color: isSubSelected
+                                                              ? AppColors.primary
+                                                              : AppColors.textPrimary,
+                                                        ),
+                                                      ),
+                                                      const SizedBox(width: 6),
+                                                      IconButton(
+                                                        icon: const Icon(Icons.edit_outlined, size: 14),
+                                                        padding: EdgeInsets.zero,
+                                                        constraints: const BoxConstraints(),
+                                                        color: AppColors.textSecondary,
+                                                        tooltip: 'expenses.edit_subcategory'.tr(),
+                                                        onPressed: () => _showEditSubcategoryDialog(
+                                                          context,
+                                                          cubit,
+                                                          cat,
+                                                          sub,
+                                                        ),
+                                                      ),
+                                                      const SizedBox(width: 6),
+                                                      IconButton(
+                                                        icon: const Icon(Icons.delete_outline, size: 14),
+                                                        padding: EdgeInsets.zero,
+                                                        constraints: const BoxConstraints(),
+                                                        color: AppColors.danger,
+                                                        tooltip: 'expenses.delete_subcategory'.tr(),
+                                                        onPressed: () => _showDeleteSubcategoryDialog(
+                                                          context,
+                                                          cubit,
+                                                          sub,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            );
+                                          }),
+                                        ],
                                       ),
-                                      const SizedBox(width: 8),
-                                      IconButton(
-                                        icon: const Icon(Icons.delete_outline, size: 16),
-                                        padding: EdgeInsets.zero,
-                                        constraints: const BoxConstraints(),
-                                        color: AppColors.danger,
-                                        onPressed: () => _showDeleteCategoryDialog(
-                                          context,
-                                          cubit,
-                                          cat,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
                               ),
                             ],
-                          ),
+                          ],
                         ),
                       );
                     },
@@ -523,6 +885,16 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
       }
     }
 
+    String? subcategoryTitle;
+    if (state.selectedSubcategoryId != null) {
+      final foundSub = state.subcategories
+          .where((s) => s.id == state.selectedSubcategoryId)
+          .firstOrNull;
+      if (foundSub != null) {
+        subcategoryTitle = foundSub.name;
+      }
+    }
+
     return Container(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -532,7 +904,10 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
+              Wrap(
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 8,
+                runSpacing: 4,
                 children: [
                   Text(
                     categoryTitle,
@@ -542,7 +917,34 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                       color: AppColors.textPrimary,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  if (subcategoryTitle != null) ...[
+                    const Icon(Icons.chevron_right, size: 18, color: AppColors.textSecondary),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            subcategoryTitle,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          InkWell(
+                            onTap: () => cubit.selectSubcategory(null),
+                            child: const Icon(Icons.close, size: 14, color: AppColors.primary),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
@@ -565,7 +967,9 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                   context,
                   cubit,
                   state.categories,
+                  state.subcategories,
                   state.selectedCategoryId,
+                  state.selectedSubcategoryId,
                 ),
                 icon: const Icon(Icons.add, size: 18),
                 label: Text('expenses.add_expense_btn'.tr()),
@@ -615,7 +1019,9 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                   ),
                 ),
               ),
-              if (state.startDate != null || state.searchQuery.isNotEmpty) ...[
+              if (state.startDate != null ||
+                  state.searchQuery.isNotEmpty ||
+                  state.selectedSubcategoryId != null) ...[
                 const SizedBox(width: 8),
                 IconButton(
                   tooltip: 'expenses.clear_filters'.tr(),
@@ -624,6 +1030,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                     _searchController.clear();
                     cubit.setSearchQuery('');
                     cubit.setDateRange(null, null);
+                    cubit.selectSubcategory(null);
                   },
                 ),
               ],
@@ -735,28 +1142,65 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                               ),
                               const SizedBox(width: 16),
 
-                              // Details: Category + Notes
+                              // Details: Category + Subcategory + Notes
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 2,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: AppColors.primary.withValues(alpha: 0.1),
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: Text(
-                                        catName,
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.bold,
-                                          color: AppColors.primary,
+                                    Wrap(
+                                      spacing: 6,
+                                      runSpacing: 4,
+                                      crossAxisAlignment: WrapCrossAlignment.center,
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 2,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.primary.withValues(alpha: 0.1),
+                                            borderRadius: BorderRadius.circular(6),
+                                          ),
+                                          child: Text(
+                                            catName,
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.bold,
+                                              color: AppColors.primary,
+                                            ),
+                                          ),
                                         ),
-                                      ),
+                                        if (item.subcategory != null)
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 2,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Colors.blueGrey.withValues(alpha: 0.12),
+                                              borderRadius: BorderRadius.circular(6),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                const Icon(
+                                                  Icons.subdirectory_arrow_right,
+                                                  size: 12,
+                                                  color: Colors.blueGrey,
+                                                ),
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  item.subcategory!.name,
+                                                  style: const TextStyle(
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: Colors.blueGrey,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                      ],
                                     ),
                                     if (exp.notes != null && exp.notes!.isNotEmpty) ...[
                                       const SizedBox(height: 6),
@@ -795,6 +1239,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                                       context,
                                       cubit,
                                       state.categories,
+                                      state.subcategories,
                                       item,
                                     ),
                                   ),

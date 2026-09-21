@@ -72,6 +72,9 @@ class _NewPurchaseInvoiceDialogState extends State<NewPurchaseInvoiceDialog> {
       return;
     }
 
+    final initialRetailPrice = productDetails.prices.where((p) => p.priceLabel == 'retail').firstOrNull?.priceValue ?? 0.0;
+    final initialWholesalePrice = productDetails.prices.where((p) => p.priceLabel == 'wholesale').firstOrNull?.priceValue ?? 0.0;
+
     setState(() {
       _draftItems.add({
         'productId': productDetails.product.id,
@@ -80,6 +83,8 @@ class _NewPurchaseInvoiceDialogState extends State<NewPurchaseInvoiceDialog> {
         'currentStock': productDetails.currentStock,
         'quantity': 1.0,
         'unitCost': productDetails.product.costPrice,
+        'retailPrice': initialRetailPrice,
+        'wholesalePrice': initialWholesalePrice,
       });
     });
   }
@@ -116,7 +121,7 @@ class _NewPurchaseInvoiceDialogState extends State<NewPurchaseInvoiceDialog> {
       clipBehavior: Clip.antiAlias,
       child: ConstrainedBox(
         constraints: const BoxConstraints(
-          maxWidth: 950,
+          maxWidth: 980,
           maxHeight: 750,
         ),
         child: Container(
@@ -356,20 +361,29 @@ class _DraftItemRow extends StatefulWidget {
 class _DraftItemRowState extends State<_DraftItemRow> {
   late final TextEditingController _qtyController;
   late final TextEditingController _costController;
+  late final TextEditingController _retailPriceController;
+  late final TextEditingController _wholesalePriceController;
 
   @override
   void initState() {
     super.initState();
     final qty = (widget.item['quantity'] as num).toDouble();
     final cost = (widget.item['unitCost'] as num).toDouble();
+    final retail = (widget.item['retailPrice'] as num?)?.toDouble() ?? 0.0;
+    final wholesale = (widget.item['wholesalePrice'] as num?)?.toDouble() ?? 0.0;
+
     _qtyController = TextEditingController(text: qty == qty.roundToDouble() ? qty.toInt().toString() : qty.toString());
     _costController = TextEditingController(text: cost.toStringAsFixed(2));
+    _retailPriceController = TextEditingController(text: retail > 0 ? retail.toStringAsFixed(2) : '');
+    _wholesalePriceController = TextEditingController(text: wholesale > 0 ? wholesale.toStringAsFixed(2) : '');
   }
 
   @override
   void dispose() {
     _qtyController.dispose();
     _costController.dispose();
+    _retailPriceController.dispose();
+    _wholesalePriceController.dispose();
     super.dispose();
   }
 
@@ -440,7 +454,7 @@ class _DraftItemRowState extends State<_DraftItemRow> {
             children: [
               // Quantity
               Expanded(
-                flex: 3,
+                flex: 2,
                 child: AppTextField(
                   label: 'common.quantity'.tr(),
                   controller: _qtyController,
@@ -454,10 +468,10 @@ class _DraftItemRowState extends State<_DraftItemRow> {
                   },
                 ),
               ),
-              const SizedBox(width: 12),
-              // Unit Cost
+              const SizedBox(width: 10),
+              // Unit Cost (سعر الشراء)
               Expanded(
-                flex: 3,
+                flex: 2,
                 child: AppTextField(
                   label: 'suppliers.unit_cost'.tr(),
                   controller: _costController,
@@ -471,10 +485,44 @@ class _DraftItemRowState extends State<_DraftItemRow> {
                   },
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 10),
+              // Retail Selling Price (سعر المفرق)
+              Expanded(
+                flex: 2,
+                child: AppTextField(
+                  label: 'suppliers.retail_price'.tr(),
+                  hint: '0.00',
+                  controller: _retailPriceController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  onChanged: (val) {
+                    final numVal = double.tryParse(val);
+                    if (numVal != null && numVal >= 0) {
+                      widget.item['retailPrice'] = numVal;
+                    }
+                  },
+                ),
+              ),
+              const SizedBox(width: 10),
+              // Wholesale Selling Price (سعر الجملة)
+              Expanded(
+                flex: 2,
+                child: AppTextField(
+                  label: 'suppliers.wholesale_price'.tr(),
+                  hint: '0.00',
+                  controller: _wholesalePriceController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  onChanged: (val) {
+                    final numVal = double.tryParse(val);
+                    if (numVal != null && numVal >= 0) {
+                      widget.item['wholesalePrice'] = numVal;
+                    }
+                  },
+                ),
+              ),
+              const SizedBox(width: 14),
               // Subtotal
               Expanded(
-                flex: 3,
+                flex: 2,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [

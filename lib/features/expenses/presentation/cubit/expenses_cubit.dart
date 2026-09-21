@@ -26,6 +26,7 @@ class ExpensesCubit extends Cubit<ExpensesState> {
     emit(ExpensesLoading());
     try {
       final categories = await _repository.getCategories();
+      final subcategories = await _repository.getAllSubcategories();
       final summaries = await _repository.getCategorySummaries(
         startDate: currentStart,
         endDate: currentEnd,
@@ -41,9 +42,11 @@ class ExpensesCubit extends Cubit<ExpensesState> {
 
       emit(ExpensesLoaded(
         categories: categories,
+        subcategories: subcategories,
         categorySummaries: summaries,
         expenses: expenses,
         selectedCategoryId: currentSelectedId,
+        selectedSubcategoryId: state is ExpensesLoaded ? (state as ExpensesLoaded).selectedSubcategoryId : null,
         startDate: currentStart,
         endDate: currentEnd,
         searchQuery: currentQuery,
@@ -58,6 +61,15 @@ class ExpensesCubit extends Cubit<ExpensesState> {
     if (state is ExpensesLoaded) {
       emit((state as ExpensesLoaded).copyWith(
         selectedCategoryId: () => categoryId,
+        selectedSubcategoryId: () => null,
+      ));
+    }
+  }
+
+  void selectSubcategory(String? subcategoryId) {
+    if (state is ExpensesLoaded) {
+      emit((state as ExpensesLoaded).copyWith(
+        selectedSubcategoryId: () => subcategoryId,
       ));
     }
   }
@@ -80,9 +92,31 @@ class ExpensesCubit extends Cubit<ExpensesState> {
   Future<void> addCategory({
     required String name,
     String? description,
+    String? parentId,
   }) async {
     try {
-      await _repository.addCategory(name: name, description: description);
+      await _repository.addCategory(name: name, description: description, parentId: parentId);
+      await loadExpenses();
+    } catch (e) {
+      if (state is ExpensesLoaded) {
+        emit((state as ExpensesLoaded).copyWith(errorMessage: () => e.toString()));
+      } else {
+        emit(ExpensesError(e.toString()));
+      }
+    }
+  }
+
+  Future<void> addSubcategory({
+    required String parentId,
+    required String name,
+    String? description,
+  }) async {
+    try {
+      await _repository.addSubcategory(
+        parentId: parentId,
+        name: name,
+        description: description,
+      );
       await loadExpenses();
     } catch (e) {
       if (state is ExpensesLoaded) {
@@ -117,8 +151,13 @@ class ExpensesCubit extends Cubit<ExpensesState> {
   Future<void> deleteCategory(String id) async {
     try {
       await _repository.deleteCategory(id);
-      if (state is ExpensesLoaded && (state as ExpensesLoaded).selectedCategoryId == id) {
-        selectCategory(null);
+      if (state is ExpensesLoaded) {
+        final loaded = state as ExpensesLoaded;
+        if (loaded.selectedCategoryId == id) {
+          selectCategory(null);
+        } else if (loaded.selectedSubcategoryId == id) {
+          selectSubcategory(null);
+        }
       }
       await loadExpenses();
     } catch (e) {
@@ -132,6 +171,7 @@ class ExpensesCubit extends Cubit<ExpensesState> {
 
   Future<void> addExpense({
     required String categoryId,
+    String? subcategoryId,
     required double amount,
     String? notes,
     DateTime? createdAt,
@@ -139,6 +179,7 @@ class ExpensesCubit extends Cubit<ExpensesState> {
     try {
       await _repository.addExpense(
         categoryId: categoryId,
+        subcategoryId: subcategoryId,
         amount: amount,
         notes: notes,
         createdAt: createdAt,
@@ -156,6 +197,7 @@ class ExpensesCubit extends Cubit<ExpensesState> {
   Future<void> updateExpense({
     required String id,
     required String categoryId,
+    String? subcategoryId,
     required double amount,
     String? notes,
     DateTime? createdAt,
@@ -164,6 +206,7 @@ class ExpensesCubit extends Cubit<ExpensesState> {
       await _repository.updateExpense(
         id: id,
         categoryId: categoryId,
+        subcategoryId: subcategoryId,
         amount: amount,
         notes: notes,
         createdAt: createdAt,

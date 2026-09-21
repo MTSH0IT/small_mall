@@ -9,10 +9,12 @@ class ExpenseWithCategory {
   const ExpenseWithCategory({
     required this.expense,
     this.category,
+    this.subcategory,
   });
 
   final Expense expense;
   final ExpenseCategory? category;
+  final ExpenseCategory? subcategory;
 }
 
 class CategoryExpenseSummary {
@@ -20,11 +22,13 @@ class CategoryExpenseSummary {
     required this.category,
     required this.totalAmount,
     required this.count,
+    this.subcategories = const [],
   });
 
   final ExpenseCategory category;
   final double totalAmount;
   final int count;
+  final List<CategoryExpenseSummary> subcategories;
 }
 
 class ExpensesRepository {
@@ -37,15 +41,42 @@ class ExpensesRepository {
 
   // --- Expense Categories ---
 
+  /// Get main categories (where parentId is null)
   Future<List<ExpenseCategory>> getCategories() async {
-    _logger.debug('Fetching expense categories', context: LogContext.expenses);
+    _logger.debug('Fetching main expense categories', context: LogContext.expenses);
     return (_db.select(_db.expenseCategories)
+          ..where((t) => t.parentId.isNull())
+          ..orderBy([(t) => OrderingTerm(expression: t.name)]))
+        .get();
+  }
+
+  /// Get all categories (both main and subcategories)
+  Future<List<ExpenseCategory>> getAllCategories() async {
+    _logger.debug('Fetching all expense categories', context: LogContext.expenses);
+    return (_db.select(_db.expenseCategories)
+          ..orderBy([(t) => OrderingTerm(expression: t.name)]))
+        .get();
+  }
+
+  /// Get all subcategories in system (where parentId is not null)
+  Future<List<ExpenseCategory>> getAllSubcategories() async {
+    return (_db.select(_db.expenseCategories)
+          ..where((t) => t.parentId.isNotNull())
+          ..orderBy([(t) => OrderingTerm(expression: t.name)]))
+        .get();
+  }
+
+  /// Get subcategories for a specific main category
+  Future<List<ExpenseCategory>> getSubcategories(String parentId) async {
+    return (_db.select(_db.expenseCategories)
+          ..where((t) => t.parentId.equals(parentId))
           ..orderBy([(t) => OrderingTerm(expression: t.name)]))
         .get();
   }
 
   Stream<List<ExpenseCategory>> watchCategories() {
     return (_db.select(_db.expenseCategories)
+          ..where((t) => t.parentId.isNull())
           ..orderBy([(t) => OrderingTerm(expression: t.name)]))
         .watch();
   }
@@ -53,14 +84,16 @@ class ExpensesRepository {
   Future<ExpenseCategory> addCategory({
     required String name,
     String? description,
+    String? parentId,
   }) async {
-    _logger.info('Adding expense category: $name', context: LogContext.expenses);
+    _logger.info('Adding expense category: $name (parentId: $parentId)', context: LogContext.expenses);
     final id = _uuid.v4();
     final now = DateTime.now();
     final companion = ExpenseCategoriesCompanion.insert(
       id: id,
       name: name,
       description: Value(description),
+      parentId: Value(parentId),
       createdAt: now,
     );
 
@@ -73,8 +106,17 @@ class ExpensesRepository {
       id: id,
       name: name,
       description: description,
+      parentId: parentId,
       createdAt: now,
     );
+  }
+
+  Future<ExpenseCategory> addSubcategory({
+    required String parentId,
+    required String name,
+    String? description,
+  }) {
+    return addCategory(name: name, description: description, parentId: parentId);
   }
 
   Future<void> updateCategory({
@@ -98,9 +140,17 @@ class ExpensesRepository {
   Future<void> deleteCategory(String id) async {
     _logger.info('Deleting expense category: $id', context: LogContext.expenses);
 
-    // Check if category is used by any expense
+    // Check if category has subcategories
+    final subcategories = await (_db.select(_db.expenseCategories)
+          ..where((t) => t.parentId.equals(id)))
+        .get();
+    if (subcategories.isNotEmpty) {
+      throw Exception('لا يمكن حذف البند الرئيسي لوجود ${subcategories.length} بنود فرعية مرتبطة به');
+    }
+
+    // Check if category is used by any expense as main category or subcategory
     final linked = await (_db.select(_db.expenses)
-          ..where((t) => t.categoryId.equals(id)))
+          ..where((t) => t.categoryId.equals(id) | t.subcategoryId.equals(id)))
         .get();
 
     if (linked.isNotEmpty) {
@@ -127,18 +177,30 @@ class ExpensesRepository {
 
   Stream<List<ExpenseWithCategory>> watchExpenses({
     String? categoryId,
+    String? subcategoryId,
     DateTime? startDate,
     DateTime? endDate,
   }) {
+    final mainCategory = _db.alias(_db.expenseCategories, 'main_cat');
+    final subCategory = _db.alias(_db.expenseCategories, 'sub_cat');
+
     final query = _db.select(_db.expenses).join([
       leftOuterJoin(
-        _db.expenseCategories,
-        _db.expenseCategories.id.equalsExp(_db.expenses.categoryId),
+        mainCategory,
+        mainCategory.id.equalsExp(_db.expenses.categoryId),
+      ),
+      leftOuterJoin(
+        subCategory,
+        subCategory.id.equalsExp(_db.expenses.subcategoryId),
       ),
     ]);
 
     if (categoryId != null && categoryId.isNotEmpty) {
       query.where(_db.expenses.categoryId.equals(categoryId));
+    }
+
+    if (subcategoryId != null && subcategoryId.isNotEmpty) {
+      query.where(_db.expenses.subcategoryId.equals(subcategoryId));
     }
 
     if (startDate != null) {
@@ -157,7 +219,8 @@ class ExpensesRepository {
       return rows.map((row) {
         return ExpenseWithCategory(
           expense: row.readTable(_db.expenses),
-          category: row.readTableOrNull(_db.expenseCategories),
+          category: row.readTableOrNull(mainCategory),
+          subcategory: row.readTableOrNull(subCategory),
         );
       }).toList();
     });
@@ -165,18 +228,30 @@ class ExpensesRepository {
 
   Future<List<ExpenseWithCategory>> getExpenses({
     String? categoryId,
+    String? subcategoryId,
     DateTime? startDate,
     DateTime? endDate,
   }) async {
+    final mainCategory = _db.alias(_db.expenseCategories, 'main_cat');
+    final subCategory = _db.alias(_db.expenseCategories, 'sub_cat');
+
     final query = _db.select(_db.expenses).join([
       leftOuterJoin(
-        _db.expenseCategories,
-        _db.expenseCategories.id.equalsExp(_db.expenses.categoryId),
+        mainCategory,
+        mainCategory.id.equalsExp(_db.expenses.categoryId),
+      ),
+      leftOuterJoin(
+        subCategory,
+        subCategory.id.equalsExp(_db.expenses.subcategoryId),
       ),
     ]);
 
     if (categoryId != null && categoryId.isNotEmpty) {
       query.where(_db.expenses.categoryId.equals(categoryId));
+    }
+
+    if (subcategoryId != null && subcategoryId.isNotEmpty) {
+      query.where(_db.expenses.subcategoryId.equals(subcategoryId));
     }
 
     if (startDate != null) {
@@ -195,24 +270,27 @@ class ExpensesRepository {
     return rows.map((row) {
       return ExpenseWithCategory(
         expense: row.readTable(_db.expenses),
-        category: row.readTableOrNull(_db.expenseCategories),
+        category: row.readTableOrNull(mainCategory),
+        subcategory: row.readTableOrNull(subCategory),
       );
     }).toList();
   }
 
   Future<Expense> addExpense({
     required String categoryId,
+    String? subcategoryId,
     required double amount,
     String? notes,
     DateTime? createdAt,
   }) async {
-    _logger.info('Adding expense: $amount under category $categoryId', context: LogContext.expenses);
+    _logger.info('Adding expense: $amount under category $categoryId, subcategory: $subcategoryId', context: LogContext.expenses);
     final id = _uuid.v4();
     final now = createdAt ?? DateTime.now();
 
     final companion = ExpensesCompanion.insert(
       id: id,
       categoryId: categoryId,
+      subcategoryId: Value(subcategoryId),
       amount: amount,
       notes: Value(notes),
       createdAt: now,
@@ -226,6 +304,7 @@ class ExpensesRepository {
     return Expense(
       id: id,
       categoryId: categoryId,
+      subcategoryId: subcategoryId,
       amount: amount,
       notes: notes,
       createdAt: now,
@@ -235,6 +314,7 @@ class ExpensesRepository {
   Future<void> updateExpense({
     required String id,
     required String categoryId,
+    String? subcategoryId,
     required double amount,
     String? notes,
     DateTime? createdAt,
@@ -244,6 +324,7 @@ class ExpensesRepository {
     await (_db.update(_db.expenses)..where((t) => t.id.equals(id))).write(
       ExpensesCompanion(
         categoryId: Value(categoryId),
+        subcategoryId: Value(subcategoryId),
         amount: Value(amount),
         notes: Value(notes),
         createdAt: createdAt != null ? Value(createdAt) : const Value.absent(),
@@ -302,20 +383,38 @@ class ExpensesRepository {
     DateTime? endDate,
   }) async {
     final categories = await getCategories();
+    final allSubcategories = await getAllSubcategories();
     final allExpenses = await getExpenses(startDate: startDate, endDate: endDate);
 
     final Map<String, List<Expense>> grouped = {};
+    final Map<String, List<Expense>> subcategoryGrouped = {};
     for (final exp in allExpenses) {
       grouped.putIfAbsent(exp.expense.categoryId, () => []).add(exp.expense);
+      if (exp.expense.subcategoryId != null) {
+        subcategoryGrouped.putIfAbsent(exp.expense.subcategoryId!, () => []).add(exp.expense);
+      }
     }
 
     return categories.map((cat) {
       final list = grouped[cat.id] ?? [];
       final total = list.fold<double>(0.0, (sum, item) => sum + item.amount);
+
+      final subcats = allSubcategories.where((s) => s.parentId == cat.id).toList();
+      final subSummaries = subcats.map((sub) {
+        final subList = subcategoryGrouped[sub.id] ?? [];
+        final subTotal = subList.fold<double>(0.0, (sum, item) => sum + item.amount);
+        return CategoryExpenseSummary(
+          category: sub,
+          totalAmount: subTotal,
+          count: subList.length,
+        );
+      }).toList();
+
       return CategoryExpenseSummary(
         category: cat,
         totalAmount: total,
         count: list.length,
+        subcategories: subSummaries,
       );
     }).toList();
   }

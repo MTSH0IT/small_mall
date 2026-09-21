@@ -9,10 +9,14 @@ class CategoryFormDialog extends StatefulWidget {
   const CategoryFormDialog({
     super.key,
     this.initialCategory,
+    this.parentId,
+    this.parentName,
     required this.onSave,
   });
 
   final ExpenseCategory? initialCategory;
+  final String? parentId;
+  final String? parentName;
   final Future<void> Function({required String name, String? description}) onSave;
 
   @override
@@ -24,6 +28,8 @@ class _CategoryFormDialogState extends State<CategoryFormDialog> {
   late final TextEditingController _nameController;
   late final TextEditingController _descController;
   bool _isLoading = false;
+
+  bool get isSubcategory => widget.parentId != null || widget.initialCategory?.parentId != null;
 
   @override
   void initState() {
@@ -63,6 +69,10 @@ class _CategoryFormDialogState extends State<CategoryFormDialog> {
   Widget build(BuildContext context) {
     final isEdit = widget.initialCategory != null;
 
+    final dialogTitle = isSubcategory
+        ? (isEdit ? 'expenses.edit_subcategory'.tr() : 'expenses.add_subcategory'.tr())
+        : (isEdit ? 'expenses.edit_category'.tr() : 'expenses.add_category'.tr());
+
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
@@ -82,27 +92,41 @@ class _CategoryFormDialogState extends State<CategoryFormDialog> {
                       color: AppColors.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Icon(Icons.category_outlined, color: AppColors.primary),
+                    child: Icon(
+                      isSubcategory ? Icons.subdirectory_arrow_left_rounded : Icons.category_outlined,
+                      color: AppColors.primary,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Text(
-                      isEdit
-                          ? 'expenses.edit_category'.tr()
-                          : 'expenses.add_category'.tr(),
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          dialogTitle,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        if (widget.parentName != null)
+                          Text(
+                            widget.parentName!,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 20),
               AppTextField(
-                label: 'expenses.category_name'.tr(),
-                hint: 'expenses.category_name_hint'.tr(),
+                label: isSubcategory ? 'expenses.subcategory_name'.tr() : 'expenses.category_name'.tr(),
+                hint: isSubcategory ? 'expenses.subcategory_name_hint'.tr() : 'expenses.category_name_hint'.tr(),
                 controller: _nameController,
                 validator: (val) {
                   if (val == null || val.trim().isEmpty) {
