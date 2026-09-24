@@ -115,6 +115,7 @@ class InvoiceList extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.all(12),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
                     padding: const EdgeInsets.all(8),
@@ -135,104 +136,117 @@ class InvoiceList extends StatelessWidget {
                       children: [
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
-                              children: [
-                                // Global Serial Number Badge
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.primary.withValues(alpha: 0.12),
-                                    borderRadius: BorderRadius.circular(4),
-                                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.25)),
-                                  ),
-                                  child: Text(
-                                    globalText,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12,
-                                      color: AppColors.primary,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                // Department / Type Serial Number Badge
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: typeColor.withValues(alpha: 0.12),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Text(
-                                    typeSerialText,
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                      color: typeColor,
-                                    ),
-                                  ),
-                                ),
-                                if (item.paymentType == 'debt') ...[
-                                  const SizedBox(width: 6),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.warning.withValues(alpha: 0.12),
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: Text(
-                                      'pos.debt'.tr(),
-                                      style: const TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
-                                        color: AppColors.warning,
+                            // Serials column (Global on top, Category serial under it)
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  // Line 1: Global Serial Number Badge & Status Badges
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.primary.withValues(alpha: 0.12),
+                                          borderRadius: BorderRadius.circular(4),
+                                          border: Border.all(color: AppColors.primary.withValues(alpha: 0.25)),
+                                        ),
+                                        child: Text(
+                                          globalText,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12,
+                                            color: AppColors.primary,
+                                          ),
+                                        ),
                                       ),
-                                    ),
+                                      if (item.paymentType == 'debt') ...[
+                                        const SizedBox(width: 6),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.warning.withValues(alpha: 0.12),
+                                            borderRadius: BorderRadius.circular(4),
+                                          ),
+                                          child: Text(
+                                            'pos.debt'.tr(),
+                                            style: const TextStyle(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                              color: AppColors.warning,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                      if (item.hasMultipleCurrencies) ...[
+                                        const SizedBox(width: 6),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF0D9488).withValues(alpha: 0.15),
+                                            borderRadius: BorderRadius.circular(4),
+                                            border: Border.all(color: const Color(0xFF0D9488).withValues(alpha: 0.3)),
+                                          ),
+                                          child: Text(
+                                            'عملتان (${AppCurrency.sypSymbol} + ${AppCurrency.usdSymbol})',
+                                            style: const TextStyle(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                              color: Color(0xFF0D9488),
+                                            ),
+                                          ),
+                                        ),
+                                      ] else ...[
+                                        const SizedBox(width: 6),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                          decoration: BoxDecoration(
+                                            color: (item.currency == 'USD'
+                                                    ? const Color(0xFF059669)
+                                                    : AppColors.primary)
+                                                .withValues(alpha: 0.12),
+                                            borderRadius: BorderRadius.circular(4),
+                                          ),
+                                          child: Text(
+                                            item.currencySymbol,
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                              color: item.currency == 'USD'
+                                                  ? const Color(0xFF059669)
+                                                  : AppColors.primary,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ],
                                   ),
-                                ],
-                                if (item.hasMultipleCurrencies) ...[
-                                  const SizedBox(width: 6),
+                                  const SizedBox(height: 5),
+                                  // Line 2: Category / Department Serial Number (under Global Serial)
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFF0D9488).withValues(alpha: 0.15),
+                                      color: typeColor.withValues(alpha: 0.12),
                                       borderRadius: BorderRadius.circular(4),
-                                      border: Border.all(color: const Color(0xFF0D9488).withValues(alpha: 0.3)),
                                     ),
                                     child: Text(
-                                      'عملتان (${AppCurrency.sypSymbol} + ${AppCurrency.usdSymbol})',
-                                      style: const TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
-                                        color: Color(0xFF0D9488),
-                                      ),
-                                    ),
-                                  ),
-                                ] else ...[
-                                  const SizedBox(width: 6),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                                    decoration: BoxDecoration(
-                                      color: (item.currency == 'USD'
-                                              ? const Color(0xFF059669)
-                                              : AppColors.primary)
-                                          .withValues(alpha: 0.12),
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: Text(
-                                      item.currencySymbol,
+                                      typeSerialText,
                                       style: TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
-                                        color: item.currency == 'USD'
-                                            ? const Color(0xFF059669)
-                                            : AppColors.primary,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: typeColor,
                                       ),
                                     ),
                                   ),
                                 ],
-                              ],
+                              ),
                             ),
+                            const SizedBox(width: 8),
+                            // Amounts
                             if (item.hasMultipleCurrencies)
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.end,

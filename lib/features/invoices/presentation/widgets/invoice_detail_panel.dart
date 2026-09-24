@@ -215,15 +215,9 @@ class InvoiceDetailPanel extends StatelessWidget {
             const SizedBox(height: 16),
 
             // Prominent Serial Header
-            Wrap(
-              crossAxisAlignment: WrapCrossAlignment.center,
-              spacing: 8,
-              runSpacing: 4,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  '${transaction.typeLabel} $departmentSerialText',
-                  style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-                ),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
@@ -235,10 +229,15 @@ class InvoiceDetailPanel extends StatelessWidget {
                     '${'invoices.global_serial_number'.tr()}: $globalText',
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: 12,
+                      fontSize: 13,
                       color: AppColors.primary,
                     ),
                   ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  '${transaction.typeLabel} $departmentSerialText',
+                  style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
                 ),
               ],
             ),

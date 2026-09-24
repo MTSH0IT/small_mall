@@ -75,9 +75,12 @@ void main() {
       ),
     ];
 
-    test('initial state returns all invoices with correct totals', () {
-      final state = InvoicesLoaded(invoices: testInvoices);
+    test('initial state defaults to today filter', () {
+      final defaultState = InvoicesLoaded(invoices: testInvoices);
+      expect(defaultState.dateFilter, 'today');
+      expect(defaultState.filteredInvoices.length, 2);
 
+      final state = InvoicesLoaded(invoices: testInvoices, dateFilter: 'all');
       expect(state.filteredInvoices.length, 4);
       expect(state.salesCount, 3);
       expect(state.returnsCount, 1);
@@ -86,11 +89,11 @@ void main() {
     });
 
     test('filters by type sale and return properly', () {
-      final saleState = InvoicesLoaded(invoices: testInvoices, typeFilter: 'sale');
+      final saleState = InvoicesLoaded(invoices: testInvoices, typeFilter: 'sale', dateFilter: 'all');
       expect(saleState.filteredInvoices.length, 3);
       expect(saleState.filteredInvoices.every((i) => i.invoice.type == 'sale'), isTrue);
 
-      final returnState = InvoicesLoaded(invoices: testInvoices, typeFilter: 'return');
+      final returnState = InvoicesLoaded(invoices: testInvoices, typeFilter: 'return', dateFilter: 'all');
       expect(returnState.filteredInvoices.length, 1);
       expect(returnState.filteredInvoices.first.invoice.serialNumber, 3);
       expect(returnState.totalReturnsAmount, 100.0);
@@ -130,23 +133,23 @@ void main() {
       expect(search1.filteredInvoices.length, 1);
       expect(search1.filteredInvoices.first.invoice.serialNumber, 1);
 
-      final searchHash2 = InvoicesLoaded(invoices: testInvoices, searchQuery: '#2');
+      final searchHash2 = InvoicesLoaded(invoices: testInvoices, dateFilter: 'all', searchQuery: '#2');
       expect(searchHash2.filteredInvoices.length, 1);
       expect(searchHash2.filteredInvoices.first.invoice.serialNumber, 2);
       expect(searchHash2.filteredInvoices.first.customerName, 'سارة خالد');
     });
 
     test('search by customer name', () {
-      final searchCustomer = InvoicesLoaded(invoices: testInvoices, searchQuery: 'سارة');
+      final searchCustomer = InvoicesLoaded(invoices: testInvoices, dateFilter: 'all', searchQuery: 'سارة');
       expect(searchCustomer.filteredInvoices.length, 1);
       expect(searchCustomer.filteredInvoices.first.customerName, 'سارة خالد');
 
-      final searchAhmed = InvoicesLoaded(invoices: testInvoices, searchQuery: 'أحمد');
+      final searchAhmed = InvoicesLoaded(invoices: testInvoices, dateFilter: 'all', searchQuery: 'أحمد');
       expect(searchAhmed.filteredInvoices.length, 2);
     });
 
     test('search by total amount', () {
-      final searchAmount = InvoicesLoaded(invoices: testInvoices, searchQuery: '500');
+      final searchAmount = InvoicesLoaded(invoices: testInvoices, dateFilter: 'all', searchQuery: '500');
       expect(searchAmount.filteredInvoices.length, 1);
       expect(searchAmount.filteredInvoices.first.invoice.totalAmount, 500.0);
     });

@@ -15,7 +15,7 @@ class InvoicesLoaded extends InvoicesState {
     String? selectedTransactionId,
     String? selectedInvoiceId,
     this.typeFilter = 'all',
-    this.dateFilter = 'all',
+    this.dateFilter = 'today',
     this.customDateRange,
     this.searchQuery = '',
   })  : transactions = transactions ?? (invoices != null ? _convertInvoices(invoices) : const []),

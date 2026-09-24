@@ -126,7 +126,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
 
   Widget _buildDropdownFilters(BuildContext context, InvoicesCubit cubit, InvoicesState state) {
     final currentType = state is InvoicesLoaded ? state.typeFilter : 'all';
-    final currentDate = state is InvoicesLoaded ? state.dateFilter : 'all';
+    final currentDate = state is InvoicesLoaded ? state.dateFilter : 'today';
     final customRange = state is InvoicesLoaded ? state.customDateRange : null;
 
     final typeOptions = [
