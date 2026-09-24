@@ -444,7 +444,8 @@
     "net_profit_formula": "Total Inflow - Total Outflow",
     "inflows_card_title": "Total Inflows",
     "outflows_card_title": "Total Outflows",
-    "sales_no_debt_note": "Cash sales only without debts"
+    "sales_no_debt_note": "Cash sales only without debts",
+    "cash_sales_operations": "cash transactions"
   },
   "invoices": {
     "title": "Invoices & Transactions",

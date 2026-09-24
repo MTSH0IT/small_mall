@@ -83,12 +83,18 @@ void main() {
         returnsAmount: 500.0,
         adjustmentsLoss: 300.0,
         salesCount: 15,
+        cashSalesCount: 10,
         returnsCount: 2,
         purchasesCount: 5,
         expensesCount: 4,
         debtPaymentsCount: 3,
         adjustmentsCount: 1,
+        newDebtsCount: 5,
       );
+
+      expect(profit.salesCount, equals(15));
+      expect(profit.cashSalesCount, equals(10));
+      expect(profit.newDebtsCount, equals(5));
 
       expect(profit.netSales, equals(8500.0));
       expect(profit.grossSales, equals(9000.0));

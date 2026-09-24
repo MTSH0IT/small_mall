@@ -444,7 +444,8 @@
     "net_profit_formula": "إجمالي الداخل - إجمالي الخارج",
     "inflows_card_title": "إجمالي الداخل",
     "outflows_card_title": "إجمالي الخارج",
-    "sales_no_debt_note": "المبيعات النقدية فقط بدون الديون"
+    "sales_no_debt_note": "المبيعات النقدية فقط بدون الديون",
+    "cash_sales_operations": "عملية نقدية"
   },
   "invoices": {
     "title": "سجل الفواتير والعمليات",

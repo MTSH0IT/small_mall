@@ -35,11 +35,13 @@ class ProfitReportData {
     this.netProfitUsd = 0.0,
     // Counts
     this.salesCount = 0,
+    this.cashSalesCount = 0,
     this.returnsCount = 0,
     this.purchasesCount = 0,
     this.expensesCount = 0,
     this.debtPaymentsCount = 0,
     this.adjustmentsCount = 0,
+    this.newDebtsCount = 0,
   });
 
   // Base SYP values
@@ -72,11 +74,13 @@ class ProfitReportData {
   final double netProfitUsd;
 
   final int salesCount;
+  final int cashSalesCount;
   final int returnsCount;
   final int purchasesCount;
   final int expensesCount;
   final int debtPaymentsCount;
   final int adjustmentsCount;
+  final int newDebtsCount;
 
   // Formula helpers for SYP: صافي الربح = (المبيعات + السداد) - (المصاريف + المشتريات)
   double get netSales => totalRevenue;
@@ -371,11 +375,13 @@ class ReportsRepository {
         netProfitUsd: netProfitUsd,
         // Counts
         salesCount: 0,
+        cashSalesCount: 0,
         returnsCount: 0,
         purchasesCount: purchasesCount,
         expensesCount: expensesCount,
         debtPaymentsCount: debtPaymentsCount,
         adjustmentsCount: adjustments.length,
+        newDebtsCount: newDebtsRows.length,
       );
     }
 
@@ -403,6 +409,8 @@ class ReportsRepository {
     double totalCostUsd = 0.0;
 
     int salesCount = 0;
+    int cashSalesCount = 0;
+    int debtSalesCount = 0;
     int returnsCount = 0;
 
     for (final inv in invoices) {
@@ -421,9 +429,15 @@ class ReportsRepository {
 
       if (inv.type == 'sale') {
         salesCount++;
+        final isCash = inv.paymentType == 'cash';
+        if (isCash) {
+          cashSalesCount++;
+        } else {
+          debtSalesCount++;
+        }
         if (isUsd) {
           grossSalesUsd += inv.totalAmount;
-          if (inv.paymentType == 'cash') {
+          if (isCash) {
             cashSalesUsd += inv.totalAmount;
           } else {
             debtSalesUsd += inv.totalAmount;
@@ -431,7 +445,7 @@ class ReportsRepository {
           totalCostUsd += invoiceCost;
         } else {
           grossSalesSyp += inv.totalAmount;
-          if (inv.paymentType == 'cash') {
+          if (isCash) {
             cashSalesSyp += inv.totalAmount;
           } else {
             debtSalesSyp += inv.totalAmount;
@@ -457,6 +471,10 @@ class ReportsRepository {
     final actualCashSalesUsd = cashSalesUsd - returnsAmountUsd;
     final grossProfitUsd = actualCashSalesUsd - totalCostUsd;
     final formulaNetProfitUsd = (actualCashSalesUsd + totalDebtPaymentsUsd) - (totalExpensesUsd + totalPurchasesUsd);
+
+    final finalNewDebtsCount = newDebtsRows.isNotEmpty
+        ? newDebtsRows.length
+        : debtSalesCount;
 
     return ProfitReportData(
       totalRevenue: actualCashSalesSyp > 0 ? actualCashSalesSyp : 0.0,
@@ -487,11 +505,13 @@ class ReportsRepository {
       netProfitUsd: formulaNetProfitUsd,
       // Counts
       salesCount: salesCount,
+      cashSalesCount: cashSalesCount,
       returnsCount: returnsCount,
       purchasesCount: purchasesCount,
       expensesCount: expensesCount,
       debtPaymentsCount: debtPaymentsCount,
       adjustmentsCount: adjustments.length,
+      newDebtsCount: finalNewDebtsCount,
     );
   }
 
