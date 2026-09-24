@@ -16,9 +16,11 @@ class InvoiceDetailPanel extends StatelessWidget {
   const InvoiceDetailPanel({
     super.key,
     required this.transaction,
+    this.showActions = true,
   });
 
   final UnifiedTransactionRecord transaction;
+  final bool showActions;
 
   Color _getTypeColor(UnifiedTransactionType type) {
     switch (type) {
@@ -85,7 +87,7 @@ class InvoiceDetailPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cubit = context.read<InvoicesCubit>();
+    final cubit = showActions ? context.read<InvoicesCubit>() : null;
     final typeColor = _getTypeColor(transaction.type);
     final typeIcon = _getTypeIcon(transaction.type);
     final globalText = transaction.globalSerialNumber != null
@@ -188,28 +190,30 @@ class InvoiceDetailPanel extends StatelessWidget {
                     ),
                   ),
                 const Spacer(),
-                // Universal Edit and Delete buttons for ALL transaction types
-                OutlinedButton.icon(
-                  onPressed: () => _openEditDialog(context, cubit),
-                  icon: const Icon(Icons.edit_outlined, size: 16),
-                  label: Text('common.edit'.tr()),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    visualDensity: VisualDensity.compact,
+                if (showActions && cubit != null) ...[
+                  // Universal Edit and Delete buttons for ALL transaction types
+                  OutlinedButton.icon(
+                    onPressed: () => _openEditDialog(context, cubit),
+                    icon: const Icon(Icons.edit_outlined, size: 16),
+                    label: Text('common.edit'.tr()),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      visualDensity: VisualDensity.compact,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                OutlinedButton.icon(
-                  onPressed: () => DeleteTransactionDialog.show(context, transaction, cubit),
-                  icon: const Icon(Icons.delete_outline, size: 16),
-                  label: Text('common.delete'.tr()),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.danger,
-                    side: BorderSide(color: AppColors.danger.withValues(alpha: 0.5)),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    visualDensity: VisualDensity.compact,
+                  const SizedBox(width: 8),
+                  OutlinedButton.icon(
+                    onPressed: () => DeleteTransactionDialog.show(context, transaction, cubit),
+                    icon: const Icon(Icons.delete_outline, size: 16),
+                    label: Text('common.delete'.tr()),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.danger,
+                      side: BorderSide(color: AppColors.danger.withValues(alpha: 0.5)),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      visualDensity: VisualDensity.compact,
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
             const SizedBox(height: 16),

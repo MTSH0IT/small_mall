@@ -249,6 +249,15 @@ class InvoicesRepository {
     return recordsWithGlobal;
   }
 
+  Future<UnifiedTransactionRecord?> getTransactionById(String id) async {
+    final all = await getAllTransactions();
+    try {
+      return all.firstWhere((t) => t.id == id);
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<List<UnifiedTransactionRecord>> _fetchSalesAndReturns() async {
     final invoicesWithDetails = await _posRepository.getAllInvoices();
     return invoicesWithDetails.map((inv) {

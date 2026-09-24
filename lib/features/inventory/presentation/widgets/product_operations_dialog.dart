@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' as intl;
+import 'package:small_mall/core/di/injection.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/core/widgets/app_table.dart';
 import 'package:small_mall/core/widgets/app_text_field.dart';
@@ -8,6 +9,8 @@ import 'package:small_mall/core/widgets/loading_indicator.dart';
 import 'package:small_mall/core/widgets/primary_button.dart';
 import 'package:small_mall/features/inventory/data/inventory_repository.dart';
 import 'package:small_mall/features/inventory/presentation/cubit/inventory_cubit.dart';
+import 'package:small_mall/features/invoices/data/invoices_repository.dart';
+import 'package:small_mall/features/invoices/presentation/widgets/transaction_detail_dialog.dart';
 
 class ProductOperationsDialog extends StatefulWidget {
   const ProductOperationsDialog({
@@ -25,8 +28,38 @@ class ProductOperationsDialog extends StatefulWidget {
 
 class _ProductOperationsDialogState extends State<ProductOperationsDialog> {
   bool _isLoading = true;
+  bool _isLoadingInvoice = false;
   List<ProductStockOperation> _allOperations = [];
   String _selectedFilter = 'all'; // all, sale, purchase, adjustment, return
+
+  Future<void> _openInvoiceDetails(ProductStockOperation op) async {
+    if (op.referenceId == null || _isLoadingInvoice) return;
+
+    setState(() => _isLoadingInvoice = true);
+    try {
+      final repo = getIt<InvoicesRepository>();
+      final tx = await repo.getTransactionById(op.referenceId!);
+      if (mounted) {
+        if (tx != null) {
+          await TransactionDetailDialog.show(context, tx);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('invoices.select_invoice_to_view'.tr())),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString())),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingInvoice = false);
+      }
+    }
+  }
 
   @override
   void initState() {
@@ -488,13 +521,49 @@ class _ProductOperationsDialogState extends State<ProductOperationsDialog> {
                             ),
                             AppTableColumn<ProductStockOperation>(
                               title: 'inventory.ref_number'.tr(),
-                              cellBuilder: (op) => Text(
-                                op.referenceNumber ?? '-',
-                                style: AppTheme.numericStyle(
-                                  color: AppColors.textSecondary,
-                                  fontSize: 12,
-                                ),
-                              ),
+                              cellBuilder: (op) {
+                                if (op.referenceNumber == null || op.referenceId == null) {
+                                  return Text(
+                                    op.referenceNumber ?? '-',
+                                    style: AppTheme.numericStyle(
+                                      color: AppColors.textSecondary,
+                                      fontSize: 12,
+                                    ),
+                                  );
+                                }
+                                return Tooltip(
+                                  message: 'invoices.details'.tr(),
+                                  child: InkWell(
+                                    onTap: () => _openInvoiceDetails(op),
+                                    borderRadius: BorderRadius.circular(6),
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            op.referenceNumber!,
+                                            style: AppTheme.numericStyle(
+                                              color: AppColors.primary,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 12,
+                                            ).copyWith(
+                                              decoration: TextDecoration.underline,
+                                              decorationColor: AppColors.primary.withValues(alpha: 0.5),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Icon(
+                                            Icons.open_in_new,
+                                            size: 13,
+                                            color: AppColors.primary.withValues(alpha: 0.8),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
                             ),
                             AppTableColumn<ProductStockOperation>(
                               title: 'inventory.party_or_notes'.tr(),

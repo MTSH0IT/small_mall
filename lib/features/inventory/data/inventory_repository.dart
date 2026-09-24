@@ -72,6 +72,7 @@ class ProductStockOperation {
     required this.quantity,
     required this.createdAt,
     this.referenceNumber,
+    this.referenceId,
     this.partyName,
     this.unitPrice,
     required this.runningBalance,
@@ -82,6 +83,7 @@ class ProductStockOperation {
   final double quantity;
   final DateTime createdAt;
   final String? referenceNumber;
+  final String? referenceId;
   final String? partyName;
   final double? unitPrice;
   final double runningBalance;
@@ -498,6 +500,7 @@ class InventoryRepository {
         quantity: m.quantity,
         createdAt: m.createdAt,
         referenceNumber: refNumber,
+        referenceId: (isInitial || m.type == 'adjustment') ? null : m.referenceId,
         partyName: party,
         unitPrice: unitPrice,
         runningBalance: runningBalance,
