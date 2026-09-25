@@ -21,12 +21,14 @@ class CategoryExpenseSummary {
   const CategoryExpenseSummary({
     required this.category,
     required this.totalAmount,
+    this.totalAmountUsd = 0.0,
     required this.count,
     this.subcategories = const [],
   });
 
   final ExpenseCategory category;
   final double totalAmount;
+  final double totalAmountUsd;
   final int count;
   final List<CategoryExpenseSummary> subcategories;
 }
@@ -403,22 +405,34 @@ class ExpensesRepository {
 
     return categories.map((cat) {
       final list = grouped[cat.id] ?? [];
-      final total = list.fold<double>(0.0, (sum, item) => sum + item.amount);
+      final totalSyp = list
+          .where((item) => item.currency != 'USD')
+          .fold<double>(0.0, (sum, item) => sum + item.amount);
+      final totalUsd = list
+          .where((item) => item.currency == 'USD')
+          .fold<double>(0.0, (sum, item) => sum + item.amount);
 
       final subcats = allSubcategories.where((s) => s.parentId == cat.id).toList();
       final subSummaries = subcats.map((sub) {
         final subList = subcategoryGrouped[sub.id] ?? [];
-        final subTotal = subList.fold<double>(0.0, (sum, item) => sum + item.amount);
+        final subTotalSyp = subList
+            .where((item) => item.currency != 'USD')
+            .fold<double>(0.0, (sum, item) => sum + item.amount);
+        final subTotalUsd = subList
+            .where((item) => item.currency == 'USD')
+            .fold<double>(0.0, (sum, item) => sum + item.amount);
         return CategoryExpenseSummary(
           category: sub,
-          totalAmount: subTotal,
+          totalAmount: subTotalSyp,
+          totalAmountUsd: subTotalUsd,
           count: subList.length,
         );
       }).toList();
 
       return CategoryExpenseSummary(
         category: cat,
-        totalAmount: total,
+        totalAmount: totalSyp,
+        totalAmountUsd: totalUsd,
         count: list.length,
         subcategories: subSummaries,
       );

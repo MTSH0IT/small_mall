@@ -148,6 +148,60 @@ void main() {
       expect(filtered.first.expense.id, equals('exp-4'));
       expect(state.filteredTotalAmount, equals(1500.0));
     });
+
+    test('ExpensesLoaded calculates totalSyp and totalUsd separately', () {
+      final mixedExpenses = [
+        ExpenseWithCategory(
+          expense: Expense(
+            id: 'exp-syp-1',
+            categoryId: 'cat-salaries',
+            amount: 50000.0,
+            notes: 'راتب',
+            createdAt: now,
+            currency: 'SYP',
+          ),
+          category: catSalaries,
+        ),
+        ExpenseWithCategory(
+          expense: Expense(
+            id: 'exp-usd-1',
+            categoryId: 'cat-rent',
+            amount: 100.0,
+            notes: 'إيجار بالدولار',
+            createdAt: now,
+            currency: 'USD',
+          ),
+          category: catRent,
+        ),
+        ExpenseWithCategory(
+          expense: Expense(
+            id: 'exp-usd-2',
+            categoryId: 'cat-rent',
+            amount: 50.0,
+            notes: 'صيانة بالدولار',
+            createdAt: now,
+            currency: 'USD',
+          ),
+          category: catRent,
+        ),
+      ];
+
+      final state = ExpensesLoaded(
+        categories: [catSalaries, catRent],
+        categorySummaries: [],
+        expenses: mixedExpenses,
+        totalAmount: 50150.0,
+      );
+
+      expect(state.totalSyp, equals(50000.0));
+      expect(state.totalUsd, equals(150.0));
+      expect(state.filteredTotalSyp, equals(50000.0));
+      expect(state.filteredTotalUsd, equals(150.0));
+
+      final filteredState = state.copyWith(selectedCategoryId: () => 'cat-rent');
+      expect(filteredState.filteredTotalSyp, equals(0.0));
+      expect(filteredState.filteredTotalUsd, equals(150.0));
+    });
   });
 
   group('Net Profit with Store Expenses Calculations', () {

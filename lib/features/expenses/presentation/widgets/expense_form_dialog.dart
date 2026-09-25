@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:small_mall/core/constants/app_currency.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/core/widgets/app_searchable_dropdown.dart';
@@ -29,6 +30,7 @@ class ExpenseFormDialog extends StatefulWidget {
     required String categoryId,
     String? subcategoryId,
     required double amount,
+    String? currency,
     String? notes,
     required DateTime createdAt,
   }) onSave;
@@ -41,6 +43,7 @@ class _ExpenseFormDialogState extends State<ExpenseFormDialog> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _amountController;
   late final TextEditingController _notesController;
+  late String _selectedCurrency;
   String? _selectedCategoryId;
   String? _selectedSubcategoryId;
   late List<ExpenseCategory> _localSubcategories;
@@ -57,6 +60,7 @@ class _ExpenseFormDialogState extends State<ExpenseFormDialog> {
     _notesController = TextEditingController(
       text: expense?.notes ?? '',
     );
+    _selectedCurrency = expense?.currency ?? AppCurrency.primaryCode;
     _selectedCategoryId = expense?.categoryId ??
         widget.preselectedCategoryId ??
         (widget.categories.isNotEmpty ? widget.categories.first.id : null);
@@ -132,6 +136,7 @@ class _ExpenseFormDialogState extends State<ExpenseFormDialog> {
         categoryId: _selectedCategoryId!,
         subcategoryId: _selectedSubcategoryId,
         amount: amount,
+        currency: _selectedCurrency,
         notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
         createdAt: _selectedDate,
       );
@@ -269,9 +274,36 @@ class _ExpenseFormDialogState extends State<ExpenseFormDialog> {
               ),
               const SizedBox(height: 16),
 
+              // Currency Selector
+              Row(
+                children: [
+                  Text(
+                    'common.currency_select'.tr(),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textPrimary),
+                  ),
+                  const SizedBox(width: 12),
+                  ChoiceChip(
+                    label: Text(AppCurrency.primary.nameAr),
+                    selected: _selectedCurrency == AppCurrency.sypCode,
+                    onSelected: (val) {
+                      if (val) setState(() => _selectedCurrency = AppCurrency.sypCode);
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                  ChoiceChip(
+                    label: Text(AppCurrency.secondary.nameAr),
+                    selected: _selectedCurrency == AppCurrency.usdCode,
+                    onSelected: (val) {
+                      if (val) setState(() => _selectedCurrency = AppCurrency.usdCode);
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
               // Amount Field
               AppTextField(
-                label: 'expenses.amount'.tr(),
+                label: '${'expenses.amount'.tr()} (${AppCurrency.getSymbol(_selectedCurrency)})',
                 hint: '0.00',
                 controller: _amountController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),

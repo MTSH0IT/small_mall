@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:small_mall/core/constants/app_currency.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/di/injection.dart';
 import 'package:small_mall/core/utils/theme.dart';
@@ -205,6 +206,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
           required categoryId,
           subcategoryId,
           required amount,
+          currency,
           notes,
           required createdAt,
         }) =>
@@ -212,6 +214,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
           categoryId: categoryId,
           subcategoryId: subcategoryId,
           amount: amount,
+          currency: currency,
           notes: notes,
           createdAt: createdAt,
         ),
@@ -264,6 +267,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
           required categoryId,
           subcategoryId,
           required amount,
+          currency,
           notes,
           required createdAt,
         }) =>
@@ -272,6 +276,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
           categoryId: categoryId,
           subcategoryId: subcategoryId,
           amount: amount,
+          currency: currency,
           notes: notes,
           createdAt: createdAt,
         ),
@@ -291,7 +296,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
             style: const TextStyle(color: AppColors.danger)),
         content: Text(
           'expenses.confirm_delete_expense'.tr(
-            args: [item.expense.amount.toStringAsFixed(2)],
+            args: ['${item.expense.amount.toStringAsFixed(2)} ${AppCurrency.getSymbol(item.expense.currency)}'],
           ),
         ),
         actions: [
@@ -469,15 +474,32 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                       ],
                     ),
                   ),
-                  Text(
-                    state.totalAmount.toStringAsFixed(2),
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: state.selectedCategoryId == null
-                          ? AppColors.primary
-                          : AppColors.textPrimary,
-                    ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '${state.totalSyp.toStringAsFixed(2)} ${AppCurrency.sypSymbol}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: state.selectedCategoryId == null
+                              ? AppColors.primary
+                              : AppColors.textPrimary,
+                        ),
+                      ),
+                      if (state.totalUsd > 0) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          '${state.totalUsd.toStringAsFixed(2)} ${AppCurrency.usdSymbol}',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF059669),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ],
               ),
@@ -500,7 +522,8 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                       final cat = state.categories[index];
                       final isSelected = state.selectedCategoryId == cat.id;
                       final summary = summariesMap[cat.id];
-                      final catTotal = summary?.totalAmount ?? 0.0;
+                      final catTotalSyp = summary?.totalAmount ?? 0.0;
+                      final catTotalUsd = summary?.totalAmountUsd ?? 0.0;
                       final catCount = summary?.count ?? 0;
                       final subcategories = state.getSubcategoriesFor(cat.id);
 
@@ -609,15 +632,24 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                                       crossAxisAlignment: CrossAxisAlignment.end,
                                       children: [
                                         Text(
-                                          catTotal.toStringAsFixed(2),
+                                          '${catTotalSyp.toStringAsFixed(2)} ${AppCurrency.sypSymbol}',
                                           style: TextStyle(
-                                            fontSize: 14,
+                                            fontSize: 13,
                                             fontWeight: FontWeight.bold,
                                             color: isSelected
                                                 ? AppColors.primary
                                                 : AppColors.textPrimary,
                                           ),
                                         ),
+                                        if (catTotalUsd > 0)
+                                          Text(
+                                            '${catTotalUsd.toStringAsFixed(2)} ${AppCurrency.usdSymbol}',
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.bold,
+                                              color: Color(0xFF059669),
+                                            ),
+                                          ),
                                         const SizedBox(height: 2),
                                         Row(
                                           mainAxisSize: MainAxisSize.min,
@@ -742,7 +774,8 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                                           ...subcategories.map((sub) {
                                             final isSubSelected = state.selectedSubcategoryId == sub.id;
                                             final subSummary = summary?.subcategories.where((s) => s.category.id == sub.id).firstOrNull;
-                                            final subTotal = subSummary?.totalAmount ?? 0.0;
+                                            final subTotalSyp = subSummary?.totalAmount ?? 0.0;
+                                            final subTotalUsd = subSummary?.totalAmountUsd ?? 0.0;
                                             final subCount = subSummary?.count ?? 0;
 
                                             return Container(
@@ -806,15 +839,30 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                                                           ],
                                                         ),
                                                       ),
-                                                      Text(
-                                                        subTotal.toStringAsFixed(2),
-                                                        style: TextStyle(
-                                                          fontSize: 12,
-                                                          fontWeight: FontWeight.bold,
-                                                          color: isSubSelected
-                                                              ? AppColors.primary
-                                                              : AppColors.textPrimary,
-                                                        ),
+                                                      Column(
+                                                        crossAxisAlignment: CrossAxisAlignment.end,
+                                                        mainAxisSize: MainAxisSize.min,
+                                                        children: [
+                                                          Text(
+                                                            '${subTotalSyp.toStringAsFixed(2)} ${AppCurrency.sypSymbol}',
+                                                            style: TextStyle(
+                                                              fontSize: 11,
+                                                              fontWeight: FontWeight.bold,
+                                                              color: isSubSelected
+                                                                  ? AppColors.primary
+                                                                  : AppColors.textPrimary,
+                                                            ),
+                                                          ),
+                                                          if (subTotalUsd > 0)
+                                                            Text(
+                                                              '${subTotalUsd.toStringAsFixed(2)} ${AppCurrency.usdSymbol}',
+                                                              style: const TextStyle(
+                                                                fontSize: 10,
+                                                                fontWeight: FontWeight.bold,
+                                                                color: Color(0xFF059669),
+                                                              ),
+                                                            ),
+                                                        ],
                                                       ),
                                                       const SizedBox(width: 6),
                                                       IconButton(
@@ -872,7 +920,6 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
     ExpensesLoaded state,
   ) {
     final filtered = state.filteredExpenses;
-    final filteredTotal = state.filteredTotalAmount;
 
     // Determine current category name
     String categoryTitle = 'expenses.all_categories'.tr();
@@ -1070,13 +1117,30 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                     ),
                   ],
                 ),
-                Text(
-                  filteredTotal.toStringAsFixed(2),
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.warning,
-                  ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '${state.filteredTotalSyp.toStringAsFixed(2)} ${AppCurrency.sypSymbol}',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.warning,
+                      ),
+                    ),
+                    if (state.filteredTotalUsd > 0) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        '${state.filteredTotalUsd.toStringAsFixed(2)} ${AppCurrency.usdSymbol}',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF059669),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ],
             ),
@@ -1216,14 +1280,47 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                                 ),
                               ),
 
-                              // Amount
-                              Text(
-                                exp.amount.toStringAsFixed(2),
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.warning,
-                                ),
+                              // Amount with currency badge
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    '${exp.amount.toStringAsFixed(2)} ${AppCurrency.getSymbol(exp.currency)}',
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.bold,
+                                      color: exp.currency == AppCurrency.usdCode
+                                          ? const Color(0xFF059669)
+                                          : AppColors.warning,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                                    decoration: BoxDecoration(
+                                      color: exp.currency == AppCurrency.usdCode
+                                          ? const Color(0xFF059669).withValues(alpha: 0.1)
+                                          : Colors.grey.shade100,
+                                      borderRadius: BorderRadius.circular(4),
+                                      border: Border.all(
+                                        color: exp.currency == AppCurrency.usdCode
+                                            ? const Color(0xFF059669).withValues(alpha: 0.3)
+                                            : Colors.grey.shade300,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      AppCurrency.fromCode(exp.currency).nameAr,
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                        color: exp.currency == AppCurrency.usdCode
+                                            ? const Color(0xFF059669)
+                                            : AppColors.textSecondary,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                               const SizedBox(width: 16),
 

@@ -173,6 +173,7 @@ class ExpensesCubit extends Cubit<ExpensesState> {
     required String categoryId,
     String? subcategoryId,
     required double amount,
+    String? currency,
     String? notes,
     DateTime? createdAt,
   }) async {
@@ -181,6 +182,7 @@ class ExpensesCubit extends Cubit<ExpensesState> {
         categoryId: categoryId,
         subcategoryId: subcategoryId,
         amount: amount,
+        currency: currency,
         notes: notes,
         createdAt: createdAt,
       );
@@ -199,6 +201,7 @@ class ExpensesCubit extends Cubit<ExpensesState> {
     required String categoryId,
     String? subcategoryId,
     required double amount,
+    String? currency,
     String? notes,
     DateTime? createdAt,
   }) async {
@@ -208,6 +211,7 @@ class ExpensesCubit extends Cubit<ExpensesState> {
         categoryId: categoryId,
         subcategoryId: subcategoryId,
         amount: amount,
+        currency: currency,
         notes: notes,
         createdAt: createdAt,
       );

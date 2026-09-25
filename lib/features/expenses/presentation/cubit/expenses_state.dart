@@ -65,6 +65,30 @@ class ExpensesLoaded extends ExpensesState {
     return filteredExpenses.fold(0.0, (sum, item) => sum + item.expense.amount);
   }
 
+  double get filteredTotalSyp {
+    return filteredExpenses
+        .where((e) => e.expense.currency != 'USD')
+        .fold(0.0, (sum, item) => sum + item.expense.amount);
+  }
+
+  double get filteredTotalUsd {
+    return filteredExpenses
+        .where((e) => e.expense.currency == 'USD')
+        .fold(0.0, (sum, item) => sum + item.expense.amount);
+  }
+
+  double get totalSyp {
+    return expenses
+        .where((e) => e.expense.currency != 'USD')
+        .fold(0.0, (sum, item) => sum + item.expense.amount);
+  }
+
+  double get totalUsd {
+    return expenses
+        .where((e) => e.expense.currency == 'USD')
+        .fold(0.0, (sum, item) => sum + item.expense.amount);
+  }
+
   ExpensesLoaded copyWith({
     List<ExpenseCategory>? categories,
     List<ExpenseCategory>? subcategories,
