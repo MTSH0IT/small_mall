@@ -31,6 +31,7 @@ class _POSProductListTileState extends State<POSProductListTile> {
     final item = widget.item;
     final inStock = item.currentStock > 0;
     final hasInCart = widget.quantityInCart > 0;
+    final canAddMore = (item.currentStock - widget.quantityInCart) > 0;
     final singlePrice = item.prices.length == 1 ? item.prices.first : null;
 
     return MouseRegion(
@@ -39,7 +40,7 @@ class _POSProductListTileState extends State<POSProductListTile> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: (inStock && singlePrice != null)
+          onTap: (canAddMore && singlePrice != null)
               ? () => widget.onPriceSelected(singlePrice)
               : null,
           borderRadius: BorderRadius.circular(10),
@@ -269,10 +270,10 @@ class _POSProductListTileState extends State<POSProductListTile> {
                   )
                 else if (singlePrice != null)
                   Material(
-                    color: inStock ? AppColors.primary : Colors.grey.shade300,
+                    color: canAddMore ? AppColors.primary : Colors.grey.shade300,
                     borderRadius: BorderRadius.circular(7),
                     child: InkWell(
-                      onTap: inStock ? () => widget.onPriceSelected(singlePrice) : null,
+                      onTap: canAddMore ? () => widget.onPriceSelected(singlePrice) : null,
                       borderRadius: BorderRadius.circular(7),
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -282,7 +283,7 @@ class _POSProductListTileState extends State<POSProductListTile> {
                             Icon(
                               Icons.add_shopping_cart_rounded,
                               size: 13,
-                              color: inStock ? Colors.white : AppColors.textSecondary,
+                              color: canAddMore ? Colors.white : AppColors.textSecondary,
                             ),
                             const SizedBox(width: 5),
                             Text(
@@ -290,7 +291,7 @@ class _POSProductListTileState extends State<POSProductListTile> {
                               style: AppTheme.numericStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
-                                color: inStock ? Colors.white : AppColors.textSecondary,
+                                color: canAddMore ? Colors.white : AppColors.textSecondary,
                               ),
                             ),
                           ],
@@ -315,12 +316,12 @@ class _POSProductListTileState extends State<POSProductListTile> {
                       );
 
                       return Material(
-                        color: inStock
+                        color: canAddMore
                             ? color.withValues(alpha: 0.1)
                             : Colors.grey.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(6),
                         child: InkWell(
-                          onTap: inStock ? () => widget.onPriceSelected(price) : null,
+                          onTap: canAddMore ? () => widget.onPriceSelected(price) : null,
                           borderRadius: BorderRadius.circular(6),
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),

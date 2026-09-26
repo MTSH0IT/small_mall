@@ -39,6 +39,16 @@ class POSCubit extends Cubit<POSState> {
     if (state is! POSLoaded) return;
     final loaded = state as POSLoaded;
 
+    // Calculate total quantity of this product already in the cart across ALL price tiers/currencies
+    final totalInCart = loaded.cart
+        .where((item) => item.productDetails.product.id == product.product.id)
+        .fold<double>(0.0, (sum, item) => sum + item.quantity);
+
+    // Prevent adding if total in cart would exceed current warehouse stock
+    if (totalInCart + 1.0 > product.currentStock) {
+      return;
+    }
+
     final existingIndex = loaded.cart.indexWhere(
       (item) =>
           item.productDetails.product.id == product.product.id &&
@@ -49,13 +59,10 @@ class POSCubit extends Cubit<POSState> {
 
     if (existingIndex >= 0) {
       final existingItem = updatedCart[existingIndex];
-      if (existingItem.quantity + 1 <= product.currentStock) {
-        updatedCart[existingIndex] = existingItem.copyWith(
-          quantity: existingItem.quantity + 1,
-        );
-      }
+      updatedCart[existingIndex] = existingItem.copyWith(
+        quantity: existingItem.quantity + 1.0,
+      );
     } else {
-      if (product.currentStock < 1.0) return; // Prevent adding out-of-stock item
       updatedCart.add(CartItem(
         productDetails: product,
         selectedPrice: price,
@@ -77,7 +84,23 @@ class POSCubit extends Cubit<POSState> {
         removeFromCart(index);
         return;
       }
-      final validQty = quantity.clamp(1.0, item.productDetails.currentStock);
+
+      // Calculate quantity of other cart items for the same product
+      final otherItemsQty = loaded.cart
+          .asMap()
+          .entries
+          .where((entry) =>
+              entry.key != index &&
+              entry.value.productDetails.product.id == item.productDetails.product.id)
+          .fold<double>(0.0, (sum, entry) => sum + entry.value.quantity);
+
+      final maxAllowedForThisItem = (item.productDetails.currentStock - otherItemsQty).clamp(0.0, double.infinity);
+      if (maxAllowedForThisItem < 1.0) {
+        removeFromCart(index);
+        return;
+      }
+
+      final validQty = quantity.clamp(1.0, maxAllowedForThisItem);
       updatedCart[index] = item.copyWith(quantity: validQty);
       emit(loaded.copyWith(cart: updatedCart));
     }

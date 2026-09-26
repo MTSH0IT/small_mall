@@ -576,10 +576,23 @@ class _POSScreenState extends State<POSScreen> {
                               ? LayoutBuilder(
                                   builder: (context, constraints) {
                                     final width = constraints.maxWidth;
-                                    final crossAxisCount = width >= 720 ? 4 : (width >= 460 ? 3 : 2);
-                                    final childAspectRatio = width >= 720
-                                        ? 1.35
-                                        : (width >= 460 ? 1.30 : 1.22);
+                                    final int crossAxisCount;
+                                    if (width >= 1200) {
+                                      crossAxisCount = 6;
+                                    } else if (width >= 950) {
+                                      crossAxisCount = 5;
+                                    } else if (width >= 720) {
+                                      crossAxisCount = 4;
+                                    } else if (width >= 480) {
+                                      crossAxisCount = 3;
+                                    } else {
+                                      crossAxisCount = 2;
+                                    }
+
+                                    final itemWidth = (width - ((crossAxisCount - 1) * 10)) / crossAxisCount;
+                                    // Target height ~130px ensures cards are compact without unnecessary empty space,
+                                    // while comfortably fitting header, name (up to 2 lines), code, and dual price rows.
+                                    final childAspectRatio = (itemWidth / 130.0).clamp(1.22, 1.70);
 
                                     return GridView.builder(
                                       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -768,8 +781,20 @@ class _POSScreenState extends State<POSScreen> {
                               itemCount: state.cart.length,
                               itemBuilder: (context, index) {
                                 final cartItem = state.cart[index];
+                                final otherItemsQty = state.cart
+                                    .asMap()
+                                    .entries
+                                    .where((entry) =>
+                                        entry.key != index &&
+                                        entry.value.productDetails.product.id ==
+                                            cartItem.productDetails.product.id)
+                                    .fold<double>(0.0, (sum, entry) => sum + entry.value.quantity);
+                                final maxAllowedQty = (cartItem.productDetails.currentStock - otherItemsQty)
+                                    .clamp(0.0, double.infinity);
+
                                 return CartItemRow(
                                   item: cartItem,
+                                  maxAllowedQuantity: maxAllowedQty,
                                   onRemove: () => cubit.removeFromCart(index),
                                   onQuantityChanged: (qty) =>
                                       cubit.updateCartItemQuantity(index, qty),

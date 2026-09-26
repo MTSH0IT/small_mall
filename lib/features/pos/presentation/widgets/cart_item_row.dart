@@ -12,6 +12,7 @@ class CartItemRow extends StatefulWidget {
     required this.onQuantityChanged,
     required this.onDiscountChanged,
     required this.onPriceChanged,
+    this.maxAllowedQuantity,
   });
 
   final CartItem item;
@@ -19,6 +20,7 @@ class CartItemRow extends StatefulWidget {
   final ValueChanged<double> onQuantityChanged;
   final ValueChanged<double> onDiscountChanged;
   final ValueChanged<double?> onPriceChanged;
+  final double? maxAllowedQuantity;
 
   @override
   State<CartItemRow> createState() => _CartItemRowState();
@@ -248,7 +250,7 @@ class _CartItemRowState extends State<CartItemRow> {
     final theme = Theme.of(context);
     final label = widget.item.selectedPrice.priceLabel.priceLabelDisplay;
     final color = widget.item.selectedPrice.priceLabel.priceLabelColor;
-    final maxStock = widget.item.productDetails.currentStock;
+    final maxStock = widget.maxAllowedQuantity ?? widget.item.productDetails.currentStock;
     final canIncrement = widget.item.quantity + 1 <= maxStock;
     final canDecrement = widget.item.quantity > 1;
 

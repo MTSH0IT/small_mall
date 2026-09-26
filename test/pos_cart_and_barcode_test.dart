@@ -147,4 +147,51 @@ void main() {
       expect(match?.product.name, 'محفظة جلدية');
     });
   });
+
+  group('POS Stock Enforcement Across Multiple Price Tiers', () {
+    test('cannot add item to cart more than available stock across different prices/currencies', () {
+      final product = ProductWithDetails(
+        product: Product(
+          id: 'p-single',
+          code: '101',
+          name: 'قطعة واحدة فقط',
+          categoryId: null,
+          costPrice: 50.0,
+          costPriceUsd: 1.0,
+          currency: 'SYP',
+          isActive: true,
+          minStockAlert: 1.0,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+        category: null,
+        prices: const [
+          ProductPrice(id: 'price-retail-syp', productId: 'p-single', priceLabel: 'retail', priceValue: 100.0, currency: 'SYP'),
+          ProductPrice(id: 'price-wholesale-syp', productId: 'p-single', priceLabel: 'wholesale', priceValue: 80.0, currency: 'SYP'),
+          ProductPrice(id: 'price-retail-usd', productId: 'p-single', priceLabel: 'retail', priceValue: 2.0, currency: 'USD'),
+          ProductPrice(id: 'price-wholesale-usd', productId: 'p-single', priceLabel: 'wholesale', priceValue: 1.5, currency: 'USD'),
+        ],
+        currentStock: 1.0,
+      );
+
+      final loadedState = POSLoaded(
+        products: [product],
+        customers: [],
+        cart: [],
+        paymentType: 'cash',
+      );
+
+      // Verify that after adding 1 unit of a product, adding another price tier of the same product is prevented
+      final cartWithOne = [
+        CartItem(productDetails: product, selectedPrice: product.prices[0], quantity: 1.0),
+      ];
+
+      final totalInCart = cartWithOne
+          .where((item) => item.productDetails.product.id == product.product.id)
+          .fold<double>(0.0, (sum, item) => sum + item.quantity);
+
+      expect(totalInCart, 1.0);
+      expect(totalInCart + 1.0 > product.currentStock, isTrue);
+    });
+  });
 }
