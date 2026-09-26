@@ -442,6 +442,8 @@
     "simple_debt_payments": "السداد",
     "net_profit_clean": "صافي الربح",
     "net_profit_formula": "إجمالي الداخل - إجمالي الخارج",
+    "sales_minus_cost": "المبيعات - التكلفة",
+    "operational_cash_flow": "صافي التدفق النقدي",
     "inflows_card_title": "إجمالي الداخل",
     "outflows_card_title": "إجمالي الخارج",
     "sales_no_debt_note": "المبيعات النقدية فقط بدون الديون",

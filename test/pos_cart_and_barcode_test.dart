@@ -174,12 +174,6 @@ void main() {
         currentStock: 1.0,
       );
 
-      final loadedState = POSLoaded(
-        products: [product],
-        customers: [],
-        cart: [],
-        paymentType: 'cash',
-      );
 
       // Verify that after adding 1 unit of a product, adding another price tier of the same product is prevented
       final cartWithOne = [

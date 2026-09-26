@@ -400,13 +400,15 @@ class ReportsRepository {
     double debtSalesSyp = 0.0;
     double grossSalesSyp = 0.0;
     double returnsAmountSyp = 0.0;
-    double totalCostSyp = 0.0;
+    double cashCostSyp = 0.0;
+    double returnsCostSyp = 0.0;
 
     double cashSalesUsd = 0.0;
     double debtSalesUsd = 0.0;
     double grossSalesUsd = 0.0;
     double returnsAmountUsd = 0.0;
-    double totalCostUsd = 0.0;
+    double cashCostUsd = 0.0;
+    double returnsCostUsd = 0.0;
 
     int salesCount = 0;
     int cashSalesCount = 0;
@@ -439,37 +441,39 @@ class ReportsRepository {
           grossSalesUsd += inv.totalAmount;
           if (isCash) {
             cashSalesUsd += inv.totalAmount;
+            cashCostUsd += invoiceCost;
           } else {
             debtSalesUsd += inv.totalAmount;
           }
-          totalCostUsd += invoiceCost;
         } else {
           grossSalesSyp += inv.totalAmount;
           if (isCash) {
             cashSalesSyp += inv.totalAmount;
+            cashCostSyp += invoiceCost;
           } else {
             debtSalesSyp += inv.totalAmount;
           }
-          totalCostSyp += invoiceCost;
         }
       } else if (inv.type == 'return') {
         returnsCount++;
         if (isUsd) {
           returnsAmountUsd += inv.totalAmount;
-          totalCostUsd -= invoiceCost;
+          returnsCostUsd += invoiceCost;
         } else {
           returnsAmountSyp += inv.totalAmount;
-          totalCostSyp -= invoiceCost;
+          returnsCostSyp += invoiceCost;
         }
       }
     }
 
     final actualCashSalesSyp = cashSalesSyp - returnsAmountSyp;
-    final grossProfitSyp = actualCashSalesSyp - totalCostSyp;
+    final actualCashCostSyp = cashCostSyp - returnsCostSyp;
+    final grossProfitSyp = actualCashSalesSyp - actualCashCostSyp;
     final formulaNetProfitSyp = (actualCashSalesSyp + totalDebtPaymentsSyp) - (totalExpensesSyp + totalPurchasesSyp);
 
     final actualCashSalesUsd = cashSalesUsd - returnsAmountUsd;
-    final grossProfitUsd = actualCashSalesUsd - totalCostUsd;
+    final actualCashCostUsd = cashCostUsd - returnsCostUsd;
+    final grossProfitUsd = actualCashSalesUsd - actualCashCostUsd;
     final formulaNetProfitUsd = (actualCashSalesUsd + totalDebtPaymentsUsd) - (totalExpensesUsd + totalPurchasesUsd);
 
     final finalNewDebtsCount = newDebtsRows.isNotEmpty
@@ -478,7 +482,7 @@ class ReportsRepository {
 
     return ProfitReportData(
       totalRevenue: actualCashSalesSyp > 0 ? actualCashSalesSyp : 0.0,
-      totalCost: totalCostSyp,
+      totalCost: actualCashCostSyp,
       grossProfit: grossProfitSyp,
       totalExpenses: totalExpensesSyp,
       netProfit: formulaNetProfitSyp,
@@ -495,7 +499,7 @@ class ReportsRepository {
       debtSalesUsd: debtSalesUsd,
       grossSalesUsd: grossSalesUsd,
       returnsAmountUsd: returnsAmountUsd,
-      totalCostUsd: totalCostUsd,
+      totalCostUsd: actualCashCostUsd,
       grossProfitUsd: grossProfitUsd,
       totalExpensesUsd: totalExpensesUsd,
       totalPurchasesUsd: totalPurchasesUsd,

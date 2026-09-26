@@ -442,6 +442,8 @@
     "simple_debt_payments": "Debt Payments",
     "net_profit_clean": "Net Profit",
     "net_profit_formula": "Total Inflow - Total Outflow",
+    "sales_minus_cost": "Sales - Cost",
+    "operational_cash_flow": "Net Cash Flow",
     "inflows_card_title": "Total Inflows",
     "outflows_card_title": "Total Outflows",
     "sales_no_debt_note": "Cash sales only without debts",

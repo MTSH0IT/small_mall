@@ -89,10 +89,23 @@ class _ReportsScreenState extends State<ReportsScreen> {
       final debts = profit.newDebts;
       final debtPayments = profit.debtPayments;
 
-      // Net profit formula: (المبيعات + السداد) - (المصاريف + المشتريات)
-      final netProfit = profit.netProfit;
+      // Profit calculation: المبيعات - التكلفة
+      final salesProfit = profit.grossProfit;
+      final salesProfitUsd = profit.grossProfitUsd;
+      final isSalesProfitable = salesProfit >= 0;
+      final salesProfitColor = isSalesProfitable ? AppColors.success : AppColors.danger;
+      final isSalesProfitableUsd = salesProfitUsd >= 0;
+      final salesProfitColorUsd = isSalesProfitableUsd ? const Color(0xFF059669) : AppColors.danger;
+
+      // Net Cash Flow formula: (المبيعات + السداد) - (المصاريف + المشتريات)
+      final netCashFlow = profit.netProfit;
+      final netCashFlowUsd = profit.netProfitUsd;
       final totalInflow = cashSales + debtPayments;
       final totalOutflow = expenses + purchases;
+      final isCashFlowPositive = netCashFlow >= 0;
+      final cashFlowColor = isCashFlowPositive ? AppColors.success : AppColors.danger;
+      final isCashFlowPositiveUsd = netCashFlowUsd >= 0;
+      final cashFlowColorUsd = isCashFlowPositiveUsd ? const Color(0xFF059669) : AppColors.danger;
 
       // USD counterparts
       final cashSalesUsd = profit.cashSalesUsd;
@@ -100,14 +113,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
       final purchasesUsd = profit.totalPurchasesUsd;
       final debtsUsd = profit.newDebtsUsd;
       final debtPaymentsUsd = profit.debtPaymentsUsd;
-      final netProfitUsd = profit.netProfitUsd;
       final totalInflowUsd = profit.totalInflowsUsd;
       final totalOutflowUsd = profit.totalOutflowsUsd;
-
-      final isProfitable = netProfit >= 0;
-      final netProfitColor = isProfitable ? AppColors.success : AppColors.danger;
-      final isProfitableUsd = netProfitUsd >= 0;
-      final netProfitColorUsd = isProfitableUsd ? const Color(0xFF059669) : AppColors.danger;
 
       return SingleChildScrollView(
         child: Column(
@@ -152,11 +159,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 Expanded(
                   child: StatCard(
                     title: 'reports.net_profit_clean'.tr(),
-                    value: '${netProfit.toStringAsFixed(2)} ل.س',
-                    secondaryValue: '${netProfitUsd.toStringAsFixed(2)} \$',
-                    color: netProfitColor,
-                    secondaryColor: netProfitColorUsd,
-                    subtitle: 'reports.net_profit_formula'.tr(),
+                    value: '${salesProfit.toStringAsFixed(2)} ل.س',
+                    secondaryValue: '${salesProfitUsd.toStringAsFixed(2)} \$',
+                    color: salesProfitColor,
+                    secondaryColor: salesProfitColorUsd,
+                    subtitle: 'reports.sales_minus_cost'.tr(),
                     icon: Icons.calculate_outlined,
                   ),
                 ),
@@ -266,13 +273,13 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
                           const SizedBox(height: 24),
 
-                          // 3. Final Net Profit Result
+                          // 3. Final Net Cash Flow Result
                           Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: netProfitColor.withValues(alpha: 0.08),
+                              color: cashFlowColor.withValues(alpha: 0.08),
                               borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: netProfitColor.withValues(alpha: 0.3)),
+                              border: Border.all(color: cashFlowColor.withValues(alpha: 0.3)),
                             ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -281,11 +288,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'reports.net_profit_clean'.tr(),
+                                      'reports.operational_cash_flow'.tr(),
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 16,
-                                        color: netProfitColor,
+                                        color: cashFlowColor,
                                       ),
                                     ),
                                     const SizedBox(height: 4),
@@ -299,20 +306,20 @@ class _ReportsScreenState extends State<ReportsScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
                                     Text(
-                                      '${netProfit.toStringAsFixed(2)} ل.س',
+                                      '${netCashFlow.toStringAsFixed(2)} ل.س',
                                       style: AppTheme.numericStyle(
                                         fontSize: 22,
                                         fontWeight: FontWeight.bold,
-                                        color: netProfitColor,
+                                        color: cashFlowColor,
                                       ),
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
-                                      '${netProfitUsd.toStringAsFixed(2)} \$',
+                                      '${netCashFlowUsd.toStringAsFixed(2)} \$',
                                       style: AppTheme.numericStyle(
                                         fontSize: 18,
                                         fontWeight: FontWeight.bold,
-                                        color: netProfitColorUsd,
+                                        color: cashFlowColorUsd,
                                       ),
                                     ),
                                   ],
