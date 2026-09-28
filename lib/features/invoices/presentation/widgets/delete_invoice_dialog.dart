@@ -67,7 +67,12 @@ class _DeleteTransactionDialogState extends State<DeleteTransactionDialog> {
       await widget.cubit.deleteTransaction(widget.transaction);
       if (mounted) {
         Navigator.of(context).pop();
-        AppToast.success(context, message: 'invoices.invoice_deleted_success'.tr());
+        AppToast.success(
+          context,
+          message: widget.transaction.isExchange
+              ? 'invoices.exchange_deleted_success'.tr()
+              : 'invoices.invoice_deleted_success'.tr(),
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -83,15 +88,17 @@ class _DeleteTransactionDialogState extends State<DeleteTransactionDialog> {
       case UnifiedTransactionType.debtInvoice:
         return 'invoices.delete_invoice_confirm_title'.tr();
       case UnifiedTransactionType.returnSale:
-        return 'تأكيد حذف فاتورة المردود';
+        return 'invoices.delete_return_confirm_title'.tr();
       case UnifiedTransactionType.purchase:
-        return 'تأكيد حذف فاتورة الشراء';
+        return 'invoices.delete_purchase_confirm_title'.tr();
       case UnifiedTransactionType.expense:
-        return 'تأكيد حذف المصروف';
+        return 'invoices.delete_expense_confirm_title'.tr();
       case UnifiedTransactionType.debtPayment:
-        return 'تأكيد حذف دفعة الدين';
+        return 'invoices.delete_debt_payment_confirm_title'.tr();
       case UnifiedTransactionType.adjustment:
-        return 'تأكيد حذف تسوية الجرد';
+        return 'invoices.delete_adjustment_confirm_title'.tr();
+      case UnifiedTransactionType.exchange:
+        return 'invoices.delete_exchange_confirm_title'.tr();
     }
   }
 
@@ -164,7 +171,9 @@ class _DeleteTransactionDialogState extends State<DeleteTransactionDialog> {
               const SizedBox(height: 16),
             ] else ...[
               Text(
-                'invoices.delete_invoice_confirm_msg'.tr(namedArgs: {'id': displayId}),
+                tr.isExchange
+                    ? 'invoices.delete_exchange_confirm_msg'.tr()
+                    : 'invoices.delete_invoice_confirm_msg'.tr(namedArgs: {'id': displayId}),
                 style: const TextStyle(fontSize: 14, height: 1.5),
               ),
               const SizedBox(height: 16),
@@ -180,19 +189,39 @@ class _DeleteTransactionDialogState extends State<DeleteTransactionDialog> {
               ),
               child: Column(
                 children: [
-                  _buildDetailRow('الرقم / المعرّف', displayId),
+                  _buildDetailRow('invoices.invoice_id'.tr(), displayId),
                   const SizedBox(height: 6),
-                  _buildDetailRow('نوع العملية', tr.typeLabel),
-                  if (tr.partyName != null && tr.partyName!.isNotEmpty) ...[
+                  _buildDetailRow('invoices.operation_type'.tr(), tr.typeLabel),
+                  if (tr.isExchange && tr.rawExchangeInvoice != null) ...[
                     const SizedBox(height: 6),
-                    _buildDetailRow('الطرف / البيان', tr.partyName!),
+                    _buildDetailRow(
+                      'invoices.paid_amount'.tr(),
+                      '-${tr.rawExchangeInvoice!.fromAmount.toStringAsFixed(2)} ${tr.rawExchangeInvoice!.fromCurrency == 'USD' ? r'$' : AppCurrency.primarySymbol}',
+                      isAmount: true,
+                    ),
+                    const SizedBox(height: 6),
+                    _buildDetailRow(
+                      'invoices.received_amount'.tr(),
+                      '+${tr.rawExchangeInvoice!.toAmount.toStringAsFixed(2)} ${tr.rawExchangeInvoice!.toCurrency == 'USD' ? r'$' : AppCurrency.primarySymbol}',
+                      isAmount: true,
+                    ),
+                    const SizedBox(height: 6),
+                    _buildDetailRow(
+                      'invoices.exchange_rate_label'.tr(),
+                      '1\$ = ${tr.rawExchangeInvoice!.exchangeRate.toStringAsFixed(0)} ${AppCurrency.primarySymbol}',
+                    ),
+                  ] else ...[
+                    if (tr.partyName != null && tr.partyName!.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      _buildDetailRow('invoices.party'.tr(), tr.partyName!),
+                    ],
+                    const SizedBox(height: 6),
+                    _buildDetailRow(
+                      'common.total'.tr(),
+                      amountText,
+                      isAmount: true,
+                    ),
                   ],
-                  const SizedBox(height: 6),
-                  _buildDetailRow(
-                    'common.total'.tr(),
-                    amountText,
-                    isAmount: true,
-                  ),
                 ],
               ),
             ),

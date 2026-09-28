@@ -207,4 +207,33 @@ class InvoicesCubit extends Cubit<InvoicesState> {
       rethrow;
     }
   }
+
+  Future<void> updateExchangeInvoice({
+    required String exchangeId,
+    required String actionType,
+    required String fromCurrency,
+    required double fromAmount,
+    required String toCurrency,
+    required double toAmount,
+    required double exchangeRate,
+    String? notes,
+    required DateTime createdAt,
+  }) async {
+    try {
+      await _invoicesRepository.updateExchangeInvoice(
+        exchangeId: exchangeId,
+        actionType: actionType,
+        fromCurrency: fromCurrency,
+        fromAmount: fromAmount,
+        toCurrency: toCurrency,
+        toAmount: toAmount,
+        exchangeRate: exchangeRate,
+        notes: notes,
+        createdAt: createdAt,
+      );
+      await loadInvoices(preserveSelectedId: exchangeId);
+    } catch (e) {
+      rethrow;
+    }
+  }
 }

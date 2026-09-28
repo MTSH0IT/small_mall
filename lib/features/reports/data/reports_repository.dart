@@ -148,6 +148,13 @@ class CashDrawerReportData {
     this.cashPurchasesUsd = 0.0,
     this.totalCashOutUsd = 0.0,
     this.netCashFlowUsd = 0.0,
+    this.exchangeInSyp = 0.0,
+    this.exchangeOutSyp = 0.0,
+    this.netExchangeSyp = 0.0,
+    this.exchangeInUsd = 0.0,
+    this.exchangeOutUsd = 0.0,
+    this.netExchangeUsd = 0.0,
+    this.exchangeCount = 0,
     required this.movements,
   });
 
@@ -168,6 +175,21 @@ class CashDrawerReportData {
   final double cashPurchasesUsd;
   final double totalCashOutUsd;
   final double netCashFlowUsd;
+
+  final double exchangeInSyp;
+  final double exchangeOutSyp;
+  final double netExchangeSyp;
+  final double exchangeInUsd;
+  final double exchangeOutUsd;
+  final double netExchangeUsd;
+  final int exchangeCount;
+
+  // Accounting balances before and after currency exchange
+  double get balanceBeforeSyp => totalCashIn - exchangeInSyp - (totalCashOut - exchangeOutSyp);
+  double get balanceAfterSyp => netCashFlow;
+
+  double get balanceBeforeUsd => totalCashInUsd - exchangeInUsd - (totalCashOutUsd - exchangeOutUsd);
+  double get balanceAfterUsd => netCashFlowUsd;
 
   final List<CashMovementItem> movements;
 }
@@ -686,14 +708,90 @@ class ReportsRepository {
       ));
     }
 
+    // 6. Currency exchange operations
+    final exchanges = await (_db.select(_db.exchangeInvoices)
+          ..where((t) =>
+              t.createdAt.isBiggerOrEqualValue(start) &
+              t.createdAt.isSmallerOrEqualValue(end)))
+        .get();
+
+    double exchangeInSyp = 0.0;
+    double exchangeOutSyp = 0.0;
+    double exchangeInUsd = 0.0;
+    double exchangeOutUsd = 0.0;
+
+    for (final ex in exchanges) {
+      final isBuy = ex.actionType == 'buy_usd';
+      if (isBuy) {
+        // Buy USD: paid SYP (outflow from SYP box), received USD (inflow to USD box)
+        exchangeOutSyp += ex.fromAmount;
+        exchangeInUsd += ex.toAmount;
+
+        movements.add(CashMovementItem(
+          id: ex.id,
+          title: 'invoices.exchange_buy_usd'.tr(),
+          type: 'exchange',
+          isCashIn: false,
+          amount: ex.fromAmount,
+          date: ex.createdAt,
+          currency: AppCurrency.sypCode,
+          referenceNumber: ex.serialNumber != null ? '#${ex.serialNumber}' : null,
+          notes: '1\$ = ${ex.exchangeRate.toStringAsFixed(0)} ${AppCurrency.primarySymbol}',
+        ));
+
+        movements.add(CashMovementItem(
+          id: '${ex.id}_in',
+          title: 'invoices.exchange_buy_usd'.tr(),
+          type: 'exchange',
+          isCashIn: true,
+          amount: ex.toAmount,
+          date: ex.createdAt,
+          currency: AppCurrency.usdCode,
+          referenceNumber: ex.serialNumber != null ? '#${ex.serialNumber}' : null,
+          notes: '1\$ = ${ex.exchangeRate.toStringAsFixed(0)} ${AppCurrency.primarySymbol}',
+        ));
+      } else {
+        // Sell USD: paid USD (outflow from USD box), received SYP (inflow to SYP box)
+        exchangeOutUsd += ex.fromAmount;
+        exchangeInSyp += ex.toAmount;
+
+        movements.add(CashMovementItem(
+          id: ex.id,
+          title: 'invoices.exchange_sell_usd'.tr(),
+          type: 'exchange',
+          isCashIn: false,
+          amount: ex.fromAmount,
+          date: ex.createdAt,
+          currency: AppCurrency.usdCode,
+          referenceNumber: ex.serialNumber != null ? '#${ex.serialNumber}' : null,
+          notes: '1\$ = ${ex.exchangeRate.toStringAsFixed(0)} ${AppCurrency.primarySymbol}',
+        ));
+
+        movements.add(CashMovementItem(
+          id: '${ex.id}_in',
+          title: 'invoices.exchange_sell_usd'.tr(),
+          type: 'exchange',
+          isCashIn: true,
+          amount: ex.toAmount,
+          date: ex.createdAt,
+          currency: AppCurrency.sypCode,
+          referenceNumber: ex.serialNumber != null ? '#${ex.serialNumber}' : null,
+          notes: '1\$ = ${ex.exchangeRate.toStringAsFixed(0)} ${AppCurrency.primarySymbol}',
+        ));
+      }
+    }
+
+    final netExchangeSyp = exchangeInSyp - exchangeOutSyp;
+    final netExchangeUsd = exchangeInUsd - exchangeOutUsd;
+
     // Sort movements by date descending (newest first)
     movements.sort((a, b) => b.date.compareTo(a.date));
 
-    final totalCashInSyp = totalCashSalesSyp + totalDebtPaymentsSyp;
-    final totalCashInUsd = totalCashSalesUsd + totalDebtPaymentsUsd;
+    final totalCashInSyp = totalCashSalesSyp + totalDebtPaymentsSyp + exchangeInSyp;
+    final totalCashInUsd = totalCashSalesUsd + totalDebtPaymentsUsd + exchangeInUsd;
 
-    final totalCashOutSyp = totalCashReturnsSyp + totalExpensesSyp + totalPurchasesSyp;
-    final totalCashOutUsd = totalCashReturnsUsd + totalExpensesUsd + totalPurchasesUsd;
+    final totalCashOutSyp = totalCashReturnsSyp + totalExpensesSyp + totalPurchasesSyp + exchangeOutSyp;
+    final totalCashOutUsd = totalCashReturnsUsd + totalExpensesUsd + totalPurchasesUsd + exchangeOutUsd;
 
     final netCashFlowSyp = totalCashInSyp - totalCashOutSyp;
     final netCashFlowUsd = totalCashInUsd - totalCashOutUsd;
@@ -715,6 +813,13 @@ class ReportsRepository {
       cashPurchasesUsd: totalPurchasesUsd,
       totalCashOutUsd: totalCashOutUsd,
       netCashFlowUsd: netCashFlowUsd,
+      exchangeInSyp: exchangeInSyp,
+      exchangeOutSyp: exchangeOutSyp,
+      netExchangeSyp: netExchangeSyp,
+      exchangeInUsd: exchangeInUsd,
+      exchangeOutUsd: exchangeOutUsd,
+      netExchangeUsd: netExchangeUsd,
+      exchangeCount: exchanges.length,
       movements: movements,
     );
   }

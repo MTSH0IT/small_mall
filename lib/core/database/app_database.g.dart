@@ -7274,6 +7274,684 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
   }
 }
 
+class $ExchangeInvoicesTable extends ExchangeInvoices
+    with TableInfo<$ExchangeInvoicesTable, ExchangeInvoice> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ExchangeInvoicesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _serialNumberMeta = const VerificationMeta(
+    'serialNumber',
+  );
+  @override
+  late final GeneratedColumn<int> serialNumber = GeneratedColumn<int>(
+    'serial_number',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _actionTypeMeta = const VerificationMeta(
+    'actionType',
+  );
+  @override
+  late final GeneratedColumn<String> actionType = GeneratedColumn<String>(
+    'action_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fromCurrencyMeta = const VerificationMeta(
+    'fromCurrency',
+  );
+  @override
+  late final GeneratedColumn<String> fromCurrency = GeneratedColumn<String>(
+    'from_currency',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fromAmountMeta = const VerificationMeta(
+    'fromAmount',
+  );
+  @override
+  late final GeneratedColumn<double> fromAmount = GeneratedColumn<double>(
+    'from_amount',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _toCurrencyMeta = const VerificationMeta(
+    'toCurrency',
+  );
+  @override
+  late final GeneratedColumn<String> toCurrency = GeneratedColumn<String>(
+    'to_currency',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _toAmountMeta = const VerificationMeta(
+    'toAmount',
+  );
+  @override
+  late final GeneratedColumn<double> toAmount = GeneratedColumn<double>(
+    'to_amount',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _exchangeRateMeta = const VerificationMeta(
+    'exchangeRate',
+  );
+  @override
+  late final GeneratedColumn<double> exchangeRate = GeneratedColumn<double>(
+    'exchange_rate',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+    'notes',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _syncedAtMeta = const VerificationMeta(
+    'syncedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> syncedAt = GeneratedColumn<DateTime>(
+    'synced_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    serialNumber,
+    actionType,
+    fromCurrency,
+    fromAmount,
+    toCurrency,
+    toAmount,
+    exchangeRate,
+    notes,
+    createdAt,
+    syncedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'exchange_invoices';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ExchangeInvoice> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('serial_number')) {
+      context.handle(
+        _serialNumberMeta,
+        serialNumber.isAcceptableOrUnknown(
+          data['serial_number']!,
+          _serialNumberMeta,
+        ),
+      );
+    }
+    if (data.containsKey('action_type')) {
+      context.handle(
+        _actionTypeMeta,
+        actionType.isAcceptableOrUnknown(data['action_type']!, _actionTypeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_actionTypeMeta);
+    }
+    if (data.containsKey('from_currency')) {
+      context.handle(
+        _fromCurrencyMeta,
+        fromCurrency.isAcceptableOrUnknown(
+          data['from_currency']!,
+          _fromCurrencyMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_fromCurrencyMeta);
+    }
+    if (data.containsKey('from_amount')) {
+      context.handle(
+        _fromAmountMeta,
+        fromAmount.isAcceptableOrUnknown(data['from_amount']!, _fromAmountMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fromAmountMeta);
+    }
+    if (data.containsKey('to_currency')) {
+      context.handle(
+        _toCurrencyMeta,
+        toCurrency.isAcceptableOrUnknown(data['to_currency']!, _toCurrencyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_toCurrencyMeta);
+    }
+    if (data.containsKey('to_amount')) {
+      context.handle(
+        _toAmountMeta,
+        toAmount.isAcceptableOrUnknown(data['to_amount']!, _toAmountMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_toAmountMeta);
+    }
+    if (data.containsKey('exchange_rate')) {
+      context.handle(
+        _exchangeRateMeta,
+        exchangeRate.isAcceptableOrUnknown(
+          data['exchange_rate']!,
+          _exchangeRateMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_exchangeRateMeta);
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+        _notesMeta,
+        notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('synced_at')) {
+      context.handle(
+        _syncedAtMeta,
+        syncedAt.isAcceptableOrUnknown(data['synced_at']!, _syncedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ExchangeInvoice map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ExchangeInvoice(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      serialNumber: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}serial_number'],
+      ),
+      actionType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}action_type'],
+      )!,
+      fromCurrency: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}from_currency'],
+      )!,
+      fromAmount: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}from_amount'],
+      )!,
+      toCurrency: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}to_currency'],
+      )!,
+      toAmount: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}to_amount'],
+      )!,
+      exchangeRate: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}exchange_rate'],
+      )!,
+      notes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}notes'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      syncedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}synced_at'],
+      ),
+    );
+  }
+
+  @override
+  $ExchangeInvoicesTable createAlias(String alias) {
+    return $ExchangeInvoicesTable(attachedDatabase, alias);
+  }
+}
+
+class ExchangeInvoice extends DataClass implements Insertable<ExchangeInvoice> {
+  final String id;
+  final int? serialNumber;
+  final String actionType;
+  final String fromCurrency;
+  final double fromAmount;
+  final String toCurrency;
+  final double toAmount;
+  final double exchangeRate;
+  final String? notes;
+  final DateTime createdAt;
+  final DateTime? syncedAt;
+  const ExchangeInvoice({
+    required this.id,
+    this.serialNumber,
+    required this.actionType,
+    required this.fromCurrency,
+    required this.fromAmount,
+    required this.toCurrency,
+    required this.toAmount,
+    required this.exchangeRate,
+    this.notes,
+    required this.createdAt,
+    this.syncedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    if (!nullToAbsent || serialNumber != null) {
+      map['serial_number'] = Variable<int>(serialNumber);
+    }
+    map['action_type'] = Variable<String>(actionType);
+    map['from_currency'] = Variable<String>(fromCurrency);
+    map['from_amount'] = Variable<double>(fromAmount);
+    map['to_currency'] = Variable<String>(toCurrency);
+    map['to_amount'] = Variable<double>(toAmount);
+    map['exchange_rate'] = Variable<double>(exchangeRate);
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    if (!nullToAbsent || syncedAt != null) {
+      map['synced_at'] = Variable<DateTime>(syncedAt);
+    }
+    return map;
+  }
+
+  ExchangeInvoicesCompanion toCompanion(bool nullToAbsent) {
+    return ExchangeInvoicesCompanion(
+      id: Value(id),
+      serialNumber: serialNumber == null && nullToAbsent
+          ? const Value.absent()
+          : Value(serialNumber),
+      actionType: Value(actionType),
+      fromCurrency: Value(fromCurrency),
+      fromAmount: Value(fromAmount),
+      toCurrency: Value(toCurrency),
+      toAmount: Value(toAmount),
+      exchangeRate: Value(exchangeRate),
+      notes: notes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(notes),
+      createdAt: Value(createdAt),
+      syncedAt: syncedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(syncedAt),
+    );
+  }
+
+  factory ExchangeInvoice.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ExchangeInvoice(
+      id: serializer.fromJson<String>(json['id']),
+      serialNumber: serializer.fromJson<int?>(json['serialNumber']),
+      actionType: serializer.fromJson<String>(json['actionType']),
+      fromCurrency: serializer.fromJson<String>(json['fromCurrency']),
+      fromAmount: serializer.fromJson<double>(json['fromAmount']),
+      toCurrency: serializer.fromJson<String>(json['toCurrency']),
+      toAmount: serializer.fromJson<double>(json['toAmount']),
+      exchangeRate: serializer.fromJson<double>(json['exchangeRate']),
+      notes: serializer.fromJson<String?>(json['notes']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      syncedAt: serializer.fromJson<DateTime?>(json['syncedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'serialNumber': serializer.toJson<int?>(serialNumber),
+      'actionType': serializer.toJson<String>(actionType),
+      'fromCurrency': serializer.toJson<String>(fromCurrency),
+      'fromAmount': serializer.toJson<double>(fromAmount),
+      'toCurrency': serializer.toJson<String>(toCurrency),
+      'toAmount': serializer.toJson<double>(toAmount),
+      'exchangeRate': serializer.toJson<double>(exchangeRate),
+      'notes': serializer.toJson<String?>(notes),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'syncedAt': serializer.toJson<DateTime?>(syncedAt),
+    };
+  }
+
+  ExchangeInvoice copyWith({
+    String? id,
+    Value<int?> serialNumber = const Value.absent(),
+    String? actionType,
+    String? fromCurrency,
+    double? fromAmount,
+    String? toCurrency,
+    double? toAmount,
+    double? exchangeRate,
+    Value<String?> notes = const Value.absent(),
+    DateTime? createdAt,
+    Value<DateTime?> syncedAt = const Value.absent(),
+  }) => ExchangeInvoice(
+    id: id ?? this.id,
+    serialNumber: serialNumber.present ? serialNumber.value : this.serialNumber,
+    actionType: actionType ?? this.actionType,
+    fromCurrency: fromCurrency ?? this.fromCurrency,
+    fromAmount: fromAmount ?? this.fromAmount,
+    toCurrency: toCurrency ?? this.toCurrency,
+    toAmount: toAmount ?? this.toAmount,
+    exchangeRate: exchangeRate ?? this.exchangeRate,
+    notes: notes.present ? notes.value : this.notes,
+    createdAt: createdAt ?? this.createdAt,
+    syncedAt: syncedAt.present ? syncedAt.value : this.syncedAt,
+  );
+  ExchangeInvoice copyWithCompanion(ExchangeInvoicesCompanion data) {
+    return ExchangeInvoice(
+      id: data.id.present ? data.id.value : this.id,
+      serialNumber: data.serialNumber.present
+          ? data.serialNumber.value
+          : this.serialNumber,
+      actionType: data.actionType.present
+          ? data.actionType.value
+          : this.actionType,
+      fromCurrency: data.fromCurrency.present
+          ? data.fromCurrency.value
+          : this.fromCurrency,
+      fromAmount: data.fromAmount.present
+          ? data.fromAmount.value
+          : this.fromAmount,
+      toCurrency: data.toCurrency.present
+          ? data.toCurrency.value
+          : this.toCurrency,
+      toAmount: data.toAmount.present ? data.toAmount.value : this.toAmount,
+      exchangeRate: data.exchangeRate.present
+          ? data.exchangeRate.value
+          : this.exchangeRate,
+      notes: data.notes.present ? data.notes.value : this.notes,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      syncedAt: data.syncedAt.present ? data.syncedAt.value : this.syncedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ExchangeInvoice(')
+          ..write('id: $id, ')
+          ..write('serialNumber: $serialNumber, ')
+          ..write('actionType: $actionType, ')
+          ..write('fromCurrency: $fromCurrency, ')
+          ..write('fromAmount: $fromAmount, ')
+          ..write('toCurrency: $toCurrency, ')
+          ..write('toAmount: $toAmount, ')
+          ..write('exchangeRate: $exchangeRate, ')
+          ..write('notes: $notes, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('syncedAt: $syncedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    serialNumber,
+    actionType,
+    fromCurrency,
+    fromAmount,
+    toCurrency,
+    toAmount,
+    exchangeRate,
+    notes,
+    createdAt,
+    syncedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ExchangeInvoice &&
+          other.id == this.id &&
+          other.serialNumber == this.serialNumber &&
+          other.actionType == this.actionType &&
+          other.fromCurrency == this.fromCurrency &&
+          other.fromAmount == this.fromAmount &&
+          other.toCurrency == this.toCurrency &&
+          other.toAmount == this.toAmount &&
+          other.exchangeRate == this.exchangeRate &&
+          other.notes == this.notes &&
+          other.createdAt == this.createdAt &&
+          other.syncedAt == this.syncedAt);
+}
+
+class ExchangeInvoicesCompanion extends UpdateCompanion<ExchangeInvoice> {
+  final Value<String> id;
+  final Value<int?> serialNumber;
+  final Value<String> actionType;
+  final Value<String> fromCurrency;
+  final Value<double> fromAmount;
+  final Value<String> toCurrency;
+  final Value<double> toAmount;
+  final Value<double> exchangeRate;
+  final Value<String?> notes;
+  final Value<DateTime> createdAt;
+  final Value<DateTime?> syncedAt;
+  final Value<int> rowid;
+  const ExchangeInvoicesCompanion({
+    this.id = const Value.absent(),
+    this.serialNumber = const Value.absent(),
+    this.actionType = const Value.absent(),
+    this.fromCurrency = const Value.absent(),
+    this.fromAmount = const Value.absent(),
+    this.toCurrency = const Value.absent(),
+    this.toAmount = const Value.absent(),
+    this.exchangeRate = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.syncedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ExchangeInvoicesCompanion.insert({
+    required String id,
+    this.serialNumber = const Value.absent(),
+    required String actionType,
+    required String fromCurrency,
+    required double fromAmount,
+    required String toCurrency,
+    required double toAmount,
+    required double exchangeRate,
+    this.notes = const Value.absent(),
+    required DateTime createdAt,
+    this.syncedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       actionType = Value(actionType),
+       fromCurrency = Value(fromCurrency),
+       fromAmount = Value(fromAmount),
+       toCurrency = Value(toCurrency),
+       toAmount = Value(toAmount),
+       exchangeRate = Value(exchangeRate),
+       createdAt = Value(createdAt);
+  static Insertable<ExchangeInvoice> custom({
+    Expression<String>? id,
+    Expression<int>? serialNumber,
+    Expression<String>? actionType,
+    Expression<String>? fromCurrency,
+    Expression<double>? fromAmount,
+    Expression<String>? toCurrency,
+    Expression<double>? toAmount,
+    Expression<double>? exchangeRate,
+    Expression<String>? notes,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? syncedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (serialNumber != null) 'serial_number': serialNumber,
+      if (actionType != null) 'action_type': actionType,
+      if (fromCurrency != null) 'from_currency': fromCurrency,
+      if (fromAmount != null) 'from_amount': fromAmount,
+      if (toCurrency != null) 'to_currency': toCurrency,
+      if (toAmount != null) 'to_amount': toAmount,
+      if (exchangeRate != null) 'exchange_rate': exchangeRate,
+      if (notes != null) 'notes': notes,
+      if (createdAt != null) 'created_at': createdAt,
+      if (syncedAt != null) 'synced_at': syncedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ExchangeInvoicesCompanion copyWith({
+    Value<String>? id,
+    Value<int?>? serialNumber,
+    Value<String>? actionType,
+    Value<String>? fromCurrency,
+    Value<double>? fromAmount,
+    Value<String>? toCurrency,
+    Value<double>? toAmount,
+    Value<double>? exchangeRate,
+    Value<String?>? notes,
+    Value<DateTime>? createdAt,
+    Value<DateTime?>? syncedAt,
+    Value<int>? rowid,
+  }) {
+    return ExchangeInvoicesCompanion(
+      id: id ?? this.id,
+      serialNumber: serialNumber ?? this.serialNumber,
+      actionType: actionType ?? this.actionType,
+      fromCurrency: fromCurrency ?? this.fromCurrency,
+      fromAmount: fromAmount ?? this.fromAmount,
+      toCurrency: toCurrency ?? this.toCurrency,
+      toAmount: toAmount ?? this.toAmount,
+      exchangeRate: exchangeRate ?? this.exchangeRate,
+      notes: notes ?? this.notes,
+      createdAt: createdAt ?? this.createdAt,
+      syncedAt: syncedAt ?? this.syncedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (serialNumber.present) {
+      map['serial_number'] = Variable<int>(serialNumber.value);
+    }
+    if (actionType.present) {
+      map['action_type'] = Variable<String>(actionType.value);
+    }
+    if (fromCurrency.present) {
+      map['from_currency'] = Variable<String>(fromCurrency.value);
+    }
+    if (fromAmount.present) {
+      map['from_amount'] = Variable<double>(fromAmount.value);
+    }
+    if (toCurrency.present) {
+      map['to_currency'] = Variable<String>(toCurrency.value);
+    }
+    if (toAmount.present) {
+      map['to_amount'] = Variable<double>(toAmount.value);
+    }
+    if (exchangeRate.present) {
+      map['exchange_rate'] = Variable<double>(exchangeRate.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (syncedAt.present) {
+      map['synced_at'] = Variable<DateTime>(syncedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ExchangeInvoicesCompanion(')
+          ..write('id: $id, ')
+          ..write('serialNumber: $serialNumber, ')
+          ..write('actionType: $actionType, ')
+          ..write('fromCurrency: $fromCurrency, ')
+          ..write('fromAmount: $fromAmount, ')
+          ..write('toCurrency: $toCurrency, ')
+          ..write('toAmount: $toAmount, ')
+          ..write('exchangeRate: $exchangeRate, ')
+          ..write('notes: $notes, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('syncedAt: $syncedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -7296,6 +7974,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $ExpenseCategoriesTable expenseCategories =
       $ExpenseCategoriesTable(this);
   late final $ExpensesTable expenses = $ExpensesTable(this);
+  late final $ExchangeInvoicesTable exchangeInvoices = $ExchangeInvoicesTable(
+    this,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -7317,6 +7998,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     syncQueue,
     expenseCategories,
     expenses,
+    exchangeInvoices,
   ];
 }
 
@@ -11093,6 +11775,338 @@ typedef $$ExpensesTableProcessedTableManager =
       Expense,
       PrefetchHooks Function()
     >;
+typedef $$ExchangeInvoicesTableCreateCompanionBuilder =
+    ExchangeInvoicesCompanion Function({
+      required String id,
+      Value<int?> serialNumber,
+      required String actionType,
+      required String fromCurrency,
+      required double fromAmount,
+      required String toCurrency,
+      required double toAmount,
+      required double exchangeRate,
+      Value<String?> notes,
+      required DateTime createdAt,
+      Value<DateTime?> syncedAt,
+      Value<int> rowid,
+    });
+typedef $$ExchangeInvoicesTableUpdateCompanionBuilder =
+    ExchangeInvoicesCompanion Function({
+      Value<String> id,
+      Value<int?> serialNumber,
+      Value<String> actionType,
+      Value<String> fromCurrency,
+      Value<double> fromAmount,
+      Value<String> toCurrency,
+      Value<double> toAmount,
+      Value<double> exchangeRate,
+      Value<String?> notes,
+      Value<DateTime> createdAt,
+      Value<DateTime?> syncedAt,
+      Value<int> rowid,
+    });
+
+class $$ExchangeInvoicesTableFilterComposer
+    extends Composer<_$AppDatabase, $ExchangeInvoicesTable> {
+  $$ExchangeInvoicesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get serialNumber => $composableBuilder(
+    column: $table.serialNumber,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get actionType => $composableBuilder(
+    column: $table.actionType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get fromCurrency => $composableBuilder(
+    column: $table.fromCurrency,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get fromAmount => $composableBuilder(
+    column: $table.fromAmount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get toCurrency => $composableBuilder(
+    column: $table.toCurrency,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get toAmount => $composableBuilder(
+    column: $table.toAmount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get exchangeRate => $composableBuilder(
+    column: $table.exchangeRate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get syncedAt => $composableBuilder(
+    column: $table.syncedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ExchangeInvoicesTableOrderingComposer
+    extends Composer<_$AppDatabase, $ExchangeInvoicesTable> {
+  $$ExchangeInvoicesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get serialNumber => $composableBuilder(
+    column: $table.serialNumber,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get actionType => $composableBuilder(
+    column: $table.actionType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get fromCurrency => $composableBuilder(
+    column: $table.fromCurrency,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get fromAmount => $composableBuilder(
+    column: $table.fromAmount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get toCurrency => $composableBuilder(
+    column: $table.toCurrency,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get toAmount => $composableBuilder(
+    column: $table.toAmount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get exchangeRate => $composableBuilder(
+    column: $table.exchangeRate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get syncedAt => $composableBuilder(
+    column: $table.syncedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ExchangeInvoicesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ExchangeInvoicesTable> {
+  $$ExchangeInvoicesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get serialNumber => $composableBuilder(
+    column: $table.serialNumber,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get actionType => $composableBuilder(
+    column: $table.actionType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get fromCurrency => $composableBuilder(
+    column: $table.fromCurrency,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get fromAmount => $composableBuilder(
+    column: $table.fromAmount,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get toCurrency => $composableBuilder(
+    column: $table.toCurrency,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get toAmount =>
+      $composableBuilder(column: $table.toAmount, builder: (column) => column);
+
+  GeneratedColumn<double> get exchangeRate => $composableBuilder(
+    column: $table.exchangeRate,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get syncedAt =>
+      $composableBuilder(column: $table.syncedAt, builder: (column) => column);
+}
+
+class $$ExchangeInvoicesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ExchangeInvoicesTable,
+          ExchangeInvoice,
+          $$ExchangeInvoicesTableFilterComposer,
+          $$ExchangeInvoicesTableOrderingComposer,
+          $$ExchangeInvoicesTableAnnotationComposer,
+          $$ExchangeInvoicesTableCreateCompanionBuilder,
+          $$ExchangeInvoicesTableUpdateCompanionBuilder,
+          (
+            ExchangeInvoice,
+            BaseReferences<
+              _$AppDatabase,
+              $ExchangeInvoicesTable,
+              ExchangeInvoice
+            >,
+          ),
+          ExchangeInvoice,
+          PrefetchHooks Function()
+        > {
+  $$ExchangeInvoicesTableTableManager(
+    _$AppDatabase db,
+    $ExchangeInvoicesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ExchangeInvoicesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ExchangeInvoicesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ExchangeInvoicesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<int?> serialNumber = const Value.absent(),
+                Value<String> actionType = const Value.absent(),
+                Value<String> fromCurrency = const Value.absent(),
+                Value<double> fromAmount = const Value.absent(),
+                Value<String> toCurrency = const Value.absent(),
+                Value<double> toAmount = const Value.absent(),
+                Value<double> exchangeRate = const Value.absent(),
+                Value<String?> notes = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime?> syncedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ExchangeInvoicesCompanion(
+                id: id,
+                serialNumber: serialNumber,
+                actionType: actionType,
+                fromCurrency: fromCurrency,
+                fromAmount: fromAmount,
+                toCurrency: toCurrency,
+                toAmount: toAmount,
+                exchangeRate: exchangeRate,
+                notes: notes,
+                createdAt: createdAt,
+                syncedAt: syncedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                Value<int?> serialNumber = const Value.absent(),
+                required String actionType,
+                required String fromCurrency,
+                required double fromAmount,
+                required String toCurrency,
+                required double toAmount,
+                required double exchangeRate,
+                Value<String?> notes = const Value.absent(),
+                required DateTime createdAt,
+                Value<DateTime?> syncedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ExchangeInvoicesCompanion.insert(
+                id: id,
+                serialNumber: serialNumber,
+                actionType: actionType,
+                fromCurrency: fromCurrency,
+                fromAmount: fromAmount,
+                toCurrency: toCurrency,
+                toAmount: toAmount,
+                exchangeRate: exchangeRate,
+                notes: notes,
+                createdAt: createdAt,
+                syncedAt: syncedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ExchangeInvoicesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ExchangeInvoicesTable,
+      ExchangeInvoice,
+      $$ExchangeInvoicesTableFilterComposer,
+      $$ExchangeInvoicesTableOrderingComposer,
+      $$ExchangeInvoicesTableAnnotationComposer,
+      $$ExchangeInvoicesTableCreateCompanionBuilder,
+      $$ExchangeInvoicesTableUpdateCompanionBuilder,
+      (
+        ExchangeInvoice,
+        BaseReferences<_$AppDatabase, $ExchangeInvoicesTable, ExchangeInvoice>,
+      ),
+      ExchangeInvoice,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -11129,4 +12143,6 @@ class $AppDatabaseManager {
       $$ExpenseCategoriesTableTableManager(_db, _db.expenseCategories);
   $$ExpensesTableTableManager get expenses =>
       $$ExpensesTableTableManager(_db, _db.expenses);
+  $$ExchangeInvoicesTableTableManager get exchangeInvoices =>
+      $$ExchangeInvoicesTableTableManager(_db, _db.exchangeInvoices);
 }

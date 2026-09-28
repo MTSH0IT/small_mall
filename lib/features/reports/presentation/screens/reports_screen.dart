@@ -11,6 +11,7 @@ import 'package:small_mall/core/widgets/stat_card.dart';
 import 'package:small_mall/features/reports/data/reports_repository.dart';
 import 'package:small_mall/features/reports/presentation/cubit/reports_cubit.dart';
 import 'package:small_mall/features/reports/presentation/cubit/reports_state.dart';
+import 'package:small_mall/features/reports/presentation/widgets/exchange_report_card.dart';
 import 'package:small_mall/features/reports/presentation/widgets/period_filter_row.dart';
 import 'package:small_mall/features/reports/presentation/widgets/sales_purchases_comparison_chart.dart';
 
@@ -97,11 +98,22 @@ class _ReportsScreenState extends State<ReportsScreen> {
       final isSalesProfitableUsd = salesProfitUsd >= 0;
       final salesProfitColorUsd = isSalesProfitableUsd ? const Color(0xFF059669) : AppColors.danger;
 
-      // Net Cash Flow formula: (المبيعات + السداد) - (المصاريف + المشتريات)
-      final netCashFlow = profit.netProfit;
-      final netCashFlowUsd = profit.netProfitUsd;
-      final totalInflow = cashSales + debtPayments;
-      final totalOutflow = expenses + purchases;
+      // Cash drawer & currency exchange data
+      final drawer = state.cashDrawerData;
+      final exchangeInSyp = drawer.exchangeInSyp;
+      final exchangeInUsd = drawer.exchangeInUsd;
+      final exchangeOutSyp = drawer.exchangeOutSyp;
+      final exchangeOutUsd = drawer.exchangeOutUsd;
+      final hasExchanges = drawer.exchangeCount > 0;
+
+      // Net Cash Flow formula: (المبيعات + السداد + وارد الصرافة) - (المصاريف + المشتريات + صادر الصرافة)
+      final totalInflow = cashSales + debtPayments + exchangeInSyp;
+      final totalInflowUsd = profit.cashSalesUsd + profit.debtPaymentsUsd + exchangeInUsd;
+      final totalOutflow = expenses + purchases + exchangeOutSyp;
+      final totalOutflowUsd = profit.totalExpensesUsd + profit.totalPurchasesUsd + exchangeOutUsd;
+      final netCashFlow = totalInflow - totalOutflow;
+      final netCashFlowUsd = totalInflowUsd - totalOutflowUsd;
+
       final isCashFlowPositive = netCashFlow >= 0;
       final cashFlowColor = isCashFlowPositive ? AppColors.success : AppColors.danger;
       final isCashFlowPositiveUsd = netCashFlowUsd >= 0;
@@ -113,8 +125,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
       final purchasesUsd = profit.totalPurchasesUsd;
       final debtsUsd = profit.newDebtsUsd;
       final debtPaymentsUsd = profit.debtPaymentsUsd;
-      final totalInflowUsd = profit.totalInflowsUsd;
-      final totalOutflowUsd = profit.totalOutflowsUsd;
 
       return SingleChildScrollView(
         child: Column(
@@ -202,7 +212,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     value: '${totalInflow.toStringAsFixed(2)} ل.س',
                     secondaryValue: '${totalInflowUsd.toStringAsFixed(2)} \$',
                     color: AppColors.success,
-                    subtitle: '${'reports.sales'.tr()} + ${'reports.simple_debt_payments'.tr()}',
+                    subtitle: hasExchanges
+                        ? '${'reports.sales'.tr()} + ${'reports.simple_debt_payments'.tr()} + ${'reports.exchange_in'.tr()}'
+                        : '${'reports.sales'.tr()} + ${'reports.simple_debt_payments'.tr()}',
                     icon: Icons.download,
                   ),
                 ),
@@ -213,11 +225,24 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     value: '${totalOutflow.toStringAsFixed(2)} ل.س',
                     secondaryValue: '${totalOutflowUsd.toStringAsFixed(2)} \$',
                     color: AppColors.danger,
-                    subtitle: '${'expenses.title'.tr()} + ${'reports.purchases'.tr()}',
+                    subtitle: hasExchanges
+                        ? '${'expenses.title'.tr()} + ${'reports.purchases'.tr()} + ${'reports.exchange_out'.tr()}'
+                        : '${'expenses.title'.tr()} + ${'reports.purchases'.tr()}',
                     icon: Icons.upload,
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 24),
+
+            // Exchange Impact Card (بطاقة الصرافة: إجمالي الدخل قبل وإجمالي الدخل بعد)
+            ExchangeReportCard(
+              drawerData: state.cashDrawerData,
+              onExchangeRecorded: () => context.read<ReportsCubit>().loadReports(
+                start: state.startDate,
+                end: state.endDate,
+                periodType: state.periodType,
+              ),
             ),
             const SizedBox(height: 24),
 
@@ -249,6 +274,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                           const SizedBox(height: 10),
                           _buildLineItem('reports.sales'.tr(), cashSales, AppColors.textPrimary, amountUsd: cashSalesUsd),
                           _buildLineItem('reports.simple_debt_payments'.tr(), debtPayments, AppColors.textPrimary, amountUsd: debtPaymentsUsd),
+                          _buildLineItem('reports.exchange_in'.tr(), exchangeInSyp, AppColors.textPrimary, amountUsd: exchangeInUsd),
                           const Divider(height: 16, color: AppColors.border),
                           _buildTotalLine('reports.inflows_card_title'.tr(), totalInflow, AppColors.success, amountUsd: totalInflowUsd),
 
@@ -268,6 +294,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                           const SizedBox(height: 10),
                           _buildLineItem('expenses.title'.tr(), expenses, AppColors.textPrimary, amountUsd: expensesUsd),
                           _buildLineItem('reports.purchases'.tr(), purchases, AppColors.textPrimary, amountUsd: purchasesUsd),
+                          _buildLineItem('reports.exchange_out'.tr(), exchangeOutSyp, AppColors.textPrimary, amountUsd: exchangeOutUsd),
                           const Divider(height: 16, color: AppColors.border),
                           _buildTotalLine('reports.outflows_card_title'.tr(), totalOutflow, AppColors.danger, amountUsd: totalOutflowUsd),
 
@@ -367,7 +394,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 '${amount.toStringAsFixed(2)} ل.س',
                 style: AppTheme.numericStyle(fontSize: 13, fontWeight: FontWeight.w600, color: color),
               ),
-              if (amountUsd != null && amountUsd != 0) ...[
+              if (amountUsd != null) ...[
                 const SizedBox(width: 6),
                 Text(
                   '/ ${amountUsd.toStringAsFixed(2)} \$',
@@ -398,7 +425,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 '${amount.toStringAsFixed(2)} ل.س',
                 style: AppTheme.numericStyle(fontSize: 14, fontWeight: FontWeight.bold, color: color),
               ),
-              if (amountUsd != null && amountUsd != 0) ...[
+              if (amountUsd != null) ...[
                 const SizedBox(width: 6),
                 Text(
                   '/ ${amountUsd.toStringAsFixed(2)} \$',

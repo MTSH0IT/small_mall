@@ -2,12 +2,14 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:small_mall/core/constants/app_currency.dart';
+import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/features/invoices/data/invoices_repository.dart';
 import 'package:small_mall/features/invoices/presentation/cubit/invoices_cubit.dart';
 import 'package:small_mall/features/invoices/presentation/widgets/delete_invoice_dialog.dart';
 import 'package:small_mall/features/invoices/presentation/widgets/edit_adjustment_dialog.dart';
 import 'package:small_mall/features/invoices/presentation/widgets/edit_debt_payment_dialog.dart';
+import 'package:small_mall/features/invoices/presentation/widgets/edit_exchange_dialog.dart';
 import 'package:small_mall/features/invoices/presentation/widgets/edit_expense_dialog.dart';
 import 'package:small_mall/features/invoices/presentation/widgets/edit_invoice_dialog.dart';
 import 'package:small_mall/features/invoices/presentation/widgets/edit_purchase_invoice_dialog.dart';
@@ -38,6 +40,8 @@ class InvoiceDetailPanel extends StatelessWidget {
         return AppColors.warning;
       case UnifiedTransactionType.adjustment:
         return const Color(0xFF0D9488);
+      case UnifiedTransactionType.exchange:
+        return const Color(0xFF0284C7);
     }
   }
 
@@ -57,6 +61,8 @@ class InvoiceDetailPanel extends StatelessWidget {
         return Icons.request_quote;
       case UnifiedTransactionType.adjustment:
         return Icons.tune;
+      case UnifiedTransactionType.exchange:
+        return Icons.currency_exchange;
     }
   }
 
@@ -80,6 +86,9 @@ class InvoiceDetailPanel extends StatelessWidget {
         break;
       case UnifiedTransactionType.adjustment:
         EditAdjustmentDialog.show(context, transaction, cubit);
+        break;
+      case UnifiedTransactionType.exchange:
+        EditExchangeDialog.show(context, transaction, cubit);
         break;
     }
   }
@@ -343,6 +352,9 @@ class InvoiceDetailPanel extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
+            ] else if (transaction.isExchange && transaction.rawExchangeInvoice != null) ...[
+              _buildExchangeDetailsCard(theme, transaction.rawExchangeInvoice!, typeColor),
+              const SizedBox(height: 16),
             ],
 
             // Total Amount
@@ -570,6 +582,144 @@ class InvoiceDetailPanel extends StatelessWidget {
               color: color ?? AppColors.textPrimary,
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildExchangeDetailsCard(ThemeData theme, ExchangeInvoice ex, Color typeColor) {
+    final isBuy = ex.actionType == 'buy_usd';
+    final fromSymbol = AppCurrency.getSymbol(ex.fromCurrency);
+    final toSymbol = AppCurrency.getSymbol(ex.toCurrency);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: typeColor.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: typeColor.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.currency_exchange, color: typeColor, size: 22),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  isBuy ? 'invoices.exchange_buy_usd'.tr() : 'invoices.exchange_sell_usd'.tr(),
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: typeColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'invoices.exchange_rate_label'.tr(),
+                  style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                ),
+                Text(
+                  '1\$ = ${ex.exchangeRate.toStringAsFixed(0)} ${AppCurrency.primarySymbol}',
+                  style: AppTheme.numericStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              // Outflow Box
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.danger.withValues(alpha: 0.07),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.danger.withValues(alpha: 0.2)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'invoices.exchange_from_amount'.tr(),
+                        style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '-${ex.fromAmount.toStringAsFixed(2)} $fromSymbol',
+                        style: AppTheme.numericStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.danger,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Inflow Box
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.success.withValues(alpha: 0.07),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.success.withValues(alpha: 0.2)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'invoices.exchange_to_amount'.tr(),
+                        style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '+${ex.toAmount.toStringAsFixed(2)} $toSymbol',
+                        style: AppTheme.numericStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.success,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (ex.notes != null && ex.notes!.trim().isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text(
+              'common.notes'.tr(),
+              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              ex.notes!,
+              style: const TextStyle(fontSize: 13),
+            ),
+          ],
         ],
       ),
     );

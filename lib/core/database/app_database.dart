@@ -212,6 +212,23 @@ class Expenses extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+class ExchangeInvoices extends Table {
+  TextColumn get id => text()();
+  IntColumn get serialNumber => integer().nullable()();
+  TextColumn get actionType => text()(); // 'buy_usd' (SYP -> USD) or 'sell_usd' (USD -> SYP)
+  TextColumn get fromCurrency => text()(); // 'SYP' or 'USD'
+  RealColumn get fromAmount => real()();
+  TextColumn get toCurrency => text()(); // 'USD' or 'SYP'
+  RealColumn get toAmount => real()();
+  RealColumn get exchangeRate => real()();
+  TextColumn get notes => text().nullable()();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get syncedAt => dateTime().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 @DriftDatabase(tables: [
   Categories,
   Products,
@@ -229,13 +246,14 @@ class Expenses extends Table {
   SyncQueue,
   ExpenseCategories,
   Expenses,
+  ExchangeInvoices,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 12;
+  int get schemaVersion => 13;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -334,8 +352,20 @@ class AppDatabase extends _$AppDatabase {
             await m.addColumn(debtPayments, debtPayments.currency);
             await m.addColumn(expenses, expenses.currency);
           }
+          if (from < 13) {
+            await m.createTable(exchangeInvoices);
+          }
         },
       );
+
+  /// Get the next available exchange invoice serial number
+  Future<int> getNextExchangeSerialNumber() async {
+    final maxExp = exchangeInvoices.serialNumber.max();
+    final query = selectOnly(exchangeInvoices)..addColumns([maxExp]);
+    final row = await query.getSingleOrNull();
+    final currentMax = row?.read(maxExp) ?? 0;
+    return currentMax + 1;
+  }
 
   /// Get the next available category serial number
   Future<int> getNextCategorySerialNumber() async {

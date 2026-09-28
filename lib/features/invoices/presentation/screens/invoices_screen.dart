@@ -8,6 +8,7 @@ import 'package:small_mall/core/widgets/app_toast.dart';
 import 'package:small_mall/core/widgets/empty_state_view.dart';
 import 'package:small_mall/core/widgets/loading_indicator.dart';
 import 'package:small_mall/core/widgets/split_pane_layout.dart';
+import 'package:small_mall/features/currency_exchange/presentation/widgets/new_exchange_dialog.dart';
 import 'package:small_mall/features/invoices/data/invoices_repository.dart';
 import 'package:small_mall/features/invoices/presentation/cubit/invoices_cubit.dart';
 import 'package:small_mall/features/invoices/presentation/cubit/invoices_state.dart';
@@ -46,6 +47,25 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
           return AppScreenScaffold(
             title: 'invoices.title'.tr(),
             onRefresh: () => cubit.loadInvoices(),
+            actions: [
+              FilledButton.icon(
+                icon: const Icon(Icons.currency_exchange, size: 16),
+                label: Text('invoices.new_exchange_action'.tr()),
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFF0284C7),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                ),
+                onPressed: () async {
+                  final res = await NewExchangeDialog.show(context);
+                  if (res != null) {
+                    cubit.loadInvoices();
+                  }
+                },
+              ),
+              const SizedBox(width: 8),
+            ],
             body: SplitPaneLayout(
               leftFlex: 2,
               rightFlex: 3,
@@ -138,6 +158,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
       {'key': 'purchase', 'label': 'invoices.purchase'.tr(), 'icon': Icons.local_shipping, 'color': const Color(0xFF2563EB)},
       {'key': 'expense', 'label': 'invoices.expense'.tr(), 'icon': Icons.account_balance_wallet, 'color': const Color(0xFFEA580C)},
       {'key': 'adjustment', 'label': 'invoices.adjustment'.tr(), 'icon': Icons.tune, 'color': const Color(0xFF0D9488)},
+      {'key': 'exchange', 'label': 'invoices.currency_exchange'.tr(), 'icon': Icons.currency_exchange, 'color': const Color(0xFF0284C7)},
     ];
 
     final dateOptions = [
@@ -404,6 +425,21 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
               '${loaded.adjustmentsCount}',
               '${loaded.adjustmentsCount} ${'inventory.adjustments'.tr()}',
               const Color(0xFF0D9488),
+            ),
+          ),
+        ],
+      );
+    }
+
+    if (type == 'exchange') {
+      return Row(
+        children: [
+          Expanded(
+            child: _buildMiniStat(
+              'invoices.currency_exchange'.tr(),
+              '${loaded.exchangesCount}',
+              '${loaded.exchangesCount} ${'reports.exchange_operations_count'.tr()}',
+              const Color(0xFF0284C7),
             ),
           ),
         ],

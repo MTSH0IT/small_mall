@@ -4,14 +4,17 @@ import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/core/widgets/card_container.dart';
 import 'package:small_mall/core/widgets/empty_state_view.dart';
 import 'package:small_mall/features/reports/data/reports_repository.dart';
+import 'package:small_mall/features/reports/presentation/widgets/exchange_report_card.dart';
 
 class CashDrawerView extends StatefulWidget {
   const CashDrawerView({
     super.key,
     required this.cashDrawerData,
+    this.onRefresh,
   });
 
   final CashDrawerReportData cashDrawerData;
+  final VoidCallback? onRefresh;
 
   @override
   State<CashDrawerView> createState() => _CashDrawerViewState();
@@ -159,23 +162,23 @@ class _CashDrawerViewState extends State<CashDrawerView> {
                                     color: AppColors.success,
                                   ),
                                 ),
-                                if (data.totalCashInUsd > 0) ...[
-                                  Text('/', style: TextStyle(color: AppColors.textSecondary.withValues(alpha: 0.5))),
-                                  Text(
-                                    '+${data.totalCashInUsd.toStringAsFixed(2)} \$',
-                                    style: AppTheme.numericStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: const Color(0xFF059669),
-                                    ),
+                                Text('/', style: TextStyle(color: AppColors.textSecondary.withValues(alpha: 0.5))),
+                                Text(
+                                  '+${data.totalCashInUsd.toStringAsFixed(2)} \$',
+                                  style: AppTheme.numericStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFF059669),
                                   ),
-                                ],
+                                ),
                               ],
                             ),
                             const Divider(height: 16, color: AppColors.border),
                             _buildMiniSummaryRow('reports.cash_sales'.tr(), data.cashSales, amountUsd: data.cashSalesUsd),
                             const SizedBox(height: 4),
                             _buildMiniSummaryRow('reports.debt_collections'.tr(), data.debtPaymentsCollected, amountUsd: data.debtPaymentsCollectedUsd),
+                            const SizedBox(height: 4),
+                            _buildMiniSummaryRow('reports.exchange_in'.tr(), data.exchangeInSyp, amountUsd: data.exchangeInUsd),
                           ],
                         ),
                       ),
@@ -221,17 +224,15 @@ class _CashDrawerViewState extends State<CashDrawerView> {
                                     color: AppColors.danger,
                                   ),
                                 ),
-                                if (data.totalCashOutUsd > 0) ...[
-                                  Text('/', style: TextStyle(color: AppColors.textSecondary.withValues(alpha: 0.5))),
-                                  Text(
-                                    '-${data.totalCashOutUsd.toStringAsFixed(2)} \$',
-                                    style: AppTheme.numericStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppColors.danger,
-                                    ),
+                                Text('/', style: TextStyle(color: AppColors.textSecondary.withValues(alpha: 0.5))),
+                                Text(
+                                  '-${data.totalCashOutUsd.toStringAsFixed(2)} \$',
+                                  style: AppTheme.numericStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.danger,
                                   ),
-                                ],
+                                ),
                               ],
                             ),
                             const Divider(height: 16, color: AppColors.border),
@@ -240,6 +241,8 @@ class _CashDrawerViewState extends State<CashDrawerView> {
                             _buildMiniSummaryRow('reports.expenses_paid'.tr(), data.expensesPaid, amountUsd: data.expensesPaidUsd),
                             const SizedBox(height: 4),
                             _buildMiniSummaryRow('reports.cash_purchases'.tr(), data.cashPurchases, amountUsd: data.cashPurchasesUsd),
+                            const SizedBox(height: 4),
+                            _buildMiniSummaryRow('reports.exchange_out'.tr(), data.exchangeOutSyp, amountUsd: data.exchangeOutUsd),
                           ],
                         ),
                       ),
@@ -366,7 +369,14 @@ class _CashDrawerViewState extends State<CashDrawerView> {
           ),
           const SizedBox(height: 24),
 
-          // 2. Cash Movements Ledger (كشف الحركات النقدية للصندوق)
+          // 2. Currency Exchange Card
+          ExchangeReportCard(
+            drawerData: data,
+            onExchangeRecorded: widget.onRefresh,
+          ),
+          const SizedBox(height: 24),
+
+          // 3. Cash Movements Ledger (كشف الحركات النقدية للصندوق)
           CardContainer(
             title: 'reports.cash_movements_ledger'.tr(),
             child: Column(
@@ -416,7 +426,9 @@ class _CashDrawerViewState extends State<CashDrawerView> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Icon(
-                            item.isCashIn ? Icons.south_west : Icons.north_east,
+                            item.type == 'exchange'
+                                ? Icons.currency_exchange
+                                : (item.isCashIn ? Icons.south_west : Icons.north_east),
                             color: itemColor,
                             size: 20,
                           ),
@@ -526,7 +538,7 @@ class _CashDrawerViewState extends State<CashDrawerView> {
   }
 
   Widget _buildMiniSummaryRow(String title, double amount, {double? amountUsd, String? currency}) {
-    final hasUsd = amountUsd != null && amountUsd != 0;
+    final hasUsd = amountUsd != null;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [

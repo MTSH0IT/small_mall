@@ -16,6 +16,7 @@ enum UnifiedTransactionType {
   debtPayment,
   debtInvoice,
   adjustment,
+  exchange,
 }
 
 class UnifiedTransactionItem {
@@ -56,6 +57,7 @@ class UnifiedTransactionRecord {
     this.rawExpense,
     this.rawDebtPayment,
     this.rawStockMovement,
+    this.rawExchangeInvoice,
   });
 
   final String id;
@@ -74,23 +76,37 @@ class UnifiedTransactionRecord {
   String get currencySymbol => AppCurrency.getSymbol(currency);
 
   bool get hasMultipleCurrencies {
+    if (isExchange && rawExchangeInvoice != null) return true;
     if (items.isEmpty) return false;
     final first = items.first.currency;
     return items.any((i) => i.currency != first);
   }
 
   Set<String> get currencies {
+    if (isExchange && rawExchangeInvoice != null) {
+      return {rawExchangeInvoice!.fromCurrency, rawExchangeInvoice!.toCurrency};
+    }
     if (items.isEmpty) return {currency};
     return items.map((i) => i.currency).toSet();
   }
 
   double totalForCurrency(String currencyCode) {
+    if (isExchange && rawExchangeInvoice != null) {
+      if (rawExchangeInvoice!.fromCurrency == currencyCode) return rawExchangeInvoice!.fromAmount;
+      if (rawExchangeInvoice!.toCurrency == currencyCode) return rawExchangeInvoice!.toAmount;
+      return 0.0;
+    }
     return items
         .where((i) => i.currency == currencyCode)
         .fold<double>(0.0, (sum, i) => sum + i.total);
   }
 
   double get totalSyp {
+    if (isExchange && rawExchangeInvoice != null) {
+      return rawExchangeInvoice!.fromCurrency == AppCurrency.sypCode
+          ? rawExchangeInvoice!.fromAmount
+          : rawExchangeInvoice!.toAmount;
+    }
     if (!hasMultipleCurrencies) {
       return currency != AppCurrency.usdCode ? totalAmount : 0.0;
     }
@@ -102,6 +118,11 @@ class UnifiedTransactionRecord {
   }
 
   double get totalUsd {
+    if (isExchange && rawExchangeInvoice != null) {
+      return rawExchangeInvoice!.fromCurrency == AppCurrency.usdCode
+          ? rawExchangeInvoice!.fromAmount
+          : rawExchangeInvoice!.toAmount;
+    }
     if (!hasMultipleCurrencies) {
       return currency == AppCurrency.usdCode ? totalAmount : 0.0;
     }
@@ -118,6 +139,7 @@ class UnifiedTransactionRecord {
   final Expense? rawExpense;
   final DebtPayment? rawDebtPayment;
   final StockMovement? rawStockMovement;
+  final ExchangeInvoice? rawExchangeInvoice;
 
   bool get isSale => type == UnifiedTransactionType.sale;
   bool get isReturn => type == UnifiedTransactionType.returnSale;
@@ -126,6 +148,7 @@ class UnifiedTransactionRecord {
   bool get isDebtPayment => type == UnifiedTransactionType.debtPayment;
   bool get isDebtInvoice => type == UnifiedTransactionType.debtInvoice;
   bool get isAdjustment => type == UnifiedTransactionType.adjustment;
+  bool get isExchange => type == UnifiedTransactionType.exchange;
 
   String get typeCode {
     switch (type) {
@@ -143,6 +166,8 @@ class UnifiedTransactionRecord {
         return 'debt_invoice';
       case UnifiedTransactionType.adjustment:
         return 'adjustment';
+      case UnifiedTransactionType.exchange:
+        return 'exchange';
     }
   }
 
@@ -162,6 +187,8 @@ class UnifiedTransactionRecord {
         return 'invoices.debt_invoice'.tr();
       case UnifiedTransactionType.adjustment:
         return 'invoices.adjustment'.tr();
+      case UnifiedTransactionType.exchange:
+        return 'invoices.exchange'.tr();
     }
   }
 
@@ -183,6 +210,7 @@ class UnifiedTransactionRecord {
     Expense? rawExpense,
     DebtPayment? rawDebtPayment,
     StockMovement? rawStockMovement,
+    ExchangeInvoice? rawExchangeInvoice,
   }) {
     return UnifiedTransactionRecord(
       id: id ?? this.id,
@@ -202,6 +230,7 @@ class UnifiedTransactionRecord {
       rawExpense: rawExpense ?? this.rawExpense,
       rawDebtPayment: rawDebtPayment ?? this.rawDebtPayment,
       rawStockMovement: rawStockMovement ?? this.rawStockMovement,
+      rawExchangeInvoice: rawExchangeInvoice ?? this.rawExchangeInvoice,
     );
   }
 }
@@ -228,6 +257,7 @@ class InvoicesRepository {
       _fetchExpenses(), // 2: Expenses with category
       _fetchDebtPayments(), // 3: Debt payments with customer
       _fetchAdjustments(), // 4: Stock adjustments with product
+      _fetchExchanges(), // 5: Exchange vouchers
     ]);
 
     records.addAll(results[0]);
@@ -235,6 +265,7 @@ class InvoicesRepository {
     records.addAll(results[2]);
     records.addAll(results[3]);
     records.addAll(results[4]);
+    records.addAll(results[5]);
 
     // Order ascending by creation date to assign chronological global serial numbers
     records.sort((a, b) => a.createdAt.compareTo(b.createdAt));
@@ -462,6 +493,33 @@ class InvoicesRepository {
     }).toList();
   }
 
+  Future<List<UnifiedTransactionRecord>> _fetchExchanges() async {
+    final exchanges = await (_db.select(_db.exchangeInvoices)
+          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
+        .get();
+
+    if (exchanges.isEmpty) return [];
+
+    return exchanges.map((ex) {
+      final isBuy = ex.actionType == 'buy_usd';
+      final actionLabel = isBuy
+          ? 'invoices.exchange_buy_usd'.tr()
+          : 'invoices.exchange_sell_usd'.tr();
+
+      return UnifiedTransactionRecord(
+        id: ex.id,
+        serialNumber: ex.serialNumber,
+        type: UnifiedTransactionType.exchange,
+        createdAt: ex.createdAt,
+        totalAmount: ex.toAmount,
+        currency: ex.toCurrency,
+        partyName: actionLabel,
+        notes: ex.notes,
+        rawExchangeInvoice: ex,
+      );
+    }).toList();
+  }
+
   // Universal Transaction Management (Sale, Purchase, Expense, Debt Payment, Adjustment)
   Future<Map<String, dynamic>> canDeleteInvoice(String invoiceId) =>
       _posRepository.canDeleteInvoice(invoiceId);
@@ -584,6 +642,22 @@ class InvoicesRepository {
               id: _uuid.v4(),
               targetTable: 'stock_movements',
               recordId: movementId,
+              createdAt: now,
+            ),
+          );
+      _sync?.updatePendingCount();
+      _sync?.sync();
+      return;
+    }
+
+    if (transaction.isExchange) {
+      final exchangeId = transaction.id;
+      await (_db.delete(_db.exchangeInvoices)..where((t) => t.id.equals(exchangeId))).go();
+      await _db.into(_db.deletedRecords).insert(
+            DeletedRecordsCompanion.insert(
+              id: _uuid.v4(),
+              targetTable: 'exchange_invoices',
+              recordId: exchangeId,
               createdAt: now,
             ),
           );
@@ -783,6 +857,35 @@ class InvoicesRepository {
           StockMovementsCompanion(
             quantity: Value(quantity),
             referenceId: Value(reason),
+          ),
+        );
+    _sync?.updatePendingCount();
+    _sync?.sync();
+  }
+
+  Future<void> updateExchangeInvoice({
+    required String exchangeId,
+    required String actionType,
+    required String fromCurrency,
+    required double fromAmount,
+    required String toCurrency,
+    required double toAmount,
+    required double exchangeRate,
+    String? notes,
+    required DateTime createdAt,
+  }) async {
+    _logger.info('Updating exchange invoice in repository: $exchangeId', context: LogContext.pos);
+    await (_db.update(_db.exchangeInvoices)..where((t) => t.id.equals(exchangeId))).write(
+          ExchangeInvoicesCompanion(
+            actionType: Value(actionType),
+            fromCurrency: Value(fromCurrency),
+            fromAmount: Value(fromAmount),
+            toCurrency: Value(toCurrency),
+            toAmount: Value(toAmount),
+            exchangeRate: Value(exchangeRate),
+            notes: Value(notes),
+            createdAt: Value(createdAt),
+            syncedAt: const Value(null),
           ),
         );
     _sync?.updatePendingCount();

@@ -1391,9 +1391,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
                             color: AppColors.primary.withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(4),
                           ),
-                          child: const Text(
-                            'ل.س و \$',
-                            style: TextStyle(
+                          child: Text(
+                            'inventory.syp_and_usd'.tr(),
+                            style: const TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
                               color: AppColors.primary,

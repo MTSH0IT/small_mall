@@ -243,6 +243,7 @@ class InvoicesLoaded extends InvoicesState {
   int get debtPaymentsCount => filteredTransactions.where((t) => t.type == UnifiedTransactionType.debtPayment).length;
   int get debtInvoicesCount => filteredTransactions.where((t) => t.type == UnifiedTransactionType.debtInvoice).length;
   int get adjustmentsCount => filteredTransactions.where((t) => t.type == UnifiedTransactionType.adjustment).length;
+  int get exchangesCount => filteredTransactions.where((t) => t.type == UnifiedTransactionType.exchange).length;
 }
 
 class InvoicesError extends InvoicesState {

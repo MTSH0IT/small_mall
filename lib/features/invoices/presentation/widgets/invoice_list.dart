@@ -33,6 +33,8 @@ class InvoiceList extends StatelessWidget {
         return AppColors.warning;
       case UnifiedTransactionType.adjustment:
         return const Color(0xFF0D9488);
+      case UnifiedTransactionType.exchange:
+        return const Color(0xFF0284C7);
     }
   }
 
@@ -52,6 +54,8 @@ class InvoiceList extends StatelessWidget {
         return Icons.request_quote;
       case UnifiedTransactionType.adjustment:
         return Icons.tune;
+      case UnifiedTransactionType.exchange:
+        return Icons.currency_exchange;
     }
   }
 
@@ -99,6 +103,8 @@ class InvoiceList extends StatelessWidget {
             partyLabel = 'invoices.expense_category'.tr();
           } else if (item.isAdjustment) {
             partyLabel = 'invoices.adjustment'.tr();
+          } else if (item.isExchange) {
+            partyLabel = 'invoices.currency_exchange'.tr();
           }
         }
 

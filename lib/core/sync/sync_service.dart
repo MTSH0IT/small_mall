@@ -159,6 +159,11 @@ class SyncService {
               ..where(_db.expenses.syncedAt.isNull()))
             .map((r) => r.read(_db.expenses.id.count()) ?? 0)
             .getSingle(),
+        (_db.selectOnly(_db.exchangeInvoices)
+              ..addColumns([_db.exchangeInvoices.id.count()])
+              ..where(_db.exchangeInvoices.syncedAt.isNull()))
+            .map((r) => r.read(_db.exchangeInvoices.id.count()) ?? 0)
+            .getSingle(),
       ]);
 
       pendingCount.value = counts.fold<int>(0, (sum, count) => sum + count);
@@ -515,6 +520,34 @@ class SyncService {
         hasErrors = true;
       }
 
+      // 13. Sync Exchange Invoices
+      try {
+        final unsynced = await (_db.select(_db.exchangeInvoices)..where((t) => t.syncedAt.isNull())).get();
+        if (unsynced.isNotEmpty) {
+          final payload = unsynced.map((ex) => {
+            'id': ex.id,
+            'serial_number': ex.serialNumber,
+            'action_type': ex.actionType,
+            'from_currency': ex.fromCurrency,
+            'from_amount': ex.fromAmount,
+            'to_currency': ex.toCurrency,
+            'to_amount': ex.toAmount,
+            'exchange_rate': ex.exchangeRate,
+            'notes': ex.notes,
+            'created_at': ex.createdAt.toIso8601String(),
+          }).toList();
+          await client.from('exchange_invoices').upsert(payload);
+
+          final now = DateTime.now();
+          final ids = unsynced.map((ex) => ex.id).toList();
+          await (_db.update(_db.exchangeInvoices)..where((t) => t.id.isIn(ids)))
+              .write(ExchangeInvoicesCompanion(syncedAt: Value(now)));
+        }
+      } catch (e) {
+        _logger.error('Failed to sync exchange invoices', error: e, context: LogContext.syncQueue);
+        hasErrors = true;
+      }
+
       await updatePendingCount();
       status.value = hasErrors ? SyncStatus.error : SyncStatus.success;
       if (hasErrors) {
@@ -577,6 +610,7 @@ class SyncService {
         'purchase_items',
         'expense_categories',
         'expenses',
+        'exchange_invoices',
       ];
 
       for (final tableName in tableNames) {
@@ -599,6 +633,7 @@ class SyncService {
         for (final table in [
           _db.expenses,
           _db.expenseCategories,
+          _db.exchangeInvoices,
           _db.debtPayments,
           _db.debts,
           _db.purchaseItems,
@@ -837,6 +872,26 @@ class SyncService {
                   amount: (json['amount'] as num).toDouble(),
                   notes: Value(json['notes'] as String?),
                   currency: Value(json['currency'] as String? ?? 'SYP'),
+                  createdAt: DateTime.parse(json['created_at'] as String),
+                  syncedAt: Value(now),
+                ),
+              );
+        }
+
+        // Insert exchange_invoices (marked synced)
+        for (final row in serverData['exchange_invoices']!) {
+          final json = row as Map<String, dynamic>;
+          await _db.into(_db.exchangeInvoices).insert(
+                ExchangeInvoicesCompanion.insert(
+                  id: json['id'] as String,
+                  serialNumber: Value(json['serial_number'] as int?),
+                  actionType: json['action_type'] as String,
+                  fromCurrency: json['from_currency'] as String,
+                  fromAmount: (json['from_amount'] as num).toDouble(),
+                  toCurrency: json['to_currency'] as String,
+                  toAmount: (json['to_amount'] as num).toDouble(),
+                  exchangeRate: (json['exchange_rate'] as num).toDouble(),
+                  notes: Value(json['notes'] as String?),
                   createdAt: DateTime.parse(json['created_at'] as String),
                   syncedAt: Value(now),
                 ),
