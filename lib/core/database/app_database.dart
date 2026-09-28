@@ -451,6 +451,42 @@ class AppDatabase extends _$AppDatabase {
     return row?.read(remainingSum) ?? 0.0;
   }
 
+  /// Fast SQL sum of all outstanding debt amounts broken down by currency
+  Future<Map<String, double>> getTotalRemainingDebtsByCurrency() async {
+    final remainingSum = debts.remainingAmount.sum();
+    final query = selectOnly(debts)
+      ..addColumns([debts.currency, remainingSum])
+      ..where(debts.status.equals('paid').not())
+      ..groupBy([debts.currency]);
+    final rows = await query.get();
+    final result = <String, double>{'SYP': 0.0, 'USD': 0.0};
+    for (final row in rows) {
+      final curr = row.read(debts.currency) ?? 'SYP';
+      result[curr] = row.read(remainingSum) ?? 0.0;
+    }
+    return result;
+  }
+
+  /// Fast SQL sum of remaining debts per customer broken down by currency
+  Future<Map<String, Map<String, double>>> getCustomerDebtTotalsByCurrency() async {
+    final remainingSum = debts.remainingAmount.sum();
+    final query = selectOnly(debts)
+      ..addColumns([debts.customerId, debts.currency, remainingSum])
+      ..where(debts.status.equals('paid').not())
+      ..groupBy([debts.customerId, debts.currency]);
+    final rows = await query.get();
+    final result = <String, Map<String, double>>{};
+    for (final row in rows) {
+      final custId = row.read(debts.customerId);
+      if (custId != null) {
+        final curr = row.read(debts.currency) ?? 'SYP';
+        final sum = row.read(remainingSum) ?? 0.0;
+        result.putIfAbsent(custId, () => {})[curr] = sum;
+      }
+    }
+    return result;
+  }
+
   /// Fast SQL sum of remaining debts per customer
   Future<Map<String, double>> getCustomerDebtTotals() async {
     final remainingSum = debts.remainingAmount.sum();

@@ -213,25 +213,61 @@ class InvoicesLoaded extends InvoicesState {
   double get totalSalesAmount => filteredTransactions
       .where((t) => t.type == UnifiedTransactionType.sale || t.type == UnifiedTransactionType.debtInvoice)
       .fold<double>(0.0, (sum, t) => sum + t.totalAmount);
+  double get totalSalesAmountSyp => filteredTransactions
+      .where((t) => (t.type == UnifiedTransactionType.sale || t.type == UnifiedTransactionType.debtInvoice) && t.currency != 'USD')
+      .fold<double>(0.0, (sum, t) => sum + t.totalAmount);
+  double get totalSalesAmountUsd => filteredTransactions
+      .where((t) => (t.type == UnifiedTransactionType.sale || t.type == UnifiedTransactionType.debtInvoice) && t.currency == 'USD')
+      .fold<double>(0.0, (sum, t) => sum + t.totalAmount);
 
   double get totalReturnsAmount => filteredTransactions
       .where((t) => t.type == UnifiedTransactionType.returnSale)
+      .fold<double>(0.0, (sum, t) => sum + t.totalAmount);
+  double get totalReturnsAmountSyp => filteredTransactions
+      .where((t) => t.type == UnifiedTransactionType.returnSale && t.currency != 'USD')
+      .fold<double>(0.0, (sum, t) => sum + t.totalAmount);
+  double get totalReturnsAmountUsd => filteredTransactions
+      .where((t) => t.type == UnifiedTransactionType.returnSale && t.currency == 'USD')
       .fold<double>(0.0, (sum, t) => sum + t.totalAmount);
 
   double get totalPurchasesAmount => filteredTransactions
       .where((t) => t.type == UnifiedTransactionType.purchase)
       .fold<double>(0.0, (sum, t) => sum + t.totalAmount);
+  double get totalPurchasesAmountSyp => filteredTransactions
+      .where((t) => t.type == UnifiedTransactionType.purchase && t.currency != 'USD')
+      .fold<double>(0.0, (sum, t) => sum + t.totalAmount);
+  double get totalPurchasesAmountUsd => filteredTransactions
+      .where((t) => t.type == UnifiedTransactionType.purchase && t.currency == 'USD')
+      .fold<double>(0.0, (sum, t) => sum + t.totalAmount);
 
   double get totalExpensesAmount => filteredTransactions
       .where((t) => t.type == UnifiedTransactionType.expense)
+      .fold<double>(0.0, (sum, t) => sum + t.totalAmount);
+  double get totalExpensesAmountSyp => filteredTransactions
+      .where((t) => t.type == UnifiedTransactionType.expense && t.currency != 'USD')
+      .fold<double>(0.0, (sum, t) => sum + t.totalAmount);
+  double get totalExpensesAmountUsd => filteredTransactions
+      .where((t) => t.type == UnifiedTransactionType.expense && t.currency == 'USD')
       .fold<double>(0.0, (sum, t) => sum + t.totalAmount);
 
   double get totalDebtPaymentsAmount => filteredTransactions
       .where((t) => t.type == UnifiedTransactionType.debtPayment)
       .fold<double>(0.0, (sum, t) => sum + t.totalAmount);
+  double get totalDebtPaymentsAmountSyp => filteredTransactions
+      .where((t) => t.type == UnifiedTransactionType.debtPayment && t.currency != 'USD')
+      .fold<double>(0.0, (sum, t) => sum + t.totalAmount);
+  double get totalDebtPaymentsAmountUsd => filteredTransactions
+      .where((t) => t.type == UnifiedTransactionType.debtPayment && t.currency == 'USD')
+      .fold<double>(0.0, (sum, t) => sum + t.totalAmount);
 
   double get totalDebtInvoicesAmount => filteredTransactions
       .where((t) => t.type == UnifiedTransactionType.debtInvoice)
+      .fold<double>(0.0, (sum, t) => sum + t.totalAmount);
+  double get totalDebtInvoicesAmountSyp => filteredTransactions
+      .where((t) => t.type == UnifiedTransactionType.debtInvoice && t.currency != 'USD')
+      .fold<double>(0.0, (sum, t) => sum + t.totalAmount);
+  double get totalDebtInvoicesAmountUsd => filteredTransactions
+      .where((t) => t.type == UnifiedTransactionType.debtInvoice && t.currency == 'USD')
       .fold<double>(0.0, (sum, t) => sum + t.totalAmount);
 
   int get salesCount => filteredTransactions

@@ -60,6 +60,26 @@ class _NewPurchaseInvoiceDialogState extends State<NewPurchaseInvoiceDialog> {
     });
   }
 
+  double get _draftTotalSyp {
+    return _draftItems
+        .where((item) => (item['currency'] as String?) != AppCurrency.usdCode)
+        .fold<double>(0.0, (sum, item) {
+      final qty = (item['quantity'] as num).toDouble();
+      final cost = (item['unitCost'] as num).toDouble();
+      return sum + (qty * cost);
+    });
+  }
+
+  double get _draftTotalUsd {
+    return _draftItems
+        .where((item) => (item['currency'] as String?) == AppCurrency.usdCode)
+        .fold<double>(0.0, (sum, item) {
+      final qty = (item['quantity'] as num).toDouble();
+      final cost = (item['unitCost'] as num).toDouble();
+      return sum + (qty * cost);
+    });
+  }
+
   double get _draftTotalPieces {
     return _draftItems.fold<double>(0.0, (sum, item) {
       return sum + (item['quantity'] as num).toDouble();
@@ -107,9 +127,14 @@ class _NewPurchaseInvoiceDialogState extends State<NewPurchaseInvoiceDialog> {
 
     setState(() => _isSaving = true);
     try {
+      final hasUsdItems = _draftItems.any((i) => (i['currency'] as String?) == AppCurrency.usdCode);
+      final hasSypItems = _draftItems.any((i) => (i['currency'] as String?) != AppCurrency.usdCode);
+      final invCurrency = hasUsdItems && !hasSypItems ? AppCurrency.usdCode : AppCurrency.sypCode;
+
       await widget.cubit.recordPurchase(
         supplierId: widget.supplier.id,
         totalAmount: _draftTotalAmount,
+        currency: invCurrency,
         items: _draftItems,
       );
 
@@ -320,7 +345,11 @@ class _NewPurchaseInvoiceDialogState extends State<NewPurchaseInvoiceDialog> {
                           style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                         ),
                         Text(
-                          '${_draftTotalAmount.toStringAsFixed(2)} ${'common.currency'.tr()}',
+                          _draftTotalUsd > 0
+                              ? (_draftTotalSyp > 0
+                                  ? '${_draftTotalSyp.toStringAsFixed(2)} ل.س / ${_draftTotalUsd.toStringAsFixed(2)} \$'
+                                  : '${_draftTotalUsd.toStringAsFixed(2)} \$')
+                              : '${_draftTotalSyp.toStringAsFixed(2)} ل.س',
                           style: AppTheme.numericStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,

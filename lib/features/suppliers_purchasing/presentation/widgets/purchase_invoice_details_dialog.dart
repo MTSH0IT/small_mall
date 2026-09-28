@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' as intl;
+import 'package:small_mall/core/constants/app_currency.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/core/widgets/app_table.dart';
 import 'package:small_mall/features/suppliers_purchasing/data/suppliers_purchasing_repository.dart';
@@ -119,7 +120,7 @@ class PurchaseInvoiceDetailsDialog extends StatelessWidget {
                         icon: Icons.payments_outlined,
                         color: AppColors.primary,
                         title: 'suppliers.total_amount'.tr(),
-                        value: '${invoice.totalAmount.toStringAsFixed(2)} ${'common.currency'.tr()}',
+                        value: '${invoice.totalAmount.toStringAsFixed(2)} ${AppCurrency.getSymbol(invoice.currency)}',
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -186,7 +187,7 @@ class PurchaseInvoiceDetailsDialog extends StatelessWidget {
                         title: 'suppliers.unit_cost'.tr(),
                         numeric: true,
                         cellBuilder: (item) => Text(
-                          '${item.item.unitCost.toStringAsFixed(2)} ${'common.currency'.tr()}',
+                          '${item.item.unitCost.toStringAsFixed(2)} ${AppCurrency.getSymbol(item.item.currency)}',
                           style: AppTheme.numericStyle(fontSize: 13),
                         ),
                       ),
@@ -202,7 +203,7 @@ class PurchaseInvoiceDetailsDialog extends StatelessWidget {
                         title: 'suppliers.item_subtotal'.tr(),
                         numeric: true,
                         cellBuilder: (item) => Text(
-                          '${item.subtotal.toStringAsFixed(2)} ${'common.currency'.tr()}',
+                          '${item.subtotal.toStringAsFixed(2)} ${AppCurrency.getSymbol(item.item.currency)}',
                           style: AppTheme.numericStyle(
                             fontWeight: FontWeight.bold,
                             color: AppColors.primary,

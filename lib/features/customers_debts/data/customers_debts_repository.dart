@@ -7,15 +7,21 @@ import 'package:small_mall/core/sync/sync_service.dart';
 import 'package:uuid/uuid.dart';
 
 class CustomerWithDebts {
-
   CustomerWithDebts({
     required this.customer,
     required this.totalDebt,
+    this.totalDebtSyp = 0.0,
+    this.totalDebtUsd = 0.0,
     required this.openDebtsCount,
   });
   final Customer customer;
   final double totalDebt;
+  final double totalDebtSyp;
+  final double totalDebtUsd;
   final int openDebtsCount;
+
+  bool get hasDebt => totalDebtSyp > 0 || totalDebtUsd > 0;
+  bool get hasBothCurrencies => totalDebtSyp > 0 && totalDebtUsd > 0;
 }
 
 class DebtWithPayments {
@@ -43,13 +49,18 @@ class CustomersDebtsRepository {
   Future<List<CustomerWithDebts>> getCustomers() async {
     _logger.debug('Fetching customers', context: LogContext.debts);
     final customers = await _db.select(_db.customers).get();
-    final debtTotals = await _db.getCustomerDebtTotals();
+    final debtTotalsByCurrency = await _db.getCustomerDebtTotalsByCurrency();
     final openCounts = await _db.getCustomerOpenDebtsCount();
 
     return customers.map((cust) {
+      final currs = debtTotalsByCurrency[cust.id] ?? {};
+      final syp = currs['SYP'] ?? 0.0;
+      final usd = currs['USD'] ?? 0.0;
       return CustomerWithDebts(
         customer: cust,
-        totalDebt: debtTotals[cust.id] ?? 0.0,
+        totalDebt: syp + usd,
+        totalDebtSyp: syp,
+        totalDebtUsd: usd,
         openDebtsCount: openCounts[cust.id] ?? 0,
       );
     }).toList();

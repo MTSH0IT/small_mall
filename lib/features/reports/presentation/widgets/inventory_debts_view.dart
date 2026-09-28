@@ -1,5 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:small_mall/core/constants/app_currency.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/core/widgets/card_container.dart';
 import 'package:small_mall/core/widgets/stat_card.dart';
@@ -52,8 +53,12 @@ class InventoryDebtsView extends StatelessWidget {
               Expanded(
                 child: StatCard(
                   title: 'reports.total_outstanding_debts'.tr(),
-                  value: '${data.totalOutstandingDebts.toStringAsFixed(2)} $currency',
+                  value: '${NumberFormat('#,##0.##').format(data.totalOutstandingDebtsSyp)} ${AppCurrency.sypSymbol}',
+                  secondaryValue: data.totalOutstandingDebtsUsd > 0
+                      ? '${NumberFormat('#,##0.00').format(data.totalOutstandingDebtsUsd)} ${AppCurrency.usdSymbol}'
+                      : null,
                   color: AppColors.accent,
+                  secondaryColor: const Color(0xFF059669),
                   subtitle: 'customers.has_debt'.tr(),
                   icon: Icons.account_balance_wallet_outlined,
                 ),
@@ -62,9 +67,13 @@ class InventoryDebtsView extends StatelessWidget {
               Expanded(
                 child: StatCard(
                   title: 'reports.debts_collected_in_period'.tr(),
-                  value: '${data.debtsCollectedInPeriod.toStringAsFixed(2)} $currency',
+                  value: '${NumberFormat('#,##0.##').format(data.debtsCollectedInPeriodSyp)} ${AppCurrency.sypSymbol}',
+                  secondaryValue: data.debtsCollectedInPeriodUsd > 0
+                      ? '${NumberFormat('#,##0.00').format(data.debtsCollectedInPeriodUsd)} ${AppCurrency.usdSymbol}'
+                      : null,
                   color: AppColors.success,
-                  subtitle: '${'reports.new_debts_issued'.tr()}: ${data.newDebtsIssuedInPeriod.toStringAsFixed(1)} $currency',
+                  secondaryColor: const Color(0xFF059669),
+                  subtitle: '${'reports.new_debts_issued'.tr()}: ${NumberFormat('#,##0.##').format(data.newDebtsIssuedInPeriodSyp)} ${AppCurrency.sypSymbol}${data.newDebtsIssuedInPeriodUsd > 0 ? ' / ${NumberFormat('#,##0.00').format(data.newDebtsIssuedInPeriodUsd)} ${AppCurrency.usdSymbol}' : ''}',
                   icon: Icons.price_check,
                 ),
               ),

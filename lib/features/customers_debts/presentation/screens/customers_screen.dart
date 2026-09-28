@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:small_mall/core/constants/app_currency.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/di/injection.dart';
 import 'package:small_mall/core/utils/theme.dart';
@@ -201,10 +202,10 @@ class _CustomersScreenState extends State<CustomersScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('${'customers.max_payment'.tr()} ${debtData.debt.remainingAmount.toStringAsFixed(2)}'),
+                Text('${'customers.max_payment'.tr()} ${debtData.debt.remainingAmount.toStringAsFixed(2)} ${AppCurrency.getSymbol(debtData.debt.currency)}'),
                 const SizedBox(height: 12),
                 AppTextField(
-                  label: '${'customers.payment_amount'.tr()} *',
+                  label: '${'customers.payment_amount'.tr()} (${AppCurrency.getSymbol(debtData.debt.currency)}) *',
                   controller: amountController,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   validator: (val) {

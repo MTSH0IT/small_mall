@@ -204,7 +204,15 @@ class InventoryAndDebtsReportData {
     required this.totalOutstandingDebts,
     required this.newDebtsIssuedInPeriod,
     required this.debtsCollectedInPeriod,
-  });
+    double? totalOutstandingDebtsSyp,
+    this.totalOutstandingDebtsUsd = 0.0,
+    double? newDebtsIssuedInPeriodSyp,
+    this.newDebtsIssuedInPeriodUsd = 0.0,
+    double? debtsCollectedInPeriodSyp,
+    this.debtsCollectedInPeriodUsd = 0.0,
+  })  : totalOutstandingDebtsSyp = totalOutstandingDebtsSyp ?? totalOutstandingDebts,
+        newDebtsIssuedInPeriodSyp = newDebtsIssuedInPeriodSyp ?? newDebtsIssuedInPeriod,
+        debtsCollectedInPeriodSyp = debtsCollectedInPeriodSyp ?? debtsCollectedInPeriod;
 
   final double totalInventoryCost;
   final int totalActiveProducts;
@@ -214,9 +222,15 @@ class InventoryAndDebtsReportData {
   final double totalOutstandingDebts;
   final double newDebtsIssuedInPeriod;
   final double debtsCollectedInPeriod;
+  final double totalOutstandingDebtsSyp;
+  final double totalOutstandingDebtsUsd;
+  final double newDebtsIssuedInPeriodSyp;
+  final double newDebtsIssuedInPeriodUsd;
+  final double debtsCollectedInPeriodSyp;
+  final double debtsCollectedInPeriodUsd;
 
-  double get collectionRate => (newDebtsIssuedInPeriod + debtsCollectedInPeriod) > 0
-      ? (debtsCollectedInPeriod / (newDebtsIssuedInPeriod + debtsCollectedInPeriod)) * 100
+  double get collectionRate => (newDebtsIssuedInPeriodSyp + debtsCollectedInPeriodSyp) > 0
+      ? (debtsCollectedInPeriodSyp / (newDebtsIssuedInPeriodSyp + debtsCollectedInPeriodSyp)) * 100
       : 0.0;
 }
 
@@ -866,21 +880,33 @@ class ReportsRepository {
     }
 
     // 3. Debts analysis
-    final totalOutstanding = await _db.getTotalRemainingDebts();
+    final debtTotals = await _db.getTotalRemainingDebtsByCurrency();
+    final totalOutstandingSyp = debtTotals['SYP'] ?? 0.0;
+    final totalOutstandingUsd = debtTotals['USD'] ?? 0.0;
 
     final newDebts = await (_db.select(_db.debts)
           ..where((t) =>
               t.createdAt.isBiggerOrEqualValue(start) &
               t.createdAt.isSmallerOrEqualValue(end)))
         .get();
-    final newDebtsIssued = newDebts.fold<double>(0.0, (sum, d) => sum + d.amount);
+    final newDebtsIssuedSyp = newDebts
+        .where((d) => d.currency != 'USD')
+        .fold<double>(0.0, (sum, d) => sum + d.amount);
+    final newDebtsIssuedUsd = newDebts
+        .where((d) => d.currency == 'USD')
+        .fold<double>(0.0, (sum, d) => sum + d.amount);
 
     final debtPayments = await (_db.select(_db.debtPayments)
           ..where((t) =>
               t.paidAt.isBiggerOrEqualValue(start) &
               t.paidAt.isSmallerOrEqualValue(end)))
         .get();
-    final debtsCollected = debtPayments.fold<double>(0.0, (sum, dp) => sum + dp.amountPaid);
+    final debtsCollectedSyp = debtPayments
+        .where((dp) => dp.currency != 'USD')
+        .fold<double>(0.0, (sum, dp) => sum + dp.amountPaid);
+    final debtsCollectedUsd = debtPayments
+        .where((dp) => dp.currency == 'USD')
+        .fold<double>(0.0, (sum, dp) => sum + dp.amountPaid);
 
     return InventoryAndDebtsReportData(
       totalInventoryCost: totalInventoryCost,
@@ -888,9 +914,15 @@ class ReportsRepository {
       lowStockProductsCount: lowStockCount,
       adjustmentsCostInPeriod: adjustmentsCost,
       adjustmentsCountInPeriod: adjustments.length,
-      totalOutstandingDebts: totalOutstanding,
-      newDebtsIssuedInPeriod: newDebtsIssued,
-      debtsCollectedInPeriod: debtsCollected,
+      totalOutstandingDebts: totalOutstandingSyp,
+      totalOutstandingDebtsSyp: totalOutstandingSyp,
+      totalOutstandingDebtsUsd: totalOutstandingUsd,
+      newDebtsIssuedInPeriod: newDebtsIssuedSyp,
+      newDebtsIssuedInPeriodSyp: newDebtsIssuedSyp,
+      newDebtsIssuedInPeriodUsd: newDebtsIssuedUsd,
+      debtsCollectedInPeriod: debtsCollectedSyp,
+      debtsCollectedInPeriodSyp: debtsCollectedSyp,
+      debtsCollectedInPeriodUsd: debtsCollectedUsd,
     );
   }
 

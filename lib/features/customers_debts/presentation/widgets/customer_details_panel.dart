@@ -1,5 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:small_mall/core/constants/app_currency.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/core/widgets/empty_state_view.dart';
 import 'package:small_mall/core/widgets/loading_indicator.dart';
@@ -115,13 +116,24 @@ class CustomerDetailsPanel extends StatelessWidget {
                         Text('${'customers.balance'.tr()}:', style: theme.textTheme.labelSmall),
                         const SizedBox(height: 4),
                         Text(
-                          customerData.totalDebt.toStringAsFixed(2),
+                          '${customerData.totalDebtSyp.toStringAsFixed(2)} ل.س',
                           style: AppTheme.numericStyle(
-                            fontSize: 28,
+                            fontSize: 24,
                             fontWeight: FontWeight.bold,
-                            color: customerData.totalDebt > 0 ? AppColors.accent : AppColors.success,
+                            color: customerData.totalDebtSyp > 0 ? AppColors.accent : AppColors.success,
                           ),
                         ),
+                        if (customerData.totalDebtUsd > 0) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            '${customerData.totalDebtUsd.toStringAsFixed(2)} \$',
+                            style: AppTheme.numericStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF059669),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ],
@@ -248,7 +260,10 @@ class CustomerDetailsPanel extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text('${'common.total'.tr()}:', style: theme.textTheme.labelSmall),
-                              Text(debtData.debt.amount.toStringAsFixed(2), style: AppTheme.numericStyle()),
+                              Text(
+                                '${debtData.debt.amount.toStringAsFixed(2)} ${AppCurrency.getSymbol(debtData.debt.currency)}',
+                                style: AppTheme.numericStyle(),
+                              ),
                             ],
                           ),
                           Column(
@@ -256,7 +271,7 @@ class CustomerDetailsPanel extends StatelessWidget {
                             children: [
                               Text('${'suppliers.remaining_amount'.tr()}:', style: theme.textTheme.labelSmall),
                               Text(
-                                debtData.debt.remainingAmount.toStringAsFixed(2),
+                                '${debtData.debt.remainingAmount.toStringAsFixed(2)} ${AppCurrency.getSymbol(debtData.debt.currency)}',
                                 style: AppTheme.numericStyle(
                                   fontWeight: FontWeight.bold,
                                   color: debtData.debt.remainingAmount > 0 ? AppColors.accent : AppColors.success,
@@ -285,7 +300,7 @@ class CustomerDetailsPanel extends StatelessWidget {
                               children: [
                                 Text(payDate, style: theme.textTheme.labelSmall),
                                 Text(
-                                  '- ${p.amountPaid.toStringAsFixed(2)}',
+                                  '- ${p.amountPaid.toStringAsFixed(2)} ${AppCurrency.getSymbol(p.currency)}',
                                   style: AppTheme.numericStyle(color: AppColors.success, fontWeight: FontWeight.bold),
                                 ),
                               ],

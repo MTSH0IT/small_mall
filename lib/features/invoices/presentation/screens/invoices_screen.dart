@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:small_mall/core/constants/app_currency.dart';
 import 'package:small_mall/core/di/injection.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/core/widgets/app_screen_scaffold.dart';
@@ -333,8 +334,9 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
             child: _buildMiniStat(
               'invoices.summary_sales'.tr(),
               '${loaded.salesCount}',
-              loaded.totalSalesAmount.toStringAsFixed(2),
               AppColors.success,
+              amountSyp: loaded.totalSalesAmountSyp,
+              amountUsd: loaded.totalSalesAmountUsd,
             ),
           ),
         ],
@@ -348,8 +350,9 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
             child: _buildMiniStat(
               'invoices.debt_invoice'.tr(),
               '${loaded.debtInvoicesCount}',
-              loaded.totalDebtInvoicesAmount.toStringAsFixed(2),
               AppColors.warning,
+              amountSyp: loaded.totalDebtInvoicesAmountSyp,
+              amountUsd: loaded.totalDebtInvoicesAmountUsd,
             ),
           ),
         ],
@@ -363,8 +366,9 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
             child: _buildMiniStat(
               'invoices.return'.tr(),
               '${loaded.returnsCount}',
-              loaded.totalReturnsAmount.toStringAsFixed(2),
               AppColors.danger,
+              amountSyp: loaded.totalReturnsAmountSyp,
+              amountUsd: loaded.totalReturnsAmountUsd,
             ),
           ),
         ],
@@ -378,8 +382,9 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
             child: _buildMiniStat(
               'invoices.summary_purchases'.tr(),
               '${loaded.purchasesCount}',
-              loaded.totalPurchasesAmount.toStringAsFixed(2),
               const Color(0xFF2563EB),
+              amountSyp: loaded.totalPurchasesAmountSyp,
+              amountUsd: loaded.totalPurchasesAmountUsd,
             ),
           ),
         ],
@@ -393,8 +398,9 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
             child: _buildMiniStat(
               'invoices.summary_expenses'.tr(),
               '${loaded.expensesCount}',
-              loaded.totalExpensesAmount.toStringAsFixed(2),
               const Color(0xFFEA580C),
+              amountSyp: loaded.totalExpensesAmountSyp,
+              amountUsd: loaded.totalExpensesAmountUsd,
             ),
           ),
         ],
@@ -408,8 +414,9 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
             child: _buildMiniStat(
               'invoices.summary_debt_payments'.tr(),
               '${loaded.debtPaymentsCount}',
-              loaded.totalDebtPaymentsAmount.toStringAsFixed(2),
               const Color(0xFF7C3AED),
+              amountSyp: loaded.totalDebtPaymentsAmountSyp,
+              amountUsd: loaded.totalDebtPaymentsAmountUsd,
             ),
           ),
         ],
@@ -423,8 +430,8 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
             child: _buildMiniStat(
               'invoices.adjustment'.tr(),
               '${loaded.adjustmentsCount}',
-              '${loaded.adjustmentsCount} ${'inventory.adjustments'.tr()}',
               const Color(0xFF0D9488),
+              customAmountText: '${loaded.adjustmentsCount} ${'inventory.adjustments'.tr()}',
             ),
           ),
         ],
@@ -438,8 +445,8 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
             child: _buildMiniStat(
               'invoices.currency_exchange'.tr(),
               '${loaded.exchangesCount}',
-              '${loaded.exchangesCount} ${'reports.exchange_operations_count'.tr()}',
               const Color(0xFF0284C7),
+              customAmountText: '${loaded.exchangesCount} ${'reports.exchange_operations_count'.tr()}',
             ),
           ),
         ],
@@ -453,8 +460,9 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
           child: _buildMiniStat(
             'invoices.summary_sales'.tr(),
             '${loaded.salesCount}',
-            loaded.totalSalesAmount.toStringAsFixed(2),
             AppColors.success,
+            amountSyp: loaded.totalSalesAmountSyp,
+            amountUsd: loaded.totalSalesAmountUsd,
           ),
         ),
         const SizedBox(width: 6),
@@ -462,8 +470,9 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
           child: _buildMiniStat(
             'invoices.summary_purchases'.tr(),
             '${loaded.purchasesCount}',
-            loaded.totalPurchasesAmount.toStringAsFixed(2),
             const Color(0xFF2563EB),
+            amountSyp: loaded.totalPurchasesAmountSyp,
+            amountUsd: loaded.totalPurchasesAmountUsd,
           ),
         ),
         const SizedBox(width: 6),
@@ -471,17 +480,25 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
           child: _buildMiniStat(
             'invoices.summary_expenses'.tr(),
             '${loaded.expensesCount}',
-            loaded.totalExpensesAmount.toStringAsFixed(2),
             const Color(0xFFEA580C),
+            amountSyp: loaded.totalExpensesAmountSyp,
+            amountUsd: loaded.totalExpensesAmountUsd,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildMiniStat(String label, String count, String amount, Color color) {
+  Widget _buildMiniStat(
+    String label,
+    String count,
+    Color color, {
+    double? amountSyp,
+    double? amountUsd,
+    String? customAmountText,
+  }) {
     return Container(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(8),
@@ -489,16 +506,30 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Text(label, style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 4),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              Text(label, style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.bold)),
               Text(count, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-              Text(amount, style: AppTheme.numericStyle(fontSize: 11, fontWeight: FontWeight.bold, color: color)),
             ],
           ),
+          const SizedBox(height: 4),
+          if (customAmountText != null)
+            Text(customAmountText, style: AppTheme.numericStyle(fontSize: 11, fontWeight: FontWeight.bold, color: color))
+          else ...[
+            if ((amountSyp ?? 0.0) != 0.0 || (amountUsd ?? 0.0) == 0.0)
+              Text(
+                '${NumberFormat('#,##0.##').format(amountSyp ?? 0.0)} ${AppCurrency.sypSymbol}',
+                style: AppTheme.numericStyle(fontSize: 11, fontWeight: FontWeight.bold, color: color),
+              ),
+            if ((amountUsd ?? 0.0) != 0.0)
+              Text(
+                '${NumberFormat('#,##0.00').format(amountUsd ?? 0.0)} ${AppCurrency.usdSymbol}',
+                style: AppTheme.numericStyle(fontSize: 10, fontWeight: FontWeight.w600, color: color.withValues(alpha: 0.85)),
+              ),
+          ],
         ],
       ),
     );

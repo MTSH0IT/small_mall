@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart' as intl;
+import 'package:small_mall/core/constants/app_currency.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/core/widgets/app_table.dart';
@@ -68,8 +69,16 @@ class _SupplierOperationsPanelState extends State<SupplierOperationsPanel> {
     }
   }
 
-  double get _totalPurchasesAmount {
-    return _invoices.fold<double>(0.0, (sum, inv) => sum + inv.invoice.totalAmount);
+  double get _totalPurchasesSyp {
+    return _invoices
+        .where((inv) => inv.invoice.currency != AppCurrency.usdCode)
+        .fold<double>(0.0, (sum, inv) => sum + inv.invoice.totalAmount);
+  }
+
+  double get _totalPurchasesUsd {
+    return _invoices
+        .where((inv) => inv.invoice.currency == AppCurrency.usdCode)
+        .fold<double>(0.0, (sum, inv) => sum + inv.invoice.totalAmount);
   }
 
   double get _totalPiecesPurchased {
@@ -200,7 +209,11 @@ class _SupplierOperationsPanelState extends State<SupplierOperationsPanel> {
   }
 
   Widget _buildKpiSection() {
-    final currency = 'common.currency'.tr();
+    final sypStr = '${_totalPurchasesSyp.toStringAsFixed(2)} ل.س';
+    final usdStr = '${_totalPurchasesUsd.toStringAsFixed(2)} \$';
+    final totalValStr = _totalPurchasesUsd > 0
+        ? (_totalPurchasesSyp > 0 ? '$sypStr / $usdStr' : usdStr)
+        : sypStr;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
@@ -209,7 +222,7 @@ class _SupplierOperationsPanelState extends State<SupplierOperationsPanel> {
           Expanded(
             child: _buildKpiCard(
               title: 'suppliers.total_amount'.tr(),
-              value: '${_totalPurchasesAmount.toStringAsFixed(2)} $currency',
+              value: totalValStr,
               icon: Icons.payments_rounded,
               color: AppColors.primary,
             ),
@@ -407,7 +420,7 @@ class _SupplierOperationsPanelState extends State<SupplierOperationsPanel> {
                   title: 'suppliers.total_amount'.tr(),
                   numeric: true,
                   cellBuilder: (inv) => Text(
-                    '${inv.invoice.totalAmount.toStringAsFixed(2)} ${'common.currency'.tr()}',
+                    '${inv.invoice.totalAmount.toStringAsFixed(2)} ${AppCurrency.getSymbol(inv.invoice.currency)}',
                     style: AppTheme.numericStyle(
                       fontWeight: FontWeight.bold,
                       color: AppColors.textPrimary,

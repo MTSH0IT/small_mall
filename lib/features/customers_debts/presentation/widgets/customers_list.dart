@@ -95,8 +95,12 @@ class CustomersList extends StatelessWidget {
               ],
             ),
             trailing: PriceTagChip(
-              label: '${'customers.balance'.tr()}: ${item.totalDebt.toStringAsFixed(1)}',
-              backgroundColor: item.totalDebt > 0 ? AppColors.accent : AppColors.success,
+              label: item.hasBothCurrencies
+                  ? '${item.totalDebtSyp.toStringAsFixed(0)} ل.س / ${item.totalDebtUsd.toStringAsFixed(1)} \$'
+                  : (item.totalDebtUsd > 0
+                      ? '${item.totalDebtUsd.toStringAsFixed(1)} \$'
+                      : '${item.totalDebtSyp.toStringAsFixed(0)} ل.س'),
+              backgroundColor: item.hasDebt ? AppColors.accent : AppColors.success,
               cutSize: 6,
             ),
             onTap: () => onSelectCustomer(item.customer.id),

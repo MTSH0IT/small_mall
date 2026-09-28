@@ -55,12 +55,14 @@ class SuppliersPurchasingCubit extends Cubit<SuppliersPurchasingState> {
   Future<void> recordPurchase({
     required String supplierId,
     required double totalAmount,
+    String currency = 'SYP',
     required List<Map<String, dynamic>> items,
   }) async {
     try {
       await _repository.recordPurchase(
         supplierId: supplierId,
         totalAmount: totalAmount,
+        currency: currency,
         items: items,
       );
       await loadSuppliers();
