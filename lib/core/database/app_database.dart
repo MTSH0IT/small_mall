@@ -394,6 +394,31 @@ class AppDatabase extends _$AppDatabase {
     return currentMax + 1;
   }
 
+  /// Get chronological serial numbers for all purchase invoices (1, 2, 3...)
+  Future<Map<String, int>> getPurchaseSerialNumbers() async {
+    final list = await (select(purchaseInvoices)
+          ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
+        .get();
+    final map = <String, int>{};
+    for (int i = 0; i < list.length; i++) {
+      map[list[i].id] = i + 1;
+    }
+    return map;
+  }
+
+  /// Get chronological serial numbers for all stock adjustments (1, 2, 3...)
+  Future<Map<String, int>> getAdjustmentSerialNumbers() async {
+    final list = await (select(stockMovements)
+          ..where((t) => t.type.equals('adjustment'))
+          ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
+        .get();
+    final map = <String, int>{};
+    for (int i = 0; i < list.length; i++) {
+      map[list[i].id] = i + 1;
+    }
+    return map;
+  }
+
   /// Fast SQL aggregation for all product stock balances
   Future<Map<String, double>> getAllStockBalances() async {
     final qtySum = stockMovements.quantity.sum();

@@ -358,7 +358,46 @@ class InvoiceDetailPanel extends StatelessWidget {
             ],
 
             // Total Amount
-            if (transaction.hasMultipleCurrencies) ...[
+            if (transaction.isAdjustment) ...[
+              Builder(
+                builder: (context) {
+                  final totalAdjQty = transaction.items.fold<double>(0.0, (sum, i) => sum + i.quantity);
+                  final formattedTotalAdj = totalAdjQty.truncateToDouble() == totalAdjQty
+                      ? totalAdjQty.toInt().toString()
+                      : totalAdjQty.toStringAsFixed(1);
+                  final sign = totalAdjQty > 0 ? '+' : '';
+                  return Container(
+                    margin: const EdgeInsets.only(top: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: typeColor.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: typeColor.withValues(alpha: 0.25)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'inventory.net_adjustments'.tr(),
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: typeColor,
+                          ),
+                        ),
+                        Text(
+                          '$sign$formattedTotalAdj ${'inventory.pieces'.tr()}',
+                          style: AppTheme.numericStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                            color: typeColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ] else if (transaction.hasMultipleCurrencies) ...[
               Container(
                 margin: const EdgeInsets.only(top: 8),
                 padding: const EdgeInsets.all(14),
@@ -491,6 +530,51 @@ class InvoiceDetailPanel extends StatelessWidget {
   }
 
   Widget _buildInfoRow(ThemeData theme, String label, String value, {bool isMuted = false}) {
+    return TransactionInfoRow(label: label, value: value, isMuted: isMuted);
+  }
+
+  Widget _buildItemCard(ThemeData theme, UnifiedTransactionItem item, UnifiedTransactionType type) {
+    return TransactionItemCard(item: item, type: type);
+  }
+
+  Widget _buildSummaryRow(
+    ThemeData theme,
+    String label,
+    double amount, {
+    bool isBold = false,
+    Color? color,
+    String? currencySymbol,
+  }) {
+    return TransactionSummaryRow(
+      label: label,
+      amount: amount,
+      isBold: isBold,
+      color: color,
+      currencySymbol: currencySymbol,
+    );
+  }
+
+  Widget _buildExchangeDetailsCard(ThemeData theme, ExchangeInvoice ex, Color typeColor) {
+    return TransactionExchangeDetailsCard(invoice: ex, typeColor: typeColor);
+  }
+}
+
+/// Standalone Reusable Widget for Transaction Information Rows
+class TransactionInfoRow extends StatelessWidget {
+  const TransactionInfoRow({
+    super.key,
+    required this.label,
+    required this.value,
+    this.isMuted = false,
+  });
+
+  final String label;
+  final String value;
+  final bool isMuted;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -510,11 +594,29 @@ class InvoiceDetailPanel extends StatelessWidget {
       ),
     );
   }
+}
 
-  Widget _buildItemCard(ThemeData theme, UnifiedTransactionItem item, UnifiedTransactionType type) {
+/// Standalone Reusable Widget for Transaction Item Cards
+class TransactionItemCard extends StatelessWidget {
+  const TransactionItemCard({
+    super.key,
+    required this.item,
+    required this.type,
+  });
+
+  final UnifiedTransactionItem item;
+  final UnifiedTransactionType type;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final qty = item.quantity;
     final price = item.unitPrice;
     final itemTotal = (price * qty.abs()) - item.discount;
+    final isAdjustment = type == UnifiedTransactionType.adjustment;
+
+    final formattedQty = qty.truncateToDouble() == qty ? qty.toInt().toString() : qty.toStringAsFixed(1);
+    final sign = qty > 0 ? '+' : '';
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -529,8 +631,8 @@ class InvoiceDetailPanel extends StatelessWidget {
                   Text(item.productName, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500)),
                   const SizedBox(height: 4),
                   Text(
-                    type == UnifiedTransactionType.adjustment
-                        ? '${'invoices.adjusted_qty'.tr()}: ${qty > 0 ? "+$qty" : qty}'
+                    isAdjustment
+                        ? '${'invoices.adjusted_qty'.tr()}: $sign$formattedQty'
                         : '${qty.toStringAsFixed(0)} × ${price.toStringAsFixed(2)} ${item.currencySymbol}',
                     style: theme.textTheme.labelSmall,
                   ),
@@ -543,8 +645,8 @@ class InvoiceDetailPanel extends StatelessWidget {
               ),
             ),
             Text(
-              type == UnifiedTransactionType.adjustment
-                  ? '${qty > 0 ? "+$qty" : qty} ${'inventory.pieces'.tr()}'
+              isAdjustment
+                  ? '$sign$formattedQty ${'inventory.pieces'.tr()}'
                   : '${itemTotal.toStringAsFixed(2)} ${item.currencySymbol}',
               style: AppTheme.numericStyle(fontWeight: FontWeight.bold, fontSize: 14),
             ),
@@ -553,15 +655,28 @@ class InvoiceDetailPanel extends StatelessWidget {
       ),
     );
   }
+}
 
-  Widget _buildSummaryRow(
-    ThemeData theme,
-    String label,
-    double amount, {
-    bool isBold = false,
-    Color? color,
-    String? currencySymbol,
-  }) {
+/// Standalone Reusable Widget for Summary Line Items
+class TransactionSummaryRow extends StatelessWidget {
+  const TransactionSummaryRow({
+    super.key,
+    required this.label,
+    required this.amount,
+    this.isBold = false,
+    this.color,
+    this.currencySymbol,
+  });
+
+  final String label;
+  final double amount;
+  final bool isBold;
+  final Color? color;
+  final String? currencySymbol;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -586,11 +701,24 @@ class InvoiceDetailPanel extends StatelessWidget {
       ),
     );
   }
+}
 
-  Widget _buildExchangeDetailsCard(ThemeData theme, ExchangeInvoice ex, Color typeColor) {
-    final isBuy = ex.actionType == 'buy_usd';
-    final fromSymbol = AppCurrency.getSymbol(ex.fromCurrency);
-    final toSymbol = AppCurrency.getSymbol(ex.toCurrency);
+/// Standalone Reusable Widget for Currency Exchange Details Card
+class TransactionExchangeDetailsCard extends StatelessWidget {
+  const TransactionExchangeDetailsCard({
+    super.key,
+    required this.invoice,
+    required this.typeColor,
+  });
+
+  final ExchangeInvoice invoice;
+  final Color typeColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final isBuy = invoice.actionType == 'buy_usd';
+    final fromSymbol = AppCurrency.getSymbol(invoice.fromCurrency);
+    final toSymbol = AppCurrency.getSymbol(invoice.toCurrency);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -634,7 +762,7 @@ class InvoiceDetailPanel extends StatelessWidget {
                   style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
                 ),
                 Text(
-                  '1\$ = ${ex.exchangeRate.toStringAsFixed(0)} ${AppCurrency.primarySymbol}',
+                  '1\$ = ${invoice.exchangeRate.toStringAsFixed(0)} ${AppCurrency.primarySymbol}',
                   style: AppTheme.numericStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
@@ -665,7 +793,7 @@ class InvoiceDetailPanel extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '-${ex.fromAmount.toStringAsFixed(2)} $fromSymbol',
+                        '-${invoice.fromAmount.toStringAsFixed(2)} $fromSymbol',
                         style: AppTheme.numericStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -695,7 +823,7 @@ class InvoiceDetailPanel extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '+${ex.toAmount.toStringAsFixed(2)} $toSymbol',
+                        '+${invoice.toAmount.toStringAsFixed(2)} $toSymbol',
                         style: AppTheme.numericStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -708,7 +836,7 @@ class InvoiceDetailPanel extends StatelessWidget {
               ),
             ],
           ),
-          if (ex.notes != null && ex.notes!.trim().isNotEmpty) ...[
+          if (invoice.notes != null && invoice.notes!.trim().isNotEmpty) ...[
             const SizedBox(height: 12),
             Text(
               'common.notes'.tr(),
@@ -716,7 +844,7 @@ class InvoiceDetailPanel extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              ex.notes!,
+              invoice.notes!,
               style: const TextStyle(fontSize: 13),
             ),
           ],

@@ -42,6 +42,9 @@ class _ProductOperationsDialogState extends State<ProductOperationsDialog> {
       if (mounted) {
         if (tx != null) {
           await TransactionDetailDialog.show(context, tx);
+          if (mounted) {
+            _fetchOperations();
+          }
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('invoices.select_invoice_to_view'.tr())),

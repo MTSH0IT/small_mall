@@ -189,7 +189,6 @@ class SuppliersPurchasingRepository {
         final prodId = item['productId'] as String;
         final qty = (item['quantity'] as num).toDouble();
         final cost = (item['unitCost'] as num).toDouble();
-        final costUsd = (item['unitCostUsd'] as num?)?.toDouble();
         final itemCurrency = (item['currency'] as String?) ?? currency;
 
         final purchaseItem = PurchaseItem(
@@ -218,10 +217,13 @@ class SuppliersPurchasingRepository {
         await _db.into(_db.stockMovements).insert(movement);
 
         // Update product's cost price (both SYP and USD if provided, mark syncedAt null)
+        final resolvedCostSyp = (item['unitCostSyp'] as num?)?.toDouble() ?? (itemCurrency == 'SYP' ? cost : null);
+        final resolvedCostUsd = (item['unitCostUsd'] as num?)?.toDouble() ?? (itemCurrency == 'USD' ? cost : null);
+
         await (_db.update(_db.products)..where((t) => t.id.equals(prodId))).write(
           ProductsCompanion(
-            costPrice: Value(cost),
-            costPriceUsd: costUsd != null ? Value(costUsd) : const Value.absent(),
+            costPrice: resolvedCostSyp != null ? Value(resolvedCostSyp) : (itemCurrency == 'SYP' ? Value(cost) : const Value.absent()),
+            costPriceUsd: resolvedCostUsd != null ? Value(resolvedCostUsd) : (itemCurrency == 'USD' ? Value(cost) : const Value.absent()),
             updatedAt: Value(now),
             syncedAt: const Value(null),
           ),

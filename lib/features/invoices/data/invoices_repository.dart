@@ -291,6 +291,13 @@ class InvoicesRepository {
 
   Future<List<UnifiedTransactionRecord>> _fetchSalesAndReturns() async {
     final invoicesWithDetails = await _posRepository.getAllInvoices();
+    final ascInvoices = List<InvoiceWithDetails>.from(invoicesWithDetails)
+      ..sort((a, b) => a.invoice.createdAt.compareTo(b.invoice.createdAt));
+    final fallbackMap = <String, int>{};
+    for (int i = 0; i < ascInvoices.length; i++) {
+      fallbackMap[ascInvoices[i].invoice.id] = i + 1;
+    }
+
     return invoicesWithDetails.map((inv) {
       final isReturn = inv.invoice.type == 'return';
       final isDebt = inv.invoice.paymentType == 'debt';
@@ -315,7 +322,7 @@ class InvoicesRepository {
 
       return UnifiedTransactionRecord(
         id: inv.invoice.id,
-        serialNumber: inv.invoice.serialNumber,
+        serialNumber: inv.invoice.serialNumber ?? fallbackMap[inv.invoice.id],
         type: type,
         createdAt: inv.invoice.createdAt,
         totalAmount: inv.invoice.totalAmount,

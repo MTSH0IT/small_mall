@@ -1,12 +1,15 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:small_mall/core/constants/app_currency.dart';
+import 'package:small_mall/core/di/injection.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/core/widgets/empty_state_view.dart';
 import 'package:small_mall/core/widgets/loading_indicator.dart';
 import 'package:small_mall/core/widgets/price_tag_chip.dart';
 import 'package:small_mall/core/widgets/primary_button.dart';
 import 'package:small_mall/features/customers_debts/data/customers_debts_repository.dart';
+import 'package:small_mall/features/invoices/data/invoices_repository.dart';
+import 'package:small_mall/features/invoices/presentation/widgets/transaction_detail_dialog.dart';
 
 class CustomerDetailsPanel extends StatelessWidget {
   const CustomerDetailsPanel({
@@ -241,9 +244,49 @@ class CustomerDetailsPanel extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            '${'pos.debt'.tr()} - $dateStr',
-                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          Row(
+                            children: [
+                              Text(
+                                '${'pos.debt'.tr()} - $dateStr',
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              if (debtData.invoice != null) ...[
+                                const SizedBox(width: 8),
+                                InkWell(
+                                  onTap: () async {
+                                    final invRepo = getIt<InvoicesRepository>();
+                                    final tx = await invRepo.getTransactionById(debtData.invoice!.id);
+                                    if (tx != null && context.mounted) {
+                                      TransactionDetailDialog.show(context, tx);
+                                    }
+                                  },
+                                  borderRadius: BorderRadius.circular(4),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(4),
+                                      border: Border.all(color: AppColors.primary.withValues(alpha: 0.25)),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          '#${debtData.invoice!.serialNumber ?? (debtData.invoice!.id.length >= 8 ? debtData.invoice!.id.substring(0, 8) : debtData.invoice!.id)}',
+                                          style: const TextStyle(
+                                            color: AppColors.primary,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        const Icon(Icons.open_in_new, size: 12, color: AppColors.primary),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
                           PriceTagChip(
                             label: statusStr,

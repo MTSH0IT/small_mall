@@ -303,6 +303,7 @@
     "sales": "Sales",
     "purchases": "Purchases",
     "adjustments": "Adjustments",
+    "pieces": "pcs",
     "returns": "Returns",
     "initial_balance": "Initial Balance",
     "total_sales_qty": "Total Sales",

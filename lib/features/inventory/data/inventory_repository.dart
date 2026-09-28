@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:small_mall/core/constants/app_currency.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/logging/app_logger.dart';
@@ -632,6 +633,10 @@ class InventoryRepository {
       }
     }
 
+    final product = await (_db.select(_db.products)..where((t) => t.id.equals(productId))).getSingleOrNull();
+    final purchaseSerialMap = await _db.getPurchaseSerialNumbers();
+    final adjustmentSerialMap = await _db.getAdjustmentSerialNumbers();
+
     double runningBalance = 0.0;
     final List<ProductStockOperation> operations = [];
 
@@ -663,7 +668,10 @@ class InventoryRepository {
       } else if (m.type == 'purchase') {
         final purch = purchaseMap[m.referenceId];
         if (purch != null) {
-          refNumber = purch.id.length >= 8 ? purch.id.substring(0, 8) : purch.id;
+          final serial = purchaseSerialMap[purch.id];
+          refNumber = serial != null
+              ? '#$serial'
+              : (purch.id.length >= 8 ? purch.id.substring(0, 8) : purch.id);
           party = supplierMap[purch.supplierId]?.name;
         }
         final item = purchaseItemMap[m.referenceId];
@@ -671,7 +679,11 @@ class InventoryRepository {
           unitPrice = item.unitCost;
         }
       } else if (m.type == 'adjustment') {
-        party = m.referenceId;
+        final serial = adjustmentSerialMap[m.id];
+        refNumber = serial != null ? '#$serial' : '-';
+        final reason = m.referenceId;
+        party = (reason != null && reason.trim().isNotEmpty) ? reason : 'inventory.adjustments'.tr();
+        unitPrice = product?.costPrice;
       }
 
       operations.add(ProductStockOperation(
@@ -680,7 +692,7 @@ class InventoryRepository {
         quantity: m.quantity,
         createdAt: m.createdAt,
         referenceNumber: refNumber,
-        referenceId: (isInitial || m.type == 'adjustment') ? null : m.referenceId,
+        referenceId: isInitial ? null : (m.type == 'adjustment' ? m.id : m.referenceId),
         partyName: party,
         unitPrice: unitPrice,
         runningBalance: runningBalance,
