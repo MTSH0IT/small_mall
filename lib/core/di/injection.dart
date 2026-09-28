@@ -1,6 +1,7 @@
 import 'package:get_it/get_it.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/logging/app_logger.dart';
+import 'package:small_mall/core/services/app_settings_service.dart';
 import 'package:small_mall/core/sync/sync_service.dart';
 import 'package:small_mall/features/customers_debts/data/customers_debts_repository.dart';
 import 'package:small_mall/features/expenses/data/expenses_repository.dart';
@@ -33,6 +34,9 @@ Future<void> setupDependencyInjection() async {
   getIt.registerLazySingleton<SuppliersPurchasingRepository>(() => SuppliersPurchasingRepository(database, syncService, logger));
   getIt.registerLazySingleton<ExpensesRepository>(() => ExpensesRepository(database, syncService, logger));
   getIt.registerLazySingleton<ReportsRepository>(() => ReportsRepository(database, logger));
+
+  // Initialize App Settings (Exchange rate & Defaults)
+  await AppSettingsService.init();
 
   // Initialize Sync Service
   await syncService.initialize();

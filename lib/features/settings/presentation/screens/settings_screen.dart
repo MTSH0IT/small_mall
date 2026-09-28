@@ -6,12 +6,15 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:small_mall/core/di/injection.dart';
+import 'package:small_mall/core/services/app_settings_service.dart';
 import 'package:small_mall/core/sync/sync_service.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/core/widgets/app_screen_scaffold.dart';
+import 'package:small_mall/core/widgets/app_text_field.dart';
 import 'package:small_mall/core/widgets/app_toast.dart';
 import 'package:small_mall/core/widgets/loading_indicator.dart';
 import 'package:small_mall/core/widgets/primary_button.dart';
+import 'package:small_mall/features/inventory/data/inventory_repository.dart';
 import 'package:small_mall/features/settings/presentation/widgets/settings_section.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -27,6 +30,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   SyncStatus _syncStatus = SyncStatus.idle;
   bool _isManualSyncing = false;
   bool _isRestoring = false;
+  bool _isSavingPricing = false;
+  bool _isRepricing = false;
+  late final TextEditingController _exchangeRateController;
+  late final TextEditingController _defaultMinStockController;
   final _syncService = getIt<SyncService>();
 
   @override
@@ -37,6 +44,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _syncService.pendingCount.addListener(_onPendingCountChanged);
     _syncService.status.addListener(_onSyncStatusChanged);
     _loadDbPath();
+
+    final rate = AppSettingsService.usdExchangeRate;
+    _exchangeRateController = TextEditingController(
+      text: rate > 0 ? (rate % 1 == 0 ? rate.toInt().toString() : rate.toString()) : '',
+    );
+    final minStock = AppSettingsService.defaultMinStockAlert;
+    _defaultMinStockController = TextEditingController(
+      text: minStock % 1 == 0 ? minStock.toInt().toString() : minStock.toString(),
+    );
   }
 
   Future<void> _loadDbPath() async {
@@ -64,10 +80,276 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  Future<void> _savePricingSettings() async {
+    setState(() => _isSavingPricing = true);
+    try {
+      final rate = AppSettingsService.parseNumber(_exchangeRateController.text) ?? 0.0;
+      final minStock = AppSettingsService.parseNumber(_defaultMinStockController.text) ?? 5.0;
+      await AppSettingsService.saveSettings(
+        exchangeRate: rate,
+        defaultMinStock: minStock,
+      );
+      if (mounted) {
+        AppToast.success(
+          context,
+          message: 'settings.pricing_settings_saved'.tr(),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSavingPricing = false);
+      }
+    }
+  }
+
+  Future<void> _showRepriceConfirmationDialog() async {
+    final rawRate = AppSettingsService.parseNumber(_exchangeRateController.text) ?? AppSettingsService.usdExchangeRate;
+    if (rawRate <= 0) {
+      AppToast.warning(
+        context,
+        message: 'settings.reprice_no_rate_warning'.tr(),
+      );
+      return;
+    }
+
+    final rateStr = rawRate % 1 == 0 ? rawRate.toInt().toString() : rawRate.toString();
+    var selectedMode = PriceRecalculationMode.usdToSyp;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (dialogCtx, setDialogState) {
+            return AlertDialog(
+              backgroundColor: AppColors.surfaceElevated,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF059669).withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.currency_exchange_rounded,
+                      color: Color(0xFF059669),
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'settings.reprice_dialog_title'.tr(),
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                  ),
+                ],
+              ),
+              content: SizedBox(
+                width: 500,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Rate Banner
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF10B981).withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: const Color(0xFF10B981).withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.info_outline_rounded, size: 18, color: Color(0xFF059669)),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'settings.reprice_current_rate'.tr(namedArgs: {'rate': rateStr}),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                  color: Color(0xFF059669),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      Text(
+                        'settings.reprice_dialog_desc'.tr(),
+                        style: const TextStyle(
+                          fontSize: 12.5,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+
+                      // Options
+                      _buildRepriceModeOption(
+                        mode: PriceRecalculationMode.usdToSyp,
+                        currentMode: selectedMode,
+                        title: 'settings.reprice_mode_usd_to_syp'.tr(),
+                        subtitle: 'settings.reprice_mode_usd_to_syp_desc'.tr(),
+                        onSelect: () => setDialogState(() => selectedMode = PriceRecalculationMode.usdToSyp),
+                      ),
+                      const SizedBox(height: 8),
+                      _buildRepriceModeOption(
+                        mode: PriceRecalculationMode.smart,
+                        currentMode: selectedMode,
+                        title: 'settings.reprice_mode_smart'.tr(),
+                        subtitle: 'settings.reprice_mode_smart_desc'.tr(),
+                        onSelect: () => setDialogState(() => selectedMode = PriceRecalculationMode.smart),
+                      ),
+                      const SizedBox(height: 8),
+                      _buildRepriceModeOption(
+                        mode: PriceRecalculationMode.sypToUsd,
+                        currentMode: selectedMode,
+                        title: 'settings.reprice_mode_syp_to_usd'.tr(),
+                        subtitle: 'settings.reprice_mode_syp_to_usd_desc'.tr(),
+                        onSelect: () => setDialogState(() => selectedMode = PriceRecalculationMode.sypToUsd),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(false),
+                  child: Text('common.cancel'.tr()),
+                ),
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.check_rounded, size: 18),
+                  label: Text('settings.reprice_confirm_btn'.tr()),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF059669),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+                  ),
+                  onPressed: () => Navigator.of(ctx).pop(true),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (confirmed == true && mounted) {
+      setState(() => _isRepricing = true);
+      try {
+        final minStock = AppSettingsService.parseNumber(_defaultMinStockController.text) ?? 5.0;
+        await AppSettingsService.saveSettings(
+          exchangeRate: rawRate,
+          defaultMinStock: minStock,
+        );
+
+        final result = await getIt<InventoryRepository>().recalculateAllProductPrices(
+          exchangeRate: rawRate,
+          mode: selectedMode,
+        );
+
+        if (mounted) {
+          if (result.totalProducts == 0) {
+            AppToast.warning(context, message: 'settings.reprice_no_products'.tr());
+          } else {
+            AppToast.success(
+              context,
+              message: 'settings.reprice_success'.tr(namedArgs: {
+                'updated': result.updatedProducts.toString(),
+                'total': result.totalProducts.toString(),
+              }),
+            );
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          AppToast.error(context, message: e.toString());
+        }
+      } finally {
+        if (mounted) {
+          setState(() => _isRepricing = false);
+        }
+      }
+    }
+  }
+
+  Widget _buildRepriceModeOption({
+    required PriceRecalculationMode mode,
+    required PriceRecalculationMode currentMode,
+    required String title,
+    required String subtitle,
+    required VoidCallback onSelect,
+  }) {
+    final isSelected = mode == currentMode;
+    return InkWell(
+      onTap: onSelect,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? const Color(0xFF059669).withValues(alpha: 0.08)
+              : AppColors.surface,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isSelected ? const Color(0xFF059669) : AppColors.border,
+            width: isSelected ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Icon(
+                isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
+                size: 18,
+                color: isSelected ? const Color(0xFF059669) : AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                      color: isSelected ? const Color(0xFF059669) : AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      fontSize: 11.5,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _syncService.pendingCount.removeListener(_onPendingCountChanged);
     _syncService.status.removeListener(_onSyncStatusChanged);
+    _exchangeRateController.dispose();
+    _defaultMinStockController.dispose();
     super.dispose();
   }
 
@@ -403,7 +685,222 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const SizedBox(height: 20),
 
-                // 2. Security & PIN Section
+                // 2. Pricing & Products Section
+                SettingsSection(
+                  title: 'settings.pricing_and_products'.tr(),
+                  subtitle: 'settings.pricing_and_products_desc'.tr(),
+                  icon: Icons.currency_exchange_rounded,
+                  iconColor: const Color(0xFF059669),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            final isNarrow = constraints.maxWidth < 500;
+                            final exchangeField = Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                AppTextField(
+                                  label: 'settings.usd_exchange_rate'.tr(),
+                                  controller: _exchangeRateController,
+                                  hint: 'settings.usd_exchange_rate_hint'.tr(),
+                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                  prefixIcon: const Icon(
+                                    Icons.currency_exchange_rounded,
+                                    size: 18,
+                                    color: Color(0xFF059669),
+                                  ),
+                                  suffixIcon: const Padding(
+                                    padding: EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                                    child: Text(
+                                      '1\$ = ل.س',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF059669),
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  'settings.usd_exchange_rate_note'.tr(),
+                                  style: const TextStyle(
+                                    fontSize: 11.5,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            );
+
+                            final minStockField = Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                AppTextField(
+                                  label: 'settings.default_min_stock'.tr(),
+                                  controller: _defaultMinStockController,
+                                  hint: 'settings.default_min_stock_hint'.tr(),
+                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                  prefixIcon: const Icon(
+                                    Icons.inventory_2_outlined,
+                                    size: 18,
+                                    color: AppColors.primary,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  'settings.default_min_stock_note'.tr(),
+                                  style: const TextStyle(
+                                    fontSize: 11.5,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            );
+
+                            if (isNarrow) {
+                              return Column(
+                                children: [
+                                  exchangeField,
+                                  const SizedBox(height: 14),
+                                  minStockField,
+                                ],
+                              );
+                            }
+
+                            return Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(child: exchangeField),
+                                const SizedBox(width: 16),
+                                Expanded(child: minStockField),
+                              ],
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        Align(
+                          alignment: AlignmentDirectional.centerEnd,
+                          child: PrimaryButton(
+                            label: 'settings.save_pricing_settings'.tr(),
+                            icon: Icons.save_rounded,
+                            isLoading: _isSavingPricing,
+                            onPressed: _isSavingPricing ? null : _savePricingSettings,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        const Divider(color: AppColors.border),
+                        const SizedBox(height: 12),
+
+                        // Reprice Stored Products Card
+                        Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF059669).withValues(alpha: 0.05),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: const Color(0xFF059669).withValues(alpha: 0.25),
+                            ),
+                          ),
+                          child: LayoutBuilder(
+                            builder: (context, boxConstraints) {
+                              final isCompact = boxConstraints.maxWidth < 600;
+                              final infoColumn = Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.auto_awesome_rounded,
+                                        size: 18,
+                                        color: Color(0xFF059669),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        'settings.reprice_products_title'.tr(),
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13.5,
+                                          color: Color(0xFF059669),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'settings.reprice_products_desc'.tr(),
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: AppColors.textSecondary,
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                ],
+                              );
+
+                              final repriceBtn = ElevatedButton.icon(
+                                icon: _isRepricing
+                                    ? const SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white,
+                                        ),
+                                      )
+                                    : const Icon(Icons.currency_exchange_rounded, size: 18),
+                                label: Text('settings.reprice_products_btn'.tr()),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF059669),
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 12,
+                                  ),
+                                ),
+                                onPressed: (_isRepricing || _isSavingPricing)
+                                    ? null
+                                    : _showRepriceConfirmationDialog,
+                              );
+
+                              if (isCompact) {
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
+                                    infoColumn,
+                                    const SizedBox(height: 12),
+                                    repriceBtn,
+                                  ],
+                                );
+                              }
+
+                              return Row(
+                                children: [
+                                  Expanded(child: infoColumn),
+                                  const SizedBox(width: 16),
+                                  repriceBtn,
+                                ],
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // 3. Security & PIN Section
                 SettingsSection(
                   title: 'settings.security'.tr(),
                   subtitle: 'settings.security_desc'.tr(),

@@ -89,6 +89,25 @@ class ProductStockOperation {
   final double runningBalance;
 }
 
+enum PriceRecalculationMode {
+  /// Recalculates SYP prices based on USD prices: SYP = USD * rate
+  usdToSyp,
+  /// Smart: Recalculates SYP for items with USD, and calculates USD for items with only SYP
+  smart,
+  /// Recalculates USD prices based on SYP prices: USD = SYP / rate
+  sypToUsd,
+}
+
+class RecalculatePricesResult {
+  const RecalculatePricesResult({
+    required this.totalProducts,
+    required this.updatedProducts,
+  });
+
+  final int totalProducts;
+  final int updatedProducts;
+}
+
 class InventoryRepository {
 
   InventoryRepository(this._db, this._sync, this._logger);
@@ -343,6 +362,167 @@ class InventoryRepository {
 
     _sync.updatePendingCount();
     _sync.sync();
+  }
+
+  /// Bulk recalculate all product prices based on current exchange rate
+  Future<RecalculatePricesResult> recalculateAllProductPrices({
+    required double exchangeRate,
+    PriceRecalculationMode mode = PriceRecalculationMode.usdToSyp,
+  }) async {
+    if (exchangeRate <= 0) {
+      return const RecalculatePricesResult(totalProducts: 0, updatedProducts: 0);
+    }
+
+    _logger.info(
+      'Bulk repricing started with rate=$exchangeRate, mode=$mode',
+      context: LogContext.inventory,
+    );
+
+    final products = await getProducts();
+    if (products.isEmpty) {
+      return const RecalculatePricesResult(totalProducts: 0, updatedProducts: 0);
+    }
+
+    final now = DateTime.now();
+    int updatedCount = 0;
+
+    await _db.transaction(() async {
+      for (final item in products) {
+        final prod = item.product;
+        final costSyp = item.costPriceSyp;
+        final costUsd = item.costPriceUsd;
+        final retailSypItem = item.retailPriceSypItem;
+        final retailUsdItem = item.retailPriceUsdItem;
+        final wholesaleSypItem = item.wholesalePriceSypItem;
+        final wholesaleUsdItem = item.wholesalePriceUsdItem;
+
+        final hasUsdPrices = (costUsd > 0) ||
+            (retailUsdItem != null && retailUsdItem.priceValue > 0) ||
+            (wholesaleUsdItem != null && wholesaleUsdItem.priceValue > 0);
+
+        final hasSypPrices = (costSyp > 0) ||
+            (retailSypItem != null && retailSypItem.priceValue > 0) ||
+            (wholesaleSypItem != null && wholesaleSypItem.priceValue > 0);
+
+        double newCostSyp = costSyp;
+        double newCostUsd = costUsd;
+        double? newRetailSyp = retailSypItem?.priceValue;
+        double? newRetailUsd = retailUsdItem?.priceValue;
+        double? newWholesaleSyp = wholesaleSypItem?.priceValue;
+        double? newWholesaleUsd = wholesaleUsdItem?.priceValue;
+
+        bool shouldUpdate = false;
+
+        if (mode == PriceRecalculationMode.usdToSyp) {
+          if (hasUsdPrices) {
+            if (costUsd > 0) {
+              newCostSyp = (costUsd * exchangeRate).roundToDouble();
+            }
+            if (retailUsdItem != null && retailUsdItem.priceValue > 0) {
+              newRetailSyp = (retailUsdItem.priceValue * exchangeRate).roundToDouble();
+            }
+            if (wholesaleUsdItem != null && wholesaleUsdItem.priceValue > 0) {
+              newWholesaleSyp = (wholesaleUsdItem.priceValue * exchangeRate).roundToDouble();
+            }
+            shouldUpdate = true;
+          }
+        } else if (mode == PriceRecalculationMode.sypToUsd) {
+          if (hasSypPrices) {
+            if (costSyp > 0) {
+              newCostUsd = double.parse((costSyp / exchangeRate).toStringAsFixed(2));
+            }
+            if (retailSypItem != null && retailSypItem.priceValue > 0) {
+              newRetailUsd = double.parse((retailSypItem.priceValue / exchangeRate).toStringAsFixed(2));
+            }
+            if (wholesaleSypItem != null && wholesaleSypItem.priceValue > 0) {
+              newWholesaleUsd = double.parse((wholesaleSypItem.priceValue / exchangeRate).toStringAsFixed(2));
+            }
+            shouldUpdate = true;
+          }
+        } else if (mode == PriceRecalculationMode.smart) {
+          if (hasUsdPrices) {
+            if (costUsd > 0) {
+              newCostSyp = (costUsd * exchangeRate).roundToDouble();
+            }
+            if (retailUsdItem != null && retailUsdItem.priceValue > 0) {
+              newRetailSyp = (retailUsdItem.priceValue * exchangeRate).roundToDouble();
+            }
+            if (wholesaleUsdItem != null && wholesaleUsdItem.priceValue > 0) {
+              newWholesaleSyp = (wholesaleUsdItem.priceValue * exchangeRate).roundToDouble();
+            }
+            shouldUpdate = true;
+          } else if (hasSypPrices) {
+            if (costSyp > 0) {
+              newCostUsd = double.parse((costSyp / exchangeRate).toStringAsFixed(2));
+            }
+            if (retailSypItem != null && retailSypItem.priceValue > 0) {
+              newRetailUsd = double.parse((retailSypItem.priceValue / exchangeRate).toStringAsFixed(2));
+            }
+            if (wholesaleSypItem != null && wholesaleSypItem.priceValue > 0) {
+              newWholesaleUsd = double.parse((wholesaleSypItem.priceValue / exchangeRate).toStringAsFixed(2));
+            }
+            shouldUpdate = true;
+          }
+        }
+
+        if (shouldUpdate) {
+          updatedCount++;
+          await (_db.update(_db.products)..where((t) => t.id.equals(prod.id))).write(
+            ProductsCompanion(
+              costPrice: Value(newCostSyp),
+              costPriceUsd: Value(newCostUsd),
+              updatedAt: Value(now),
+              syncedAt: const Value(null),
+            ),
+          );
+
+          Future<void> upsertPrice(
+            String label,
+            String curr,
+            double? val,
+            ProductPrice? existing,
+          ) async {
+            if (val == null || val <= 0) return;
+            if (existing != null) {
+              await (_db.update(_db.productPrices)..where((t) => t.id.equals(existing.id))).write(
+                ProductPricesCompanion(
+                  priceValue: Value(val),
+                  currency: Value(curr),
+                ),
+              );
+            } else {
+              await _db.into(_db.productPrices).insert(
+                ProductPrice(
+                  id: _uuid.v4(),
+                  productId: prod.id,
+                  priceLabel: label,
+                  priceValue: val,
+                  currency: curr,
+                ),
+              );
+            }
+          }
+
+          await upsertPrice('retail', 'SYP', newRetailSyp, retailSypItem);
+          await upsertPrice('wholesale', 'SYP', newWholesaleSyp, wholesaleSypItem);
+          await upsertPrice('retail', 'USD', newRetailUsd, retailUsdItem);
+          await upsertPrice('wholesale', 'USD', newWholesaleUsd, wholesaleUsdItem);
+        }
+      }
+    });
+
+    _sync.updatePendingCount();
+    _sync.sync();
+
+    _logger.info(
+      'Bulk repricing completed: $updatedCount/${products.length} products updated',
+      context: LogContext.inventory,
+    );
+
+    return RecalculatePricesResult(
+      totalProducts: products.length,
+      updatedProducts: updatedCount,
+    );
   }
 
   Future<void> deleteProduct(String id) async {

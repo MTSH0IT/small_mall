@@ -19,10 +19,12 @@ class AppTextField extends StatelessWidget {
     this.onTap,
     this.maxLines = 1,
     this.inputFormatters,
+    this.focusNode,
   });
   final String label;
   final String? hint;
   final TextEditingController? controller;
+  final FocusNode? focusNode;
   final TextInputType keyboardType;
   final bool isPassword;
   final Widget? suffixIcon;
@@ -51,6 +53,7 @@ class AppTextField extends StatelessWidget {
         const SizedBox(height: 6),
         TextFormField(
           controller: controller,
+          focusNode: focusNode,
           keyboardType: keyboardType,
           obscureText: isPassword,
           readOnly: readOnly,

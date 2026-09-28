@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:small_mall/core/constants/app_currency.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/di/injection.dart';
+import 'package:small_mall/core/services/app_settings_service.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/core/widgets/app_screen_scaffold.dart';
 import 'package:small_mall/core/widgets/app_searchable_dropdown.dart';
@@ -1018,8 +1019,15 @@ class _ProductsScreenState extends State<ProductsScreen> {
               : existing.product.costPriceUsd.toString())
           : '',
     );
+    final defaultMinStock = AppSettingsService.defaultMinStockAlert;
     final minStockController = TextEditingController(
-      text: existing?.product.minStockAlert.toString() ?? '5',
+      text: existing != null
+          ? (existing.product.minStockAlert % 1 == 0
+              ? existing.product.minStockAlert.toInt().toString()
+              : existing.product.minStockAlert.toString())
+          : (defaultMinStock % 1 == 0
+              ? defaultMinStock.toInt().toString()
+              : defaultMinStock.toString()),
     );
     final initialStockController = TextEditingController(text: '0');
 
@@ -1090,12 +1098,51 @@ class _ProductsScreenState extends State<ProductsScreen> {
           : '',
     );
 
+    final exchangeRate = AppSettingsService.usdExchangeRate;
+    bool autoConvert = exchangeRate > 0;
+
+    void onSypChanged(String val, TextEditingController usdCtrl) {
+      if (!autoConvert || exchangeRate <= 0) return;
+      final text = val.trim();
+      if (text.isEmpty) {
+        if (usdCtrl.text.isNotEmpty) usdCtrl.text = '';
+        return;
+      }
+      final sypVal = AppSettingsService.parseNumber(text);
+      if (sypVal != null) {
+        final convertedUsd = sypVal / exchangeRate;
+        final formatted = AppSettingsService.formatUsd(convertedUsd);
+        if (usdCtrl.text != formatted) {
+          usdCtrl.text = formatted;
+        }
+      }
+    }
+
+    void onUsdChanged(String val, TextEditingController sypCtrl) {
+      if (!autoConvert || exchangeRate <= 0) return;
+      final text = val.trim();
+      if (text.isEmpty) {
+        if (sypCtrl.text.isNotEmpty) sypCtrl.text = '';
+        return;
+      }
+      final usdVal = AppSettingsService.parseNumber(text);
+      if (usdVal != null) {
+        final convertedSyp = usdVal * exchangeRate;
+        final formatted = AppSettingsService.formatSyp(convertedSyp);
+        if (sypCtrl.text != formatted) {
+          sypCtrl.text = formatted;
+        }
+      }
+    }
+
     if (!context.mounted) return;
 
     showDialog(
       context: context,
       builder: (ctx) {
-        return AlertDialog(
+        return StatefulBuilder(
+          builder: (dialogCtx, setDialogState) {
+            return AlertDialog(
           backgroundColor: AppColors.surfaceElevated,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
@@ -1355,6 +1402,100 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         ),
                       ],
                     ),
+                    const SizedBox(height: 8),
+
+                    // Exchange Rate Status Banner & Toggle
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: exchangeRate > 0
+                            ? (autoConvert
+                                ? const Color(0xFF10B981).withValues(alpha: 0.08)
+                                : Colors.amber.withValues(alpha: 0.08))
+                            : AppColors.surface,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: exchangeRate > 0
+                              ? (autoConvert
+                                  ? const Color(0xFF10B981).withValues(alpha: 0.35)
+                                  : Colors.amber.withValues(alpha: 0.35))
+                              : AppColors.border,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            exchangeRate > 0
+                                ? (autoConvert
+                                    ? Icons.sync_alt_rounded
+                                    : Icons.sync_disabled_rounded)
+                                : Icons.info_outline_rounded,
+                            size: 18,
+                            color: exchangeRate > 0
+                                ? (autoConvert
+                                    ? const Color(0xFF059669)
+                                    : Colors.amber.shade800)
+                                : AppColors.textSecondary,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  exchangeRate > 0
+                                      ? (autoConvert
+                                          ? 'inventory.auto_conversion_active'.tr(namedArgs: {
+                                              'rate': (exchangeRate % 1 == 0
+                                                  ? exchangeRate.toInt().toString()
+                                                  : exchangeRate.toString()),
+                                            })
+                                          : 'inventory.auto_conversion_paused'.tr())
+                                      : 'inventory.no_exchange_rate_set'.tr(),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: exchangeRate > 0
+                                        ? (autoConvert
+                                            ? const Color(0xFF059669)
+                                            : Colors.amber.shade900)
+                                        : AppColors.textSecondary,
+                                  ),
+                                ),
+                                if (exchangeRate > 0)
+                                  Text(
+                                    autoConvert
+                                        ? 'inventory.auto_conversion_hint_on'.tr()
+                                        : 'inventory.auto_conversion_hint_off'.tr(),
+                                    style: TextStyle(
+                                      fontSize: 10.5,
+                                      color: autoConvert
+                                          ? const Color(0xFF059669).withValues(alpha: 0.8)
+                                          : Colors.amber.shade800,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                          if (exchangeRate > 0)
+                            Transform.scale(
+                              scale: 0.8,
+                              child: Switch(
+                                value: autoConvert,
+                                activeThumbColor: const Color(0xFF059669),
+                                activeTrackColor: const Color(0xFF10B981).withValues(alpha: 0.35),
+                                inactiveTrackColor: Colors.amber.withValues(alpha: 0.2),
+                                inactiveThumbColor: Colors.amber.shade800,
+                                onChanged: (val) {
+                                  setDialogState(() {
+                                    autoConvert = val;
+                                  });
+                                },
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
                     const SizedBox(height: 12),
 
                     // Section 1: أسعار الليرة السورية
@@ -1388,6 +1529,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                           AppTextField(
                             label: 'inventory.cost_price_syp'.tr(),
                             controller: costSypController,
+                            onChanged: (val) => onSypChanged(val, costUsdController),
                             hint: '0',
                             suffixIcon: Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
@@ -1411,6 +1553,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                 child: AppTextField(
                                   label: 'inventory.retail_price_syp'.tr(),
                                   controller: retailSypController,
+                                  onChanged: (val) => onSypChanged(val, retailUsdController),
                                   hint: '0.0',
                                   suffixIcon: Padding(
                                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
@@ -1433,6 +1576,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                 child: AppTextField(
                                   label: 'inventory.wholesale_price_syp'.tr(),
                                   controller: wholesaleSypController,
+                                  onChanged: (val) => onSypChanged(val, wholesaleUsdController),
                                   hint: '0.0',
                                   suffixIcon: Padding(
                                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
@@ -1489,6 +1633,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                           AppTextField(
                             label: 'inventory.cost_price_usd'.tr(),
                             controller: costUsdController,
+                            onChanged: (val) => onUsdChanged(val, costSypController),
                             hint: '0.00',
                             suffixIcon: const Padding(
                               padding: EdgeInsets.symmetric(horizontal: 10, vertical: 12),
@@ -1512,6 +1657,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                 child: AppTextField(
                                   label: 'inventory.retail_price_usd'.tr(),
                                   controller: retailUsdController,
+                                  onChanged: (val) => onUsdChanged(val, retailSypController),
                                   hint: '0.00',
                                   suffixIcon: const Padding(
                                     padding: EdgeInsets.symmetric(horizontal: 10, vertical: 12),
@@ -1534,6 +1680,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                 child: AppTextField(
                                   label: 'inventory.wholesale_price_usd'.tr(),
                                   controller: wholesaleUsdController,
+                                  onChanged: (val) => onUsdChanged(val, wholesaleSypController),
                                   hint: '0.00',
                                   suffixIcon: const Padding(
                                     padding: EdgeInsets.symmetric(horizontal: 10, vertical: 12),
@@ -1626,13 +1773,13 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   onPressed: () {
                     if (formKey.currentState?.validate() ?? false) {
                       final retailSypVal =
-                          double.tryParse(retailSypController.text) ?? 0.0;
+                          AppSettingsService.parseNumber(retailSypController.text) ?? 0.0;
                       final wholesaleSypVal =
-                          double.tryParse(wholesaleSypController.text) ?? 0.0;
+                          AppSettingsService.parseNumber(wholesaleSypController.text) ?? 0.0;
                       final retailUsdVal =
-                          double.tryParse(retailUsdController.text) ?? 0.0;
+                          AppSettingsService.parseNumber(retailUsdController.text) ?? 0.0;
                       final wholesaleUsdVal =
-                          double.tryParse(wholesaleUsdController.text) ?? 0.0;
+                          AppSettingsService.parseNumber(wholesaleUsdController.text) ?? 0.0;
 
                       if (retailSypVal <= 0 && retailUsdVal <= 0) {
                         AppToast.warning(
@@ -1643,13 +1790,13 @@ class _ProductsScreenState extends State<ProductsScreen> {
                       }
 
                       final costSypVal =
-                          double.tryParse(costSypController.text) ?? 0.0;
+                          AppSettingsService.parseNumber(costSypController.text) ?? 0.0;
                       final costUsdVal =
-                          double.tryParse(costUsdController.text) ?? 0.0;
+                          AppSettingsService.parseNumber(costUsdController.text) ?? 0.0;
                       final minStock =
-                          double.tryParse(minStockController.text) ?? 5.0;
+                          AppSettingsService.parseNumber(minStockController.text) ?? defaultMinStock;
                       final initialStock =
-                          double.tryParse(initialStockController.text) ?? 0.0;
+                          AppSettingsService.parseNumber(initialStockController.text) ?? 0.0;
 
                       final prices = <Map<String, dynamic>>[];
                       if (retailSypVal > 0) {
@@ -1720,6 +1867,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
               ],
             ),
           ],
+        );
+          },
         );
       },
     );
