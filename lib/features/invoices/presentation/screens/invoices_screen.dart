@@ -9,7 +9,6 @@ import 'package:small_mall/core/widgets/app_toast.dart';
 import 'package:small_mall/core/widgets/empty_state_view.dart';
 import 'package:small_mall/core/widgets/loading_indicator.dart';
 import 'package:small_mall/core/widgets/split_pane_layout.dart';
-import 'package:small_mall/features/currency_exchange/presentation/widgets/new_exchange_dialog.dart';
 import 'package:small_mall/features/invoices/data/invoices_repository.dart';
 import 'package:small_mall/features/invoices/presentation/cubit/invoices_cubit.dart';
 import 'package:small_mall/features/invoices/presentation/cubit/invoices_state.dart';
@@ -48,25 +47,6 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
           return AppScreenScaffold(
             title: 'invoices.title'.tr(),
             onRefresh: () => cubit.loadInvoices(),
-            actions: [
-              FilledButton.icon(
-                icon: const Icon(Icons.currency_exchange, size: 16),
-                label: Text('invoices.new_exchange_action'.tr()),
-                style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF0284C7),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                ),
-                onPressed: () async {
-                  final res = await NewExchangeDialog.show(context);
-                  if (res != null) {
-                    cubit.loadInvoices();
-                  }
-                },
-              ),
-              const SizedBox(width: 8),
-            ],
             body: SplitPaneLayout(
               leftFlex: 2,
               rightFlex: 3,

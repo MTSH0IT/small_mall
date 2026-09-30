@@ -164,6 +164,7 @@
     "card": "Card / POS",
     "debt": "Credit / Debt",
     "subtotal": "Subtotal",
+    "final_total": "Final Total",
     "discount_amount": "Discount",
     "net_total": "Net Total Due",
     "checkout": "Complete Checkout",

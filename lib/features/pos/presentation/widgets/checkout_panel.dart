@@ -31,213 +31,6 @@ class CheckoutPanel extends StatelessWidget {
   final void Function(Customer)? onEditCustomerPressed;
   final VoidCallback? onCheckoutPressed;
 
-  Future<void> _showEditTotalDialog({
-    required BuildContext context,
-    required String currencyCode,
-    required double originalSubtotal,
-    required double currentTotal,
-    required bool hasCustomTotal,
-  }) async {
-    final isSyp = currencyCode == AppCurrency.sypCode;
-    final currencySymbol = AppCurrency.getSymbol(currencyCode);
-    final currencyName = AppCurrency.fromCode(currencyCode).nameAr;
-    final controller = TextEditingController(text: currentTotal.toStringAsFixed(2));
-
-    await showDialog(
-      context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(Icons.edit_outlined, color: AppColors.primary, size: 20),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  'تعديل المجموع النهائي ($currencyName)',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'المجموع الأصلي: ${originalSubtotal.toStringAsFixed(2)} $currencySymbol',
-                      style: AppTheme.numericStyle(color: AppColors.textSecondary, fontSize: 13),
-                    ),
-                    if (hasCustomTotal)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.amber.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(color: Colors.amber.shade700, width: 0.8),
-                        ),
-                        child: Text(
-                          'pos.modified_price'.tr(),
-                          style: TextStyle(
-                            color: Colors.amber.shade800,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: controller,
-                autofocus: true,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                style: AppTheme.numericStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                decoration: InputDecoration(
-                  labelText: 'المبلغ النهائي المطلوب',
-                  prefixIcon: const Icon(Icons.calculate_outlined, size: 20),
-                  suffixText: currencySymbol,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                ),
-              ),
-            ],
-          ),
-          actionsAlignment: MainAxisAlignment.spaceBetween,
-          actions: [
-            if (hasCustomTotal)
-              TextButton.icon(
-                style: TextButton.styleFrom(foregroundColor: AppColors.textSecondary),
-                icon: const Icon(Icons.restore_rounded, size: 16),
-                label: const Text('استعادة الأصلي'),
-                onPressed: () {
-                  if (isSyp) {
-                    onCustomTotalChanged?.call(clearSyp: true);
-                  } else {
-                    onCustomTotalChanged?.call(clearUsd: true);
-                  }
-                  Navigator.pop(ctx);
-                },
-              )
-            else
-              const SizedBox.shrink(),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: Text('common.cancel'.tr()),
-                ),
-                const SizedBox(width: 8),
-                FilledButton(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                  onPressed: () {
-                    final val = double.tryParse(controller.text.trim());
-                    if (val != null && val >= 0) {
-                      if (isSyp) {
-                        onCustomTotalChanged?.call(syp: val);
-                      } else {
-                        onCustomTotalChanged?.call(usd: val);
-                      }
-                    }
-                    Navigator.pop(ctx);
-                  },
-                  child: Text('common.save'.tr()),
-                ),
-              ],
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildEditableTotalChip({
-    required BuildContext context,
-    required String currencyCode,
-    required double originalSubtotal,
-    required double currentTotal,
-    required bool hasCustomTotal,
-  }) {
-    final isUsd = currencyCode == AppCurrency.usdCode;
-    final currencySymbol = AppCurrency.getSymbol(currencyCode);
-    final defaultColor = isUsd ? const Color(0xFF059669) : AppColors.primary;
-
-    return InkWell(
-      onTap: () => _showEditTotalDialog(
-        context: context,
-        currencyCode: currencyCode,
-        originalSubtotal: originalSubtotal,
-        currentTotal: currentTotal,
-        hasCustomTotal: hasCustomTotal,
-      ),
-      borderRadius: BorderRadius.circular(6),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: hasCustomTotal
-              ? Colors.amber.withValues(alpha: 0.12)
-              : defaultColor.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(
-            color: hasCustomTotal
-                ? Colors.amber.shade700
-                : defaultColor.withValues(alpha: 0.3),
-            width: 1.0,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (hasCustomTotal) ...[
-              Text(
-                '${originalSubtotal.toStringAsFixed(2)} ',
-                style: AppTheme.numericStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 12,
-                ).copyWith(decoration: TextDecoration.lineThrough),
-              ),
-            ],
-            Text(
-              '${currentTotal.toStringAsFixed(2)} $currencySymbol',
-              style: AppTheme.numericStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: hasCustomTotal ? Colors.amber.shade900 : defaultColor,
-              ),
-            ),
-            const SizedBox(width: 4),
-            Icon(
-              Icons.edit_outlined,
-              size: 14,
-              color: hasCustomTotal ? Colors.amber.shade800 : defaultColor,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -273,128 +66,63 @@ class CheckoutPanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Calculation Summary Box
+          // Calculation Summary Box (Final Total)
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: AppColors.border),
             ),
-            child: Column(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Subtotal
-                if (state.hasMultipleCurrencies)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '${'pos.subtotal'.tr()}:',
-                        style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          if (state.subtotalUsd > 0)
-                            Text(
-                              '${state.subtotalUsd.toStringAsFixed(2)} ${AppCurrency.usdSymbol}',
-                              style: AppTheme.numericStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
-                                color: const Color(0xFF059669),
-                              ),
-                            ),
-                          if (state.subtotalSyp > 0)
-                            Text(
-                              '${state.subtotalSyp.toStringAsFixed(2)} ${AppCurrency.sypSymbol}',
-                              style: AppTheme.numericStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
-                                color: AppColors.primary,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ],
-                  )
-                else
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        '${'pos.subtotal'.tr()}:',
-                        style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
-                      ),
-                      Text(
-                        '${state.cartSubtotal.toStringAsFixed(2)} ${state.cartCurrencySymbol}',
-                        style: AppTheme.numericStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                      ),
-                    ],
+                Text(
+                  '${'pos.final_total'.tr()}:',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                    fontSize: 15,
                   ),
-                const Divider(height: 16, color: AppColors.border),
-
-                // Net Total
+                ),
                 if (state.hasMultipleCurrencies)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Text(
-                          '${'pos.net_total'.tr()}:',
-                          style: theme.textTheme.titleMedium?.copyWith(
+                      if (state.totalUsd > 0)
+                        Text(
+                          '${state.totalUsd.toStringAsFixed(2)} ${AppCurrency.usdSymbol}',
+                          style: AppTheme.numericStyle(
                             fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: const Color(0xFF059669),
+                          ),
+                        ),
+                      if (state.totalUsd > 0 && state.totalSyp > 0)
+                        const SizedBox(height: 4),
+                      if (state.totalSyp > 0)
+                        Text(
+                          '${state.totalSyp.toStringAsFixed(2)} ${AppCurrency.sypSymbol}',
+                          style: AppTheme.numericStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
                             color: AppColors.primary,
                           ),
                         ),
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          if (state.subtotalUsd > 0 || state.hasCustomTotalUsd)
-                            _buildEditableTotalChip(
-                              context: context,
-                              currencyCode: AppCurrency.usdCode,
-                              originalSubtotal: state.subtotalUsd,
-                              currentTotal: state.totalUsd,
-                              hasCustomTotal: state.hasCustomTotalUsd,
-                            ),
-                          if ((state.subtotalUsd > 0 || state.hasCustomTotalUsd) &&
-                              (state.subtotalSyp > 0 || state.hasCustomTotalSyp))
-                            const SizedBox(height: 6),
-                          if (state.subtotalSyp > 0 || state.hasCustomTotalSyp)
-                            _buildEditableTotalChip(
-                              context: context,
-                              currencyCode: AppCurrency.sypCode,
-                              originalSubtotal: state.subtotalSyp,
-                              currentTotal: state.totalSyp,
-                              hasCustomTotal: state.hasCustomTotalSyp,
-                            ),
-                        ],
-                      ),
                     ],
                   )
                 else
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        '${'pos.net_total'.tr()}:',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                      _buildEditableTotalChip(
-                        context: context,
-                        currencyCode: state.cartCurrency,
-                        originalSubtotal: state.cartSubtotal,
-                        currentTotal: state.cartCurrency == AppCurrency.usdCode ? state.totalUsd : state.totalSyp,
-                        hasCustomTotal: state.cartCurrency == AppCurrency.usdCode ? state.hasCustomTotalUsd : state.hasCustomTotalSyp,
-                      ),
-                    ],
+                  Text(
+                    '${state.totalAmount.toStringAsFixed(2)} ${state.cartCurrencySymbol}',
+                    style: AppTheme.numericStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      color: state.cartCurrency == AppCurrency.usdCode
+                          ? const Color(0xFF059669)
+                          : AppColors.primary,
+                    ),
                   ),
               ],
             ),
