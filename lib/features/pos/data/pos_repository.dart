@@ -4,6 +4,7 @@ import 'package:small_mall/core/constants/app_currency.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/logging/app_logger.dart';
 import 'package:small_mall/core/logging/log_context.dart';
+import 'package:small_mall/core/services/app_settings_service.dart';
 import 'package:small_mall/core/sync/sync_service.dart';
 import 'package:uuid/uuid.dart';
 
@@ -74,6 +75,11 @@ class POSRepository {
       // Insert Invoice
       await _db.into(_db.invoices).insert(invoice);
 
+      // Fetch products for all items in the invoice to record their locked cost at sale time
+      final productIds = items.map((i) => i['productId'] as String).toSet();
+      final productsList = await (_db.select(_db.products)..where((t) => t.id.isIn(productIds))).get();
+      final productMap = {for (final p in productsList) p.id: p};
+
       // Insert Invoice Items & Stock Movements
       for (final item in items) {
         final itemId = _uuid.v4();
@@ -83,6 +89,24 @@ class POSRepository {
         final itemDiscount = (item['discount'] as num).toDouble();
         final itemCurrency = (item['currency'] as String?) ?? currency;
 
+        final prod = productMap[prodId];
+        double? itemCost;
+        if (prod != null) {
+          if (itemCurrency == AppCurrency.usdCode) {
+            if (prod.costPriceUsd > 0) {
+              itemCost = prod.costPriceUsd;
+            } else if (prod.costPrice > 0 && AppSettingsService.usdExchangeRate > 0) {
+              itemCost = prod.costPrice / AppSettingsService.usdExchangeRate;
+            }
+          } else {
+            if (prod.costPrice > 0) {
+              itemCost = prod.costPrice;
+            } else if (prod.costPriceUsd > 0 && AppSettingsService.usdExchangeRate > 0) {
+              itemCost = prod.costPriceUsd * AppSettingsService.usdExchangeRate;
+            }
+          }
+        }
+
         final invItem = InvoiceItem(
           id: itemId,
           invoiceId: invoiceId,
@@ -91,6 +115,7 @@ class POSRepository {
           quantity: qty,
           discount: itemDiscount,
           currency: itemCurrency,
+          costPrice: itemCost,
         );
 
         await _db.into(_db.invoiceItems).insert(invItem);
@@ -212,12 +237,16 @@ class POSRepository {
       await _db.into(_db.invoices).insert(returnInvoice);
 
       // Write return items and restore stock
+      final origItems = await (_db.select(_db.invoiceItems)..where((t) => t.invoiceId.equals(originalInvoiceId))).get();
+      final origItemMap = {for (final oi in origItems) oi.productId: oi};
+
       for (final item in itemsToReturn) {
         final itemId = _uuid.v4();
         final prodId = item['productId'] as String;
         final qty = (item['quantity'] as num).toDouble();
         final priceUsed = (item['priceUsed'] as num).toDouble();
         final itemCurrency = (item['currency'] as String?) ?? originalInvoice.currency;
+        final origCost = origItemMap[prodId]?.costPrice;
 
         final invItem = InvoiceItem(
           id: itemId,
@@ -227,6 +256,7 @@ class POSRepository {
           quantity: qty,
           discount: 0.0,
           currency: itemCurrency,
+          costPrice: origCost,
         );
 
         await _db.into(_db.invoiceItems).insert(invItem);
@@ -493,6 +523,11 @@ class POSRepository {
             );
       }
 
+      final oldItemCostMap = {for (final oi in oldItems) oi.productId: oi.costPrice};
+      final updateProdIds = items.map((i) => i['productId'] as String).toSet();
+      final updateProds = await (_db.select(_db.products)..where((t) => t.id.isIn(updateProdIds))).get();
+      final updateProdMap = {for (final p in updateProds) p.id: p};
+
       // 3. Insert new invoice items & new stock movements
       for (final item in items) {
         final itemId = _uuid.v4();
@@ -500,6 +535,27 @@ class POSRepository {
         final priceUsed = (item['priceUsed'] as num).toDouble();
         final qty = (item['quantity'] as num).toDouble();
         final itemDiscount = (item['discount'] as num?)?.toDouble() ?? 0.0;
+        final itemCurrency = (item['currency'] as String?) ?? invoice.currency;
+
+        double? itemCost = (item['costPrice'] as num?)?.toDouble() ?? oldItemCostMap[prodId];
+        if (itemCost == null || itemCost <= 0) {
+          final prod = updateProdMap[prodId];
+          if (prod != null) {
+            if (itemCurrency == AppCurrency.usdCode) {
+              if (prod.costPriceUsd > 0) {
+                itemCost = prod.costPriceUsd;
+              } else if (prod.costPrice > 0 && AppSettingsService.usdExchangeRate > 0) {
+                itemCost = prod.costPrice / AppSettingsService.usdExchangeRate;
+              }
+            } else {
+              if (prod.costPrice > 0) {
+                itemCost = prod.costPrice;
+              } else if (prod.costPriceUsd > 0 && AppSettingsService.usdExchangeRate > 0) {
+                itemCost = prod.costPriceUsd * AppSettingsService.usdExchangeRate;
+              }
+            }
+          }
+        }
 
         final invItem = InvoiceItem(
           id: itemId,
@@ -508,7 +564,8 @@ class POSRepository {
           priceUsed: priceUsed,
           quantity: qty,
           discount: itemDiscount,
-          currency: (item['currency'] as String?) ?? invoice.currency,
+          currency: itemCurrency,
+          costPrice: itemCost,
         );
         await _db.into(_db.invoiceItems).insert(invItem);
 

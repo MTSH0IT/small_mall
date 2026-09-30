@@ -96,6 +96,7 @@ class InvoiceItems extends Table {
   RealColumn get quantity => real()();
   RealColumn get discount => real().withDefault(const Constant(0.0))();
   TextColumn get currency => text().withDefault(const Constant('SYP'))();
+  RealColumn get costPrice => real().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -253,7 +254,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 13;
+  int get schemaVersion => 14;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -354,6 +355,9 @@ class AppDatabase extends _$AppDatabase {
           }
           if (from < 13) {
             await m.createTable(exchangeInvoices);
+          }
+          if (from < 14) {
+            await m.addColumn(invoiceItems, invoiceItems.costPrice);
           }
         },
       );

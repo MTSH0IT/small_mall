@@ -3024,6 +3024,17 @@ class $InvoiceItemsTable extends InvoiceItems
     requiredDuringInsert: false,
     defaultValue: const Constant('SYP'),
   );
+  static const VerificationMeta _costPriceMeta = const VerificationMeta(
+    'costPrice',
+  );
+  @override
+  late final GeneratedColumn<double> costPrice = GeneratedColumn<double>(
+    'cost_price',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -3033,6 +3044,7 @@ class $InvoiceItemsTable extends InvoiceItems
     quantity,
     discount,
     currency,
+    costPrice,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -3095,6 +3107,12 @@ class $InvoiceItemsTable extends InvoiceItems
         currency.isAcceptableOrUnknown(data['currency']!, _currencyMeta),
       );
     }
+    if (data.containsKey('cost_price')) {
+      context.handle(
+        _costPriceMeta,
+        costPrice.isAcceptableOrUnknown(data['cost_price']!, _costPriceMeta),
+      );
+    }
     return context;
   }
 
@@ -3132,6 +3150,10 @@ class $InvoiceItemsTable extends InvoiceItems
         DriftSqlType.string,
         data['${effectivePrefix}currency'],
       )!,
+      costPrice: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}cost_price'],
+      ),
     );
   }
 
@@ -3149,6 +3171,7 @@ class InvoiceItem extends DataClass implements Insertable<InvoiceItem> {
   final double quantity;
   final double discount;
   final String currency;
+  final double? costPrice;
   const InvoiceItem({
     required this.id,
     required this.invoiceId,
@@ -3157,6 +3180,7 @@ class InvoiceItem extends DataClass implements Insertable<InvoiceItem> {
     required this.quantity,
     required this.discount,
     required this.currency,
+    this.costPrice,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -3168,6 +3192,9 @@ class InvoiceItem extends DataClass implements Insertable<InvoiceItem> {
     map['quantity'] = Variable<double>(quantity);
     map['discount'] = Variable<double>(discount);
     map['currency'] = Variable<String>(currency);
+    if (!nullToAbsent || costPrice != null) {
+      map['cost_price'] = Variable<double>(costPrice);
+    }
     return map;
   }
 
@@ -3180,6 +3207,9 @@ class InvoiceItem extends DataClass implements Insertable<InvoiceItem> {
       quantity: Value(quantity),
       discount: Value(discount),
       currency: Value(currency),
+      costPrice: costPrice == null && nullToAbsent
+          ? const Value.absent()
+          : Value(costPrice),
     );
   }
 
@@ -3196,6 +3226,7 @@ class InvoiceItem extends DataClass implements Insertable<InvoiceItem> {
       quantity: serializer.fromJson<double>(json['quantity']),
       discount: serializer.fromJson<double>(json['discount']),
       currency: serializer.fromJson<String>(json['currency']),
+      costPrice: serializer.fromJson<double?>(json['costPrice']),
     );
   }
   @override
@@ -3209,6 +3240,7 @@ class InvoiceItem extends DataClass implements Insertable<InvoiceItem> {
       'quantity': serializer.toJson<double>(quantity),
       'discount': serializer.toJson<double>(discount),
       'currency': serializer.toJson<String>(currency),
+      'costPrice': serializer.toJson<double?>(costPrice),
     };
   }
 
@@ -3220,6 +3252,7 @@ class InvoiceItem extends DataClass implements Insertable<InvoiceItem> {
     double? quantity,
     double? discount,
     String? currency,
+    Value<double?> costPrice = const Value.absent(),
   }) => InvoiceItem(
     id: id ?? this.id,
     invoiceId: invoiceId ?? this.invoiceId,
@@ -3228,6 +3261,7 @@ class InvoiceItem extends DataClass implements Insertable<InvoiceItem> {
     quantity: quantity ?? this.quantity,
     discount: discount ?? this.discount,
     currency: currency ?? this.currency,
+    costPrice: costPrice.present ? costPrice.value : this.costPrice,
   );
   InvoiceItem copyWithCompanion(InvoiceItemsCompanion data) {
     return InvoiceItem(
@@ -3238,6 +3272,7 @@ class InvoiceItem extends DataClass implements Insertable<InvoiceItem> {
       quantity: data.quantity.present ? data.quantity.value : this.quantity,
       discount: data.discount.present ? data.discount.value : this.discount,
       currency: data.currency.present ? data.currency.value : this.currency,
+      costPrice: data.costPrice.present ? data.costPrice.value : this.costPrice,
     );
   }
 
@@ -3250,7 +3285,8 @@ class InvoiceItem extends DataClass implements Insertable<InvoiceItem> {
           ..write('priceUsed: $priceUsed, ')
           ..write('quantity: $quantity, ')
           ..write('discount: $discount, ')
-          ..write('currency: $currency')
+          ..write('currency: $currency, ')
+          ..write('costPrice: $costPrice')
           ..write(')'))
         .toString();
   }
@@ -3264,6 +3300,7 @@ class InvoiceItem extends DataClass implements Insertable<InvoiceItem> {
     quantity,
     discount,
     currency,
+    costPrice,
   );
   @override
   bool operator ==(Object other) =>
@@ -3275,7 +3312,8 @@ class InvoiceItem extends DataClass implements Insertable<InvoiceItem> {
           other.priceUsed == this.priceUsed &&
           other.quantity == this.quantity &&
           other.discount == this.discount &&
-          other.currency == this.currency);
+          other.currency == this.currency &&
+          other.costPrice == this.costPrice);
 }
 
 class InvoiceItemsCompanion extends UpdateCompanion<InvoiceItem> {
@@ -3286,6 +3324,7 @@ class InvoiceItemsCompanion extends UpdateCompanion<InvoiceItem> {
   final Value<double> quantity;
   final Value<double> discount;
   final Value<String> currency;
+  final Value<double?> costPrice;
   final Value<int> rowid;
   const InvoiceItemsCompanion({
     this.id = const Value.absent(),
@@ -3295,6 +3334,7 @@ class InvoiceItemsCompanion extends UpdateCompanion<InvoiceItem> {
     this.quantity = const Value.absent(),
     this.discount = const Value.absent(),
     this.currency = const Value.absent(),
+    this.costPrice = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   InvoiceItemsCompanion.insert({
@@ -3305,6 +3345,7 @@ class InvoiceItemsCompanion extends UpdateCompanion<InvoiceItem> {
     required double quantity,
     this.discount = const Value.absent(),
     this.currency = const Value.absent(),
+    this.costPrice = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        invoiceId = Value(invoiceId),
@@ -3319,6 +3360,7 @@ class InvoiceItemsCompanion extends UpdateCompanion<InvoiceItem> {
     Expression<double>? quantity,
     Expression<double>? discount,
     Expression<String>? currency,
+    Expression<double>? costPrice,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -3329,6 +3371,7 @@ class InvoiceItemsCompanion extends UpdateCompanion<InvoiceItem> {
       if (quantity != null) 'quantity': quantity,
       if (discount != null) 'discount': discount,
       if (currency != null) 'currency': currency,
+      if (costPrice != null) 'cost_price': costPrice,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -3341,6 +3384,7 @@ class InvoiceItemsCompanion extends UpdateCompanion<InvoiceItem> {
     Value<double>? quantity,
     Value<double>? discount,
     Value<String>? currency,
+    Value<double?>? costPrice,
     Value<int>? rowid,
   }) {
     return InvoiceItemsCompanion(
@@ -3351,6 +3395,7 @@ class InvoiceItemsCompanion extends UpdateCompanion<InvoiceItem> {
       quantity: quantity ?? this.quantity,
       discount: discount ?? this.discount,
       currency: currency ?? this.currency,
+      costPrice: costPrice ?? this.costPrice,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -3379,6 +3424,9 @@ class InvoiceItemsCompanion extends UpdateCompanion<InvoiceItem> {
     if (currency.present) {
       map['currency'] = Variable<String>(currency.value);
     }
+    if (costPrice.present) {
+      map['cost_price'] = Variable<double>(costPrice.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -3395,6 +3443,7 @@ class InvoiceItemsCompanion extends UpdateCompanion<InvoiceItem> {
           ..write('quantity: $quantity, ')
           ..write('discount: $discount, ')
           ..write('currency: $currency, ')
+          ..write('costPrice: $costPrice, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -9498,6 +9547,7 @@ typedef $$InvoiceItemsTableCreateCompanionBuilder =
       required double quantity,
       Value<double> discount,
       Value<String> currency,
+      Value<double?> costPrice,
       Value<int> rowid,
     });
 typedef $$InvoiceItemsTableUpdateCompanionBuilder =
@@ -9509,6 +9559,7 @@ typedef $$InvoiceItemsTableUpdateCompanionBuilder =
       Value<double> quantity,
       Value<double> discount,
       Value<String> currency,
+      Value<double?> costPrice,
       Value<int> rowid,
     });
 
@@ -9553,6 +9604,11 @@ class $$InvoiceItemsTableFilterComposer
 
   ColumnFilters<String> get currency => $composableBuilder(
     column: $table.currency,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get costPrice => $composableBuilder(
+    column: $table.costPrice,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -9600,6 +9656,11 @@ class $$InvoiceItemsTableOrderingComposer
     column: $table.currency,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<double> get costPrice => $composableBuilder(
+    column: $table.costPrice,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$InvoiceItemsTableAnnotationComposer
@@ -9631,6 +9692,9 @@ class $$InvoiceItemsTableAnnotationComposer
 
   GeneratedColumn<String> get currency =>
       $composableBuilder(column: $table.currency, builder: (column) => column);
+
+  GeneratedColumn<double> get costPrice =>
+      $composableBuilder(column: $table.costPrice, builder: (column) => column);
 }
 
 class $$InvoiceItemsTableTableManager
@@ -9671,6 +9735,7 @@ class $$InvoiceItemsTableTableManager
                 Value<double> quantity = const Value.absent(),
                 Value<double> discount = const Value.absent(),
                 Value<String> currency = const Value.absent(),
+                Value<double?> costPrice = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => InvoiceItemsCompanion(
                 id: id,
@@ -9680,6 +9745,7 @@ class $$InvoiceItemsTableTableManager
                 quantity: quantity,
                 discount: discount,
                 currency: currency,
+                costPrice: costPrice,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -9691,6 +9757,7 @@ class $$InvoiceItemsTableTableManager
                 required double quantity,
                 Value<double> discount = const Value.absent(),
                 Value<String> currency = const Value.absent(),
+                Value<double?> costPrice = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => InvoiceItemsCompanion.insert(
                 id: id,
@@ -9700,6 +9767,7 @@ class $$InvoiceItemsTableTableManager
                 quantity: quantity,
                 discount: discount,
                 currency: currency,
+                costPrice: costPrice,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

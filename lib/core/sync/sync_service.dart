@@ -36,16 +36,18 @@ class SyncService {
     // Fallback: On Windows Desktop, connectivity_plus often reports ConnectivityResult.none
     // even when active internet is reachable (e.g. mobile hotspots, private LANs).
     try {
-      final addresses = await InternetAddress.lookup('xkhmfkrdwuupfqrecfzj.supabase.co')
-          .timeout(const Duration(seconds: 3));
+      final addresses = await InternetAddress.lookup(
+        'xkhmfkrdwuupfqrecfzj.supabase.co',
+      ).timeout(const Duration(seconds: 3));
       if (addresses.isNotEmpty && addresses[0].rawAddress.isNotEmpty) {
         return true;
       }
     } catch (_) {}
 
     try {
-      final fallback = await InternetAddress.lookup('1.1.1.1')
-          .timeout(const Duration(seconds: 2));
+      final fallback = await InternetAddress.lookup(
+        '1.1.1.1',
+      ).timeout(const Duration(seconds: 2));
       return fallback.isNotEmpty && fallback[0].rawAddress.isNotEmpty;
     } catch (_) {
       return false;
@@ -210,9 +212,15 @@ class SyncService {
         for (final d in deletions) {
           try {
             await client.from(d.targetTable).delete().eq('id', d.recordId);
-            await (_db.delete(_db.deletedRecords)..where((t) => t.id.equals(d.id))).go();
+            await (_db.delete(
+              _db.deletedRecords,
+            )..where((t) => t.id.equals(d.id))).go();
           } catch (e) {
-            _logger.error('Failed to sync deletion: ${d.targetTable}/${d.recordId}', error: e, context: LogContext.syncQueue);
+            _logger.error(
+              'Failed to sync deletion: ${d.targetTable}/${d.recordId}',
+              error: e,
+              context: LogContext.syncQueue,
+            );
             hasErrors = true;
           }
         }
@@ -222,13 +230,19 @@ class SyncService {
 
       // 2. Sync Categories
       try {
-        final unsynced = await (_db.select(_db.categories)..where((t) => t.syncedAt.isNull())).get();
+        final unsynced = await (_db.select(
+          _db.categories,
+        )..where((t) => t.syncedAt.isNull())).get();
         if (unsynced.isNotEmpty) {
-          final payload = unsynced.map((c) => {
-            'id': c.id,
-            'name': c.name,
-            'serial_number': c.serialNumber,
-          }).toList();
+          final payload = unsynced
+              .map(
+                (c) => {
+                  'id': c.id,
+                  'name': c.name,
+                  'serial_number': c.serialNumber,
+                },
+              )
+              .toList();
           await client.from('categories').upsert(payload);
           final now = DateTime.now();
           final ids = unsynced.map((c) => c.id).toList();
@@ -236,40 +250,60 @@ class SyncService {
               .write(CategoriesCompanion(syncedAt: Value(now)));
         }
       } catch (e) {
-        _logger.error('Failed to sync categories', error: e, context: LogContext.syncQueue);
+        _logger.error(
+          'Failed to sync categories',
+          error: e,
+          context: LogContext.syncQueue,
+        );
         hasErrors = true;
       }
 
       // 3. Sync Products & Product Prices
       try {
-        final unsynced = await (_db.select(_db.products)..where((t) => t.syncedAt.isNull())).get();
+        final unsynced = await (_db.select(
+          _db.products,
+        )..where((t) => t.syncedAt.isNull())).get();
         if (unsynced.isNotEmpty) {
           final prodIds = unsynced.map((p) => p.id).toList();
-          final payload = unsynced.map((p) => {
-            'id': p.id,
-            'serial_number': p.serialNumber,
-            'code': p.code,
-            'name': p.name,
-            'category_id': p.categoryId,
-            'cost_price': p.costPrice,
-            'cost_price_usd': p.costPriceUsd,
-            'is_active': p.isActive,
-            'min_stock_alert': p.minStockAlert,
-            'currency': p.currency,
-            'created_at': p.createdAt.toIso8601String(),
-            'updated_at': p.updatedAt.toIso8601String(),
-          }).toList();
+          final payload = unsynced
+              .map(
+                (p) => {
+                  'id': p.id,
+                  'serial_number': p.serialNumber,
+                  'code': p.code,
+                  'name': p.name,
+                  'category_id': p.categoryId,
+                  'cost_price': p.costPrice,
+                  'cost_price_usd': p.costPriceUsd,
+                  'is_active': p.isActive,
+                  'min_stock_alert': p.minStockAlert,
+                  'currency': p.currency,
+                  'created_at': p.createdAt.toIso8601String(),
+                  'updated_at': p.updatedAt.toIso8601String(),
+                },
+              )
+              .toList();
           await client.from('products').upsert(payload);
 
-          final prices = await (_db.select(_db.productPrices)..where((t) => t.productId.isIn(prodIds))).get();
+          final prices = await (_db.select(
+            _db.productPrices,
+          )..where((t) => t.productId.isIn(prodIds))).get();
           if (prices.isNotEmpty) {
-            await client.from('product_prices').upsert(prices.map((pr) => {
-              'id': pr.id,
-              'product_id': pr.productId,
-              'price_label': pr.priceLabel,
-              'price_value': pr.priceValue,
-              'currency': pr.currency,
-            }).toList());
+            await client
+                .from('product_prices')
+                .upsert(
+                  prices
+                      .map(
+                        (pr) => {
+                          'id': pr.id,
+                          'product_id': pr.productId,
+                          'price_label': pr.priceLabel,
+                          'price_value': pr.priceValue,
+                          'currency': pr.currency,
+                        },
+                      )
+                      .toList(),
+                );
           }
 
           final now = DateTime.now();
@@ -277,82 +311,125 @@ class SyncService {
               .write(ProductsCompanion(syncedAt: Value(now)));
         }
       } catch (e) {
-        _logger.error('Failed to sync products', error: e, context: LogContext.syncQueue);
+        _logger.error(
+          'Failed to sync products',
+          error: e,
+          context: LogContext.syncQueue,
+        );
         hasErrors = true;
       }
 
       // 4. Sync Customers
       try {
-        final unsynced = await (_db.select(_db.customers)..where((t) => t.syncedAt.isNull())).get();
+        final unsynced = await (_db.select(
+          _db.customers,
+        )..where((t) => t.syncedAt.isNull())).get();
         if (unsynced.isNotEmpty) {
-          final payload = unsynced.map((c) => {
-            'id': c.id,
-            'name': c.name,
-            'phone': c.phone,
-            'notes': c.notes,
-            'created_at': c.createdAt.toIso8601String(),
-          }).toList();
+          final payload = unsynced
+              .map(
+                (c) => {
+                  'id': c.id,
+                  'name': c.name,
+                  'phone': c.phone,
+                  'notes': c.notes,
+                  'created_at': c.createdAt.toIso8601String(),
+                },
+              )
+              .toList();
           await client.from('customers').upsert(payload);
           final now = DateTime.now();
           final ids = unsynced.map((c) => c.id).toList();
-          await (_db.update(_db.customers)..where((t) => t.id.isIn(ids)))
-              .write(CustomersCompanion(syncedAt: Value(now)));
+          await (_db.update(_db.customers)..where((t) => t.id.isIn(ids))).write(
+            CustomersCompanion(syncedAt: Value(now)),
+          );
         }
       } catch (e) {
-        _logger.error('Failed to sync customers', error: e, context: LogContext.syncQueue);
+        _logger.error(
+          'Failed to sync customers',
+          error: e,
+          context: LogContext.syncQueue,
+        );
         hasErrors = true;
       }
 
       // 5. Sync Suppliers
       try {
-        final unsynced = await (_db.select(_db.suppliers)..where((t) => t.syncedAt.isNull())).get();
+        final unsynced = await (_db.select(
+          _db.suppliers,
+        )..where((t) => t.syncedAt.isNull())).get();
         if (unsynced.isNotEmpty) {
-          final payload = unsynced.map((s) => {
-            'id': s.id,
-            'name': s.name,
-            'phone': s.phone,
-            'notes': s.notes,
-          }).toList();
+          final payload = unsynced
+              .map(
+                (s) => {
+                  'id': s.id,
+                  'name': s.name,
+                  'phone': s.phone,
+                  'notes': s.notes,
+                },
+              )
+              .toList();
           await client.from('suppliers').upsert(payload);
           final now = DateTime.now();
           final ids = unsynced.map((s) => s.id).toList();
-          await (_db.update(_db.suppliers)..where((t) => t.id.isIn(ids)))
-              .write(SuppliersCompanion(syncedAt: Value(now)));
+          await (_db.update(_db.suppliers)..where((t) => t.id.isIn(ids))).write(
+            SuppliersCompanion(syncedAt: Value(now)),
+          );
         }
       } catch (e) {
-        _logger.error('Failed to sync suppliers', error: e, context: LogContext.syncQueue);
+        _logger.error(
+          'Failed to sync suppliers',
+          error: e,
+          context: LogContext.syncQueue,
+        );
         hasErrors = true;
       }
 
       // 6. Sync Invoices & Invoice Items
       try {
-        final unsynced = await (_db.select(_db.invoices)..where((t) => t.syncedAt.isNull())).get();
+        final unsynced = await (_db.select(
+          _db.invoices,
+        )..where((t) => t.syncedAt.isNull())).get();
         if (unsynced.isNotEmpty) {
           final invIds = unsynced.map((i) => i.id).toList();
-          final payload = unsynced.map((i) => {
-            'id': i.id,
-            'serial_number': i.serialNumber,
-            'type': i.type,
-            'customer_id': i.customerId,
-            'total_amount': i.totalAmount,
-            'discount': i.discount,
-            'payment_type': i.paymentType,
-            'currency': i.currency,
-            'created_at': i.createdAt.toIso8601String(),
-          }).toList();
+          final payload = unsynced
+              .map(
+                (i) => {
+                  'id': i.id,
+                  'serial_number': i.serialNumber,
+                  'type': i.type,
+                  'customer_id': i.customerId,
+                  'total_amount': i.totalAmount,
+                  'discount': i.discount,
+                  'payment_type': i.paymentType,
+                  'currency': i.currency,
+                  'created_at': i.createdAt.toIso8601String(),
+                },
+              )
+              .toList();
           await client.from('invoices').upsert(payload);
 
-          final items = await (_db.select(_db.invoiceItems)..where((t) => t.invoiceId.isIn(invIds))).get();
+          final items = await (_db.select(
+            _db.invoiceItems,
+          )..where((t) => t.invoiceId.isIn(invIds))).get();
           if (items.isNotEmpty) {
-            await client.from('invoice_items').upsert(items.map((it) => {
-              'id': it.id,
-              'invoice_id': it.invoiceId,
-              'product_id': it.productId,
-              'price_used': it.priceUsed,
-              'quantity': it.quantity,
-              'discount': it.discount,
-              'currency': it.currency,
-            }).toList());
+            await client
+                .from('invoice_items')
+                .upsert(
+                  items
+                      .map(
+                        (it) => {
+                          'id': it.id,
+                          'invoice_id': it.invoiceId,
+                          'product_id': it.productId,
+                          'price_used': it.priceUsed,
+                          'quantity': it.quantity,
+                          'discount': it.discount,
+                          'currency': it.currency,
+                          'cost_price': it.costPrice,
+                        },
+                      )
+                      .toList(),
+                );
           }
 
           final now = DateTime.now();
@@ -360,57 +437,88 @@ class SyncService {
               .write(InvoicesCompanion(syncedAt: Value(now)));
         }
       } catch (e) {
-        _logger.error('Failed to sync invoices', error: e, context: LogContext.syncQueue);
+        _logger.error(
+          'Failed to sync invoices',
+          error: e,
+          context: LogContext.syncQueue,
+        );
         hasErrors = true;
       }
 
       // 7. Sync Purchase Invoices & Items
       try {
-        final unsynced = await (_db.select(_db.purchaseInvoices)..where((t) => t.syncedAt.isNull())).get();
+        final unsynced = await (_db.select(
+          _db.purchaseInvoices,
+        )..where((t) => t.syncedAt.isNull())).get();
         if (unsynced.isNotEmpty) {
           final purIds = unsynced.map((p) => p.id).toList();
-          final payload = unsynced.map((p) => {
-            'id': p.id,
-            'supplier_id': p.supplierId,
-            'total_amount': p.totalAmount,
-            'currency': p.currency,
-            'created_at': p.createdAt.toIso8601String(),
-          }).toList();
+          final payload = unsynced
+              .map(
+                (p) => {
+                  'id': p.id,
+                  'supplier_id': p.supplierId,
+                  'total_amount': p.totalAmount,
+                  'currency': p.currency,
+                  'created_at': p.createdAt.toIso8601String(),
+                },
+              )
+              .toList();
           await client.from('purchase_invoices').upsert(payload);
 
-          final items = await (_db.select(_db.purchaseItems)..where((t) => t.purchaseInvoiceId.isIn(purIds))).get();
+          final items = await (_db.select(
+            _db.purchaseItems,
+          )..where((t) => t.purchaseInvoiceId.isIn(purIds))).get();
           if (items.isNotEmpty) {
-            await client.from('purchase_items').upsert(items.map((pi) => {
-              'id': pi.id,
-              'purchase_invoice_id': pi.purchaseInvoiceId,
-              'product_id': pi.productId,
-              'quantity': pi.quantity,
-              'unit_cost': pi.unitCost,
-              'currency': pi.currency,
-            }).toList());
+            await client
+                .from('purchase_items')
+                .upsert(
+                  items
+                      .map(
+                        (pi) => {
+                          'id': pi.id,
+                          'purchase_invoice_id': pi.purchaseInvoiceId,
+                          'product_id': pi.productId,
+                          'quantity': pi.quantity,
+                          'unit_cost': pi.unitCost,
+                          'currency': pi.currency,
+                        },
+                      )
+                      .toList(),
+                );
           }
 
           final now = DateTime.now();
-          await (_db.update(_db.purchaseInvoices)..where((t) => t.id.isIn(purIds)))
+          await (_db.update(_db.purchaseInvoices)
+                ..where((t) => t.id.isIn(purIds)))
               .write(PurchaseInvoicesCompanion(syncedAt: Value(now)));
         }
       } catch (e) {
-        _logger.error('Failed to sync purchase invoices', error: e, context: LogContext.syncQueue);
+        _logger.error(
+          'Failed to sync purchase invoices',
+          error: e,
+          context: LogContext.syncQueue,
+        );
         hasErrors = true;
       }
 
       // 8. Sync Stock Movements
       try {
-        final unsynced = await (_db.select(_db.stockMovements)..where((t) => t.syncedAt.isNull())).get();
+        final unsynced = await (_db.select(
+          _db.stockMovements,
+        )..where((t) => t.syncedAt.isNull())).get();
         if (unsynced.isNotEmpty) {
-          final payload = unsynced.map((m) => {
-            'id': m.id,
-            'product_id': m.productId,
-            'type': m.type,
-            'quantity': m.quantity,
-            'created_at': m.createdAt.toIso8601String(),
-            'reference_id': m.referenceId,
-          }).toList();
+          final payload = unsynced
+              .map(
+                (m) => {
+                  'id': m.id,
+                  'product_id': m.productId,
+                  'type': m.type,
+                  'quantity': m.quantity,
+                  'created_at': m.createdAt.toIso8601String(),
+                  'reference_id': m.referenceId,
+                },
+              )
+              .toList();
           await client.from('stock_movements').upsert(payload);
 
           final now = DateTime.now();
@@ -419,47 +527,68 @@ class SyncService {
               .write(StockMovementsCompanion(syncedAt: Value(now)));
         }
       } catch (e) {
-        _logger.error('Failed to sync stock movements', error: e, context: LogContext.syncQueue);
+        _logger.error(
+          'Failed to sync stock movements',
+          error: e,
+          context: LogContext.syncQueue,
+        );
         hasErrors = true;
       }
 
       // 9. Sync Debts
       try {
-        final unsynced = await (_db.select(_db.debts)..where((t) => t.syncedAt.isNull())).get();
+        final unsynced = await (_db.select(
+          _db.debts,
+        )..where((t) => t.syncedAt.isNull())).get();
         if (unsynced.isNotEmpty) {
-          final payload = unsynced.map((d) => {
-            'id': d.id,
-            'customer_id': d.customerId,
-            'invoice_id': d.invoiceId,
-            'amount': d.amount,
-            'remaining_amount': d.remainingAmount,
-            'status': d.status,
-            'currency': d.currency,
-            'created_at': d.createdAt.toIso8601String(),
-          }).toList();
+          final payload = unsynced
+              .map(
+                (d) => {
+                  'id': d.id,
+                  'customer_id': d.customerId,
+                  'invoice_id': d.invoiceId,
+                  'amount': d.amount,
+                  'remaining_amount': d.remainingAmount,
+                  'status': d.status,
+                  'currency': d.currency,
+                  'created_at': d.createdAt.toIso8601String(),
+                },
+              )
+              .toList();
           await client.from('debts').upsert(payload);
 
           final now = DateTime.now();
           final ids = unsynced.map((d) => d.id).toList();
-          await (_db.update(_db.debts)..where((t) => t.id.isIn(ids)))
-              .write(DebtsCompanion(syncedAt: Value(now)));
+          await (_db.update(_db.debts)..where((t) => t.id.isIn(ids))).write(
+            DebtsCompanion(syncedAt: Value(now)),
+          );
         }
       } catch (e) {
-        _logger.error('Failed to sync debts', error: e, context: LogContext.syncQueue);
+        _logger.error(
+          'Failed to sync debts',
+          error: e,
+          context: LogContext.syncQueue,
+        );
         hasErrors = true;
       }
 
       // 10. Sync Debt Payments
       try {
-        final unsynced = await (_db.select(_db.debtPayments)..where((t) => t.syncedAt.isNull())).get();
+        final unsynced = await (_db.select(
+          _db.debtPayments,
+        )..where((t) => t.syncedAt.isNull())).get();
         if (unsynced.isNotEmpty) {
-          final payload = unsynced.map((p) => {
-            'id': p.id,
-            'debt_id': p.debtId,
-            'amount_paid': p.amountPaid,
-            'currency': p.currency,
-            'paid_at': p.paidAt.toIso8601String(),
-          }).toList();
+          final payload = unsynced
+              .map(
+                (p) => {
+                  'id': p.id,
+                  'debt_id': p.debtId,
+                  'amount_paid': p.amountPaid,
+                  'currency': p.currency,
+                  'paid_at': p.paidAt.toIso8601String(),
+                },
+              )
+              .toList();
           await client.from('debt_payments').upsert(payload);
 
           final now = DateTime.now();
@@ -468,74 +597,106 @@ class SyncService {
               .write(DebtPaymentsCompanion(syncedAt: Value(now)));
         }
       } catch (e) {
-        _logger.error('Failed to sync debt payments', error: e, context: LogContext.syncQueue);
+        _logger.error(
+          'Failed to sync debt payments',
+          error: e,
+          context: LogContext.syncQueue,
+        );
         hasErrors = true;
       }
 
       // 11. Sync Expense Categories
       try {
-        final unsynced = await (_db.select(_db.expenseCategories)..where((t) => t.syncedAt.isNull())).get();
+        final unsynced = await (_db.select(
+          _db.expenseCategories,
+        )..where((t) => t.syncedAt.isNull())).get();
         if (unsynced.isNotEmpty) {
-          final payload = unsynced.map((c) => {
-            'id': c.id,
-            'name': c.name,
-            'description': c.description,
-            'parent_id': c.parentId,
-            'created_at': c.createdAt.toIso8601String(),
-          }).toList();
+          final payload = unsynced
+              .map(
+                (c) => {
+                  'id': c.id,
+                  'name': c.name,
+                  'description': c.description,
+                  'parent_id': c.parentId,
+                  'created_at': c.createdAt.toIso8601String(),
+                },
+              )
+              .toList();
           await client.from('expense_categories').upsert(payload);
 
           final now = DateTime.now();
           final ids = unsynced.map((c) => c.id).toList();
-          await (_db.update(_db.expenseCategories)..where((t) => t.id.isIn(ids)))
+          await (_db.update(_db.expenseCategories)
+                ..where((t) => t.id.isIn(ids)))
               .write(ExpenseCategoriesCompanion(syncedAt: Value(now)));
         }
       } catch (e) {
-        _logger.error('Failed to sync expense categories', error: e, context: LogContext.syncQueue);
+        _logger.error(
+          'Failed to sync expense categories',
+          error: e,
+          context: LogContext.syncQueue,
+        );
         hasErrors = true;
       }
 
       // 12. Sync Expenses
       try {
-        final unsynced = await (_db.select(_db.expenses)..where((t) => t.syncedAt.isNull())).get();
+        final unsynced = await (_db.select(
+          _db.expenses,
+        )..where((t) => t.syncedAt.isNull())).get();
         if (unsynced.isNotEmpty) {
-          final payload = unsynced.map((e) => {
-            'id': e.id,
-            'category_id': e.categoryId,
-            'subcategory_id': e.subcategoryId,
-            'amount': e.amount,
-            'notes': e.notes,
-            'currency': e.currency,
-            'created_at': e.createdAt.toIso8601String(),
-          }).toList();
+          final payload = unsynced
+              .map(
+                (e) => {
+                  'id': e.id,
+                  'category_id': e.categoryId,
+                  'subcategory_id': e.subcategoryId,
+                  'amount': e.amount,
+                  'notes': e.notes,
+                  'currency': e.currency,
+                  'created_at': e.createdAt.toIso8601String(),
+                },
+              )
+              .toList();
           await client.from('expenses').upsert(payload);
 
           final now = DateTime.now();
           final ids = unsynced.map((e) => e.id).toList();
-          await (_db.update(_db.expenses)..where((t) => t.id.isIn(ids)))
-              .write(ExpensesCompanion(syncedAt: Value(now)));
+          await (_db.update(_db.expenses)..where((t) => t.id.isIn(ids))).write(
+            ExpensesCompanion(syncedAt: Value(now)),
+          );
         }
       } catch (e) {
-        _logger.error('Failed to sync expenses', error: e, context: LogContext.syncQueue);
+        _logger.error(
+          'Failed to sync expenses',
+          error: e,
+          context: LogContext.syncQueue,
+        );
         hasErrors = true;
       }
 
       // 13. Sync Exchange Invoices
       try {
-        final unsynced = await (_db.select(_db.exchangeInvoices)..where((t) => t.syncedAt.isNull())).get();
+        final unsynced = await (_db.select(
+          _db.exchangeInvoices,
+        )..where((t) => t.syncedAt.isNull())).get();
         if (unsynced.isNotEmpty) {
-          final payload = unsynced.map((ex) => {
-            'id': ex.id,
-            'serial_number': ex.serialNumber,
-            'action_type': ex.actionType,
-            'from_currency': ex.fromCurrency,
-            'from_amount': ex.fromAmount,
-            'to_currency': ex.toCurrency,
-            'to_amount': ex.toAmount,
-            'exchange_rate': ex.exchangeRate,
-            'notes': ex.notes,
-            'created_at': ex.createdAt.toIso8601String(),
-          }).toList();
+          final payload = unsynced
+              .map(
+                (ex) => {
+                  'id': ex.id,
+                  'serial_number': ex.serialNumber,
+                  'action_type': ex.actionType,
+                  'from_currency': ex.fromCurrency,
+                  'from_amount': ex.fromAmount,
+                  'to_currency': ex.toCurrency,
+                  'to_amount': ex.toAmount,
+                  'exchange_rate': ex.exchangeRate,
+                  'notes': ex.notes,
+                  'created_at': ex.createdAt.toIso8601String(),
+                },
+              )
+              .toList();
           await client.from('exchange_invoices').upsert(payload);
 
           final now = DateTime.now();
@@ -544,16 +705,26 @@ class SyncService {
               .write(ExchangeInvoicesCompanion(syncedAt: Value(now)));
         }
       } catch (e) {
-        _logger.error('Failed to sync exchange invoices', error: e, context: LogContext.syncQueue);
+        _logger.error(
+          'Failed to sync exchange invoices',
+          error: e,
+          context: LogContext.syncQueue,
+        );
         hasErrors = true;
       }
 
       await updatePendingCount();
       status.value = hasErrors ? SyncStatus.error : SyncStatus.success;
       if (hasErrors) {
-        _logger.warning('Sync completed with errors', context: LogContext.syncQueue);
+        _logger.warning(
+          'Sync completed with errors',
+          context: LogContext.syncQueue,
+        );
       } else {
-        _logger.info('Sync completed successfully', context: LogContext.syncQueue);
+        _logger.info(
+          'Sync completed successfully',
+          context: LogContext.syncQueue,
+        );
       }
     } catch (e) {
       _logger.error('Sync failed', error: e, context: LogContext.syncQueue);
@@ -653,7 +824,9 @@ class SyncService {
         // Insert categories (marked synced)
         for (final row in serverData['categories']!) {
           final json = row as Map<String, dynamic>;
-          await _db.into(_db.categories).insert(
+          await _db
+              .into(_db.categories)
+              .insert(
                 CategoriesCompanion.insert(
                   id: json['id'] as String,
                   name: json['name'] as String,
@@ -666,7 +839,9 @@ class SyncService {
         // Insert suppliers (marked synced)
         for (final row in serverData['suppliers']!) {
           final json = row as Map<String, dynamic>;
-          await _db.into(_db.suppliers).insert(
+          await _db
+              .into(_db.suppliers)
+              .insert(
                 SuppliersCompanion.insert(
                   id: json['id'] as String,
                   name: json['name'] as String,
@@ -680,7 +855,9 @@ class SyncService {
         // Insert customers (marked synced)
         for (final row in serverData['customers']!) {
           final json = row as Map<String, dynamic>;
-          await _db.into(_db.customers).insert(
+          await _db
+              .into(_db.customers)
+              .insert(
                 CustomersCompanion.insert(
                   id: json['id'] as String,
                   name: json['name'] as String,
@@ -695,7 +872,9 @@ class SyncService {
         // Insert products (marked synced)
         for (final row in serverData['products']!) {
           final json = row as Map<String, dynamic>;
-          await _db.into(_db.products).insert(
+          await _db
+              .into(_db.products)
+              .insert(
                 ProductsCompanion.insert(
                   id: json['id'] as String,
                   serialNumber: Value(json['serial_number'] as int?),
@@ -703,7 +882,9 @@ class SyncService {
                   name: json['name'] as String,
                   categoryId: Value(json['category_id'] as String?),
                   costPrice: Value((json['cost_price'] as num).toDouble()),
-                  costPriceUsd: Value((json['cost_price_usd'] as num?)?.toDouble() ?? 0.0),
+                  costPriceUsd: Value(
+                    (json['cost_price_usd'] as num?)?.toDouble() ?? 0.0,
+                  ),
                   isActive: Value(json['is_active'] as bool? ?? true),
                   minStockAlert: Value(
                     (json['min_stock_alert'] as num?)?.toDouble() ?? 0,
@@ -721,7 +902,9 @@ class SyncService {
         // Insert product_prices
         for (final row in serverData['product_prices']!) {
           final json = row as Map<String, dynamic>;
-          await _db.into(_db.productPrices).insert(
+          await _db
+              .into(_db.productPrices)
+              .insert(
                 ProductPricesCompanion.insert(
                   id: json['id'] as String,
                   productId: json['product_id'] as String,
@@ -735,7 +918,9 @@ class SyncService {
         // Insert stock_movements (marked synced)
         for (final row in serverData['stock_movements']!) {
           final json = row as Map<String, dynamic>;
-          await _db.into(_db.stockMovements).insert(
+          await _db
+              .into(_db.stockMovements)
+              .insert(
                 StockMovementsCompanion.insert(
                   id: json['id'] as String,
                   productId: json['product_id'] as String,
@@ -751,7 +936,9 @@ class SyncService {
         // Insert invoices (marked synced)
         for (final row in serverData['invoices']!) {
           final json = row as Map<String, dynamic>;
-          await _db.into(_db.invoices).insert(
+          await _db
+              .into(_db.invoices)
+              .insert(
                 InvoicesCompanion.insert(
                   id: json['id'] as String,
                   serialNumber: Value(json['serial_number'] as int?),
@@ -770,7 +957,9 @@ class SyncService {
         // Insert invoice_items
         for (final row in serverData['invoice_items']!) {
           final json = row as Map<String, dynamic>;
-          await _db.into(_db.invoiceItems).insert(
+          await _db
+              .into(_db.invoiceItems)
+              .insert(
                 InvoiceItemsCompanion.insert(
                   id: json['id'] as String,
                   invoiceId: json['invoice_id'] as String,
@@ -779,6 +968,7 @@ class SyncService {
                   quantity: (json['quantity'] as num).toDouble(),
                   discount: Value((json['discount'] as num?)?.toDouble() ?? 0),
                   currency: Value(json['currency'] as String? ?? 'SYP'),
+                  costPrice: Value((json['cost_price'] as num?)?.toDouble()),
                 ),
               );
         }
@@ -786,7 +976,9 @@ class SyncService {
         // Insert debts (marked synced)
         for (final row in serverData['debts']!) {
           final json = row as Map<String, dynamic>;
-          await _db.into(_db.debts).insert(
+          await _db
+              .into(_db.debts)
+              .insert(
                 DebtsCompanion.insert(
                   id: json['id'] as String,
                   customerId: json['customer_id'] as String,
@@ -804,7 +996,9 @@ class SyncService {
         // Insert debt_payments (marked synced)
         for (final row in serverData['debt_payments']!) {
           final json = row as Map<String, dynamic>;
-          await _db.into(_db.debtPayments).insert(
+          await _db
+              .into(_db.debtPayments)
+              .insert(
                 DebtPaymentsCompanion.insert(
                   id: json['id'] as String,
                   debtId: json['debt_id'] as String,
@@ -819,7 +1013,9 @@ class SyncService {
         // Insert purchase_invoices (marked synced)
         for (final row in serverData['purchase_invoices']!) {
           final json = row as Map<String, dynamic>;
-          await _db.into(_db.purchaseInvoices).insert(
+          await _db
+              .into(_db.purchaseInvoices)
+              .insert(
                 PurchaseInvoicesCompanion.insert(
                   id: json['id'] as String,
                   supplierId: json['supplier_id'] as String,
@@ -834,7 +1030,9 @@ class SyncService {
         // Insert purchase_items
         for (final row in serverData['purchase_items']!) {
           final json = row as Map<String, dynamic>;
-          await _db.into(_db.purchaseItems).insert(
+          await _db
+              .into(_db.purchaseItems)
+              .insert(
                 PurchaseItemsCompanion.insert(
                   id: json['id'] as String,
                   purchaseInvoiceId: json['purchase_invoice_id'] as String,
@@ -849,7 +1047,9 @@ class SyncService {
         // Insert expense_categories (marked synced)
         for (final row in serverData['expense_categories']!) {
           final json = row as Map<String, dynamic>;
-          await _db.into(_db.expenseCategories).insert(
+          await _db
+              .into(_db.expenseCategories)
+              .insert(
                 ExpenseCategoriesCompanion.insert(
                   id: json['id'] as String,
                   name: json['name'] as String,
@@ -864,7 +1064,9 @@ class SyncService {
         // Insert expenses (marked synced)
         for (final row in serverData['expenses']!) {
           final json = row as Map<String, dynamic>;
-          await _db.into(_db.expenses).insert(
+          await _db
+              .into(_db.expenses)
+              .insert(
                 ExpensesCompanion.insert(
                   id: json['id'] as String,
                   categoryId: json['category_id'] as String,
@@ -881,7 +1083,9 @@ class SyncService {
         // Insert exchange_invoices (marked synced)
         for (final row in serverData['exchange_invoices']!) {
           final json = row as Map<String, dynamic>;
-          await _db.into(_db.exchangeInvoices).insert(
+          await _db
+              .into(_db.exchangeInvoices)
+              .insert(
                 ExchangeInvoicesCompanion.insert(
                   id: json['id'] as String,
                   serialNumber: Value(json['serial_number'] as int?),

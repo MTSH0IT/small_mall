@@ -82,12 +82,12 @@ class InventoryTable extends StatelessWidget {
           ),
         ),
         AppTableColumn<ProductWithDetails>(
-          title: 'inventory.operations'.tr(),
+          title: 'inventory.product_movement'.tr(),
           cellBuilder: (item) => ElevatedButton.icon(
             onPressed: () => onViewHistory(item),
-            icon: const Icon(Icons.manage_history_rounded, size: 16),
+            icon: const Icon(Icons.analytics_outlined, size: 16),
             label: Text(
-              'inventory.operations'.tr(),
+              'inventory.product_movement'.tr(),
               style: const TextStyle(fontSize: 12),
             ),
             style: ElevatedButton.styleFrom(
