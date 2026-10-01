@@ -1,4 +1,8 @@
+import 'package:drift/drift.dart';
+import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:small_mall/core/database/app_database.dart';
+import 'package:small_mall/core/logging/app_logger.dart';
 import 'package:small_mall/features/reports/data/reports_repository.dart';
 import 'package:small_mall/features/reports/presentation/cubit/reports_state.dart';
 
@@ -197,4 +201,114 @@ void main() {
       expect(tab2.periodType, equals('this_week'));
     });
   });
+
+  group('Multi-Currency Invoices in ReportsRepository', () {
+    late AppDatabase db;
+    late ReportsRepository repo;
+
+    setUp(() {
+      db = AppDatabase.forTesting(NativeDatabase.memory());
+      repo = ReportsRepository(db, AppLogger());
+    });
+
+    tearDown(() async {
+      await db.close();
+    });
+
+    test('getProfitReport and getCashDrawerReport properly split multi-currency sales', () async {
+      final now = DateTime.now();
+      final start = now.subtract(const Duration(days: 1));
+      final end = now.add(const Duration(days: 1));
+
+      // 1. Insert two products (one SYP, one USD)
+      await db.into(db.products).insert(
+            ProductsCompanion.insert(
+              id: 'prod-syp',
+              name: 'منتج بالليرة',
+              costPrice: const Value(1000.0),
+              costPriceUsd: const Value(0.0),
+              currency: const Value('SYP'),
+              createdAt: now,
+              updatedAt: now,
+            ),
+          );
+      await db.into(db.products).insert(
+            ProductsCompanion.insert(
+              id: 'prod-usd',
+              name: 'منتج بالدولار',
+              costPrice: const Value(0.0),
+              costPriceUsd: const Value(5.0),
+              currency: const Value('USD'),
+              createdAt: now,
+              updatedAt: now,
+            ),
+          );
+
+      // 2. Insert multi-currency sale invoice (#2) with totalAmount = 1359.0 and currency = SYP
+      await db.into(db.invoices).insert(
+            InvoicesCompanion.insert(
+              id: 'inv-multi',
+              serialNumber: const Value(2),
+              type: 'sale',
+              totalAmount: 1359.0, // 1350 SYP + 9 USD
+              discount: const Value(0.0),
+              paymentType: 'cash',
+              currency: const Value('SYP'),
+              createdAt: now,
+            ),
+          );
+
+      // 3. Insert invoice items: 1350 SYP and 9 USD
+      await db.into(db.invoiceItems).insert(
+            InvoiceItemsCompanion.insert(
+              id: 'item-1',
+              invoiceId: 'inv-multi',
+              productId: 'prod-syp',
+              priceUsed: 1350.0,
+              quantity: 1.0,
+              discount: const Value(0.0),
+              currency: const Value('SYP'),
+              costPrice: const Value(1000.0),
+            ),
+          );
+      await db.into(db.invoiceItems).insert(
+            InvoiceItemsCompanion.insert(
+              id: 'item-2',
+              invoiceId: 'inv-multi',
+              productId: 'prod-usd',
+              priceUsed: 9.0,
+              quantity: 1.0,
+              discount: const Value(0.0),
+              currency: const Value('USD'),
+              costPrice: const Value(5.0),
+            ),
+          );
+
+      // 4. Test Profit Report
+      final profitReport = await repo.getProfitReport(start, end);
+
+      expect(profitReport.cashSales, equals(1350.0), reason: 'SYP cash sales should only be 1350.0');
+      expect(profitReport.cashSalesUsd, equals(9.0), reason: 'USD cash sales should be 9.0');
+      expect(profitReport.totalCost, equals(1000.0), reason: 'SYP cost should be 1000.0');
+      expect(profitReport.totalCostUsd, equals(5.0), reason: 'USD cost should be 5.0');
+      expect(profitReport.grossProfit, equals(350.0));
+      expect(profitReport.grossProfitUsd, equals(4.0));
+      expect(profitReport.salesCount, equals(1));
+      expect(profitReport.cashSalesCount, equals(1));
+
+      // 5. Test Cash Drawer Report
+      final drawerReport = await repo.getCashDrawerReport(start, end);
+
+      expect(drawerReport.cashSales, equals(1350.0));
+      expect(drawerReport.cashSalesUsd, equals(9.0));
+      expect(drawerReport.totalCashIn, equals(1350.0));
+      expect(drawerReport.totalCashInUsd, equals(9.0));
+
+      final sypMovement = drawerReport.movements.firstWhere((m) => m.currency == 'SYP');
+      final usdMovement = drawerReport.movements.firstWhere((m) => m.currency == 'USD');
+      expect(sypMovement.amount, equals(1350.0));
+      expect(usdMovement.amount, equals(9.0));
+    });
+  });
 }
+

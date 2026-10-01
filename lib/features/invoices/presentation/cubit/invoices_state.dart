@@ -54,6 +54,7 @@ class InvoicesLoaded extends InvoicesState {
           quantity: item.invoiceItem.quantity,
           unitPrice: item.invoiceItem.priceUsed,
           discount: item.invoiceItem.discount,
+          currency: item.invoiceItem.currency,
         );
       }).toList();
 
@@ -214,31 +215,31 @@ class InvoicesLoaded extends InvoicesState {
       .where((t) => t.type == UnifiedTransactionType.sale || t.type == UnifiedTransactionType.debtInvoice)
       .fold<double>(0.0, (sum, t) => sum + t.totalAmount);
   double get totalSalesAmountSyp => filteredTransactions
-      .where((t) => (t.type == UnifiedTransactionType.sale || t.type == UnifiedTransactionType.debtInvoice) && t.currency != 'USD')
-      .fold<double>(0.0, (sum, t) => sum + t.totalAmount);
+      .where((t) => t.type == UnifiedTransactionType.sale || t.type == UnifiedTransactionType.debtInvoice)
+      .fold<double>(0.0, (sum, t) => sum + t.totalSyp);
   double get totalSalesAmountUsd => filteredTransactions
-      .where((t) => (t.type == UnifiedTransactionType.sale || t.type == UnifiedTransactionType.debtInvoice) && t.currency == 'USD')
-      .fold<double>(0.0, (sum, t) => sum + t.totalAmount);
+      .where((t) => t.type == UnifiedTransactionType.sale || t.type == UnifiedTransactionType.debtInvoice)
+      .fold<double>(0.0, (sum, t) => sum + t.totalUsd);
 
   double get totalReturnsAmount => filteredTransactions
       .where((t) => t.type == UnifiedTransactionType.returnSale)
       .fold<double>(0.0, (sum, t) => sum + t.totalAmount);
   double get totalReturnsAmountSyp => filteredTransactions
-      .where((t) => t.type == UnifiedTransactionType.returnSale && t.currency != 'USD')
-      .fold<double>(0.0, (sum, t) => sum + t.totalAmount);
+      .where((t) => t.type == UnifiedTransactionType.returnSale)
+      .fold<double>(0.0, (sum, t) => sum + t.totalSyp);
   double get totalReturnsAmountUsd => filteredTransactions
-      .where((t) => t.type == UnifiedTransactionType.returnSale && t.currency == 'USD')
-      .fold<double>(0.0, (sum, t) => sum + t.totalAmount);
+      .where((t) => t.type == UnifiedTransactionType.returnSale)
+      .fold<double>(0.0, (sum, t) => sum + t.totalUsd);
 
   double get totalPurchasesAmount => filteredTransactions
       .where((t) => t.type == UnifiedTransactionType.purchase)
       .fold<double>(0.0, (sum, t) => sum + t.totalAmount);
   double get totalPurchasesAmountSyp => filteredTransactions
-      .where((t) => t.type == UnifiedTransactionType.purchase && t.currency != 'USD')
-      .fold<double>(0.0, (sum, t) => sum + t.totalAmount);
+      .where((t) => t.type == UnifiedTransactionType.purchase)
+      .fold<double>(0.0, (sum, t) => sum + t.totalSyp);
   double get totalPurchasesAmountUsd => filteredTransactions
-      .where((t) => t.type == UnifiedTransactionType.purchase && t.currency == 'USD')
-      .fold<double>(0.0, (sum, t) => sum + t.totalAmount);
+      .where((t) => t.type == UnifiedTransactionType.purchase)
+      .fold<double>(0.0, (sum, t) => sum + t.totalUsd);
 
   double get totalExpensesAmount => filteredTransactions
       .where((t) => t.type == UnifiedTransactionType.expense)
@@ -264,11 +265,11 @@ class InvoicesLoaded extends InvoicesState {
       .where((t) => t.type == UnifiedTransactionType.debtInvoice)
       .fold<double>(0.0, (sum, t) => sum + t.totalAmount);
   double get totalDebtInvoicesAmountSyp => filteredTransactions
-      .where((t) => t.type == UnifiedTransactionType.debtInvoice && t.currency != 'USD')
-      .fold<double>(0.0, (sum, t) => sum + t.totalAmount);
+      .where((t) => t.type == UnifiedTransactionType.debtInvoice)
+      .fold<double>(0.0, (sum, t) => sum + t.totalSyp);
   double get totalDebtInvoicesAmountUsd => filteredTransactions
-      .where((t) => t.type == UnifiedTransactionType.debtInvoice && t.currency == 'USD')
-      .fold<double>(0.0, (sum, t) => sum + t.totalAmount);
+      .where((t) => t.type == UnifiedTransactionType.debtInvoice)
+      .fold<double>(0.0, (sum, t) => sum + t.totalUsd);
 
   int get salesCount => filteredTransactions
       .where((t) => t.type == UnifiedTransactionType.sale || t.type == UnifiedTransactionType.debtInvoice)

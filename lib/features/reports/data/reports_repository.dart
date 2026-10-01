@@ -4,6 +4,7 @@ import 'package:small_mall/core/constants/app_currency.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/logging/app_logger.dart';
 import 'package:small_mall/core/logging/log_context.dart';
+import 'package:small_mall/core/services/app_settings_service.dart';
 
 class ProfitReportData {
   ProfitReportData({
@@ -453,16 +454,64 @@ class ReportsRepository {
 
     for (final inv in invoices) {
       final items = periodItems.where((i) => i.invoiceId == inv.id).toList();
-      final isUsd = inv.currency == 'USD';
+      final hasItems = items.isNotEmpty;
+      final hasMultipleCurrencies = hasItems &&
+          items.any((i) => i.currency == 'USD') &&
+          items.any((i) => i.currency != 'USD');
 
-      double invoiceCost = 0.0;
-      for (final item in items) {
-        final prod = productMap[item.productId];
-        if (prod == null) continue;
-        final unitCost = isUsd
-            ? ((prod.costPriceUsd > 0) ? prod.costPriceUsd : prod.costPrice)
-            : prod.costPrice;
-        invoiceCost += unitCost * item.quantity;
+      double invSalesSyp = 0.0;
+      double invSalesUsd = 0.0;
+      double invCostSyp = 0.0;
+      double invCostUsd = 0.0;
+
+      if (hasItems) {
+        for (final item in items) {
+          final itemIsUsd = item.currency == 'USD';
+          final itemRev = (item.priceUsed * item.quantity) - item.discount;
+
+          final prod = productMap[item.productId];
+          double unitCost = item.costPrice ?? 0.0;
+          if (unitCost <= 0 && prod != null) {
+            unitCost = itemIsUsd
+                ? ((prod.costPriceUsd > 0)
+                    ? prod.costPriceUsd
+                    : (AppSettingsService.usdExchangeRate > 0
+                        ? prod.costPrice / AppSettingsService.usdExchangeRate
+                        : prod.costPrice))
+                : ((prod.costPrice > 0)
+                    ? prod.costPrice
+                    : (AppSettingsService.usdExchangeRate > 0
+                        ? prod.costPriceUsd * AppSettingsService.usdExchangeRate
+                        : 0.0));
+          }
+          final itemTotalCost = unitCost * item.quantity;
+
+          if (itemIsUsd) {
+            invSalesUsd += itemRev;
+            invCostUsd += itemTotalCost;
+          } else {
+            invSalesSyp += itemRev;
+            invCostSyp += itemTotalCost;
+          }
+        }
+
+        if (inv.discount > 0) {
+          if (!hasMultipleCurrencies) {
+            if (inv.currency == 'USD') {
+              invSalesUsd = (invSalesUsd - inv.discount).clamp(0.0, double.infinity);
+            } else {
+              invSalesSyp = (invSalesSyp - inv.discount).clamp(0.0, double.infinity);
+            }
+          } else {
+            invSalesSyp = (invSalesSyp - inv.discount).clamp(0.0, double.infinity);
+          }
+        }
+      } else {
+        if (inv.currency == 'USD') {
+          invSalesUsd = inv.totalAmount;
+        } else {
+          invSalesSyp = inv.totalAmount;
+        }
       }
 
       if (inv.type == 'sale') {
@@ -470,35 +519,23 @@ class ReportsRepository {
         final isCash = inv.paymentType == 'cash';
         if (isCash) {
           cashSalesCount++;
+          cashSalesSyp += invSalesSyp;
+          cashSalesUsd += invSalesUsd;
+          cashCostSyp += invCostSyp;
+          cashCostUsd += invCostUsd;
         } else {
           debtSalesCount++;
+          debtSalesSyp += invSalesSyp;
+          debtSalesUsd += invSalesUsd;
         }
-        if (isUsd) {
-          grossSalesUsd += inv.totalAmount;
-          if (isCash) {
-            cashSalesUsd += inv.totalAmount;
-            cashCostUsd += invoiceCost;
-          } else {
-            debtSalesUsd += inv.totalAmount;
-          }
-        } else {
-          grossSalesSyp += inv.totalAmount;
-          if (isCash) {
-            cashSalesSyp += inv.totalAmount;
-            cashCostSyp += invoiceCost;
-          } else {
-            debtSalesSyp += inv.totalAmount;
-          }
-        }
+        grossSalesSyp += invSalesSyp;
+        grossSalesUsd += invSalesUsd;
       } else if (inv.type == 'return') {
         returnsCount++;
-        if (isUsd) {
-          returnsAmountUsd += inv.totalAmount;
-          returnsCostUsd += invoiceCost;
-        } else {
-          returnsAmountSyp += inv.totalAmount;
-          returnsCostSyp += invoiceCost;
-        }
+        returnsAmountSyp += invSalesSyp;
+        returnsAmountUsd += invSalesUsd;
+        returnsCostSyp += invCostSyp;
+        returnsCostUsd += invCostUsd;
       }
     }
 
@@ -613,26 +650,97 @@ class ReportsRepository {
     final suppliers = await _db.select(_db.suppliers).get();
     final supplierMap = {for (final s in suppliers) s.id: s.name};
 
+    final allDrawerInvoiceIds = <String>{
+      ...cashSalesInvoices.map((i) => i.id),
+      ...returnsInvoices.map((i) => i.id),
+    };
+    final drawerItems = allDrawerInvoiceIds.isEmpty
+        ? <InvoiceItem>[]
+        : await (_db.select(_db.invoiceItems)
+              ..where((t) => t.invoiceId.isIn(allDrawerInvoiceIds)))
+            .get();
+
     double totalCashSalesSyp = 0.0;
     double totalCashSalesUsd = 0.0;
     for (final inv in cashSalesInvoices) {
-      if (inv.currency == 'USD') {
-        totalCashSalesUsd += inv.totalAmount;
+      final items = drawerItems.where((i) => i.invoiceId == inv.id).toList();
+      final hasMultipleCurrencies = items.isNotEmpty &&
+          items.any((i) => i.currency == 'USD') &&
+          items.any((i) => i.currency != 'USD');
+
+      double invSyp = 0.0;
+      double invUsd = 0.0;
+
+      if (hasMultipleCurrencies) {
+        invUsd = items
+            .where((i) => i.currency == 'USD')
+            .fold<double>(0.0, (sum, i) => sum + (i.priceUsed * i.quantity - i.discount));
+        final rawSyp = items
+            .where((i) => i.currency != 'USD')
+            .fold<double>(0.0, (sum, i) => sum + (i.priceUsed * i.quantity - i.discount));
+        invSyp = (rawSyp - inv.discount).clamp(0.0, double.infinity);
       } else {
-        totalCashSalesSyp += inv.totalAmount;
+        if (inv.currency == 'USD') {
+          invUsd = inv.totalAmount;
+        } else {
+          invSyp = inv.totalAmount;
+        }
       }
+
+      totalCashSalesUsd += invUsd;
+      totalCashSalesSyp += invSyp;
+
       final custName = inv.customerId != null ? customerMap[inv.customerId] : null;
-      movements.add(CashMovementItem(
-        id: inv.id,
-        title: 'reports.cash_sales'.tr(),
-        type: 'cash_sale',
-        isCashIn: true,
-        amount: inv.totalAmount,
-        date: inv.createdAt,
-        currency: inv.currency,
-        partyName: custName,
-        referenceNumber: inv.serialNumber != null ? '#${inv.serialNumber}' : null,
-      ));
+      final ref = inv.serialNumber != null ? '#${inv.serialNumber}' : null;
+
+      if (invSyp > 0 && invUsd > 0) {
+        movements.add(CashMovementItem(
+          id: '${inv.id}_syp',
+          title: 'reports.cash_sales'.tr(),
+          type: 'cash_sale',
+          isCashIn: true,
+          amount: invSyp,
+          date: inv.createdAt,
+          currency: AppCurrency.sypCode,
+          partyName: custName,
+          referenceNumber: ref,
+        ));
+        movements.add(CashMovementItem(
+          id: '${inv.id}_usd',
+          title: 'reports.cash_sales'.tr(),
+          type: 'cash_sale',
+          isCashIn: true,
+          amount: invUsd,
+          date: inv.createdAt,
+          currency: AppCurrency.usdCode,
+          partyName: custName,
+          referenceNumber: ref,
+        ));
+      } else if (invUsd > 0) {
+        movements.add(CashMovementItem(
+          id: inv.id,
+          title: 'reports.cash_sales'.tr(),
+          type: 'cash_sale',
+          isCashIn: true,
+          amount: invUsd,
+          date: inv.createdAt,
+          currency: AppCurrency.usdCode,
+          partyName: custName,
+          referenceNumber: ref,
+        ));
+      } else {
+        movements.add(CashMovementItem(
+          id: inv.id,
+          title: 'reports.cash_sales'.tr(),
+          type: 'cash_sale',
+          isCashIn: true,
+          amount: invSyp,
+          date: inv.createdAt,
+          currency: AppCurrency.sypCode,
+          partyName: custName,
+          referenceNumber: ref,
+        ));
+      }
     }
 
     double totalDebtPaymentsSyp = 0.0;
@@ -660,23 +768,84 @@ class ReportsRepository {
     double totalCashReturnsSyp = 0.0;
     double totalCashReturnsUsd = 0.0;
     for (final ret in returnsInvoices) {
-      if (ret.currency == 'USD') {
-        totalCashReturnsUsd += ret.totalAmount;
+      final items = drawerItems.where((i) => i.invoiceId == ret.id).toList();
+      final hasMultipleCurrencies = items.isNotEmpty &&
+          items.any((i) => i.currency == 'USD') &&
+          items.any((i) => i.currency != 'USD');
+
+      double retSyp = 0.0;
+      double retUsd = 0.0;
+
+      if (hasMultipleCurrencies) {
+        retUsd = items
+            .where((i) => i.currency == 'USD')
+            .fold<double>(0.0, (sum, i) => sum + (i.priceUsed * i.quantity - i.discount));
+        final rawSyp = items
+            .where((i) => i.currency != 'USD')
+            .fold<double>(0.0, (sum, i) => sum + (i.priceUsed * i.quantity - i.discount));
+        retSyp = (rawSyp - ret.discount).clamp(0.0, double.infinity);
       } else {
-        totalCashReturnsSyp += ret.totalAmount;
+        if (ret.currency == 'USD') {
+          retUsd = ret.totalAmount;
+        } else {
+          retSyp = ret.totalAmount;
+        }
       }
+
+      totalCashReturnsUsd += retUsd;
+      totalCashReturnsSyp += retSyp;
+
       final custName = ret.customerId != null ? customerMap[ret.customerId] : null;
-      movements.add(CashMovementItem(
-        id: ret.id,
-        title: 'reports.cash_returns'.tr(),
-        type: 'return',
-        isCashIn: false,
-        amount: ret.totalAmount,
-        date: ret.createdAt,
-        currency: ret.currency,
-        partyName: custName,
-        referenceNumber: ret.serialNumber != null ? '#${ret.serialNumber}' : null,
-      ));
+      final ref = ret.serialNumber != null ? '#${ret.serialNumber}' : null;
+
+      if (retSyp > 0 && retUsd > 0) {
+        movements.add(CashMovementItem(
+          id: '${ret.id}_syp',
+          title: 'reports.cash_returns'.tr(),
+          type: 'return',
+          isCashIn: false,
+          amount: retSyp,
+          date: ret.createdAt,
+          currency: AppCurrency.sypCode,
+          partyName: custName,
+          referenceNumber: ref,
+        ));
+        movements.add(CashMovementItem(
+          id: '${ret.id}_usd',
+          title: 'reports.cash_returns'.tr(),
+          type: 'return',
+          isCashIn: false,
+          amount: retUsd,
+          date: ret.createdAt,
+          currency: AppCurrency.usdCode,
+          partyName: custName,
+          referenceNumber: ref,
+        ));
+      } else if (retUsd > 0) {
+        movements.add(CashMovementItem(
+          id: ret.id,
+          title: 'reports.cash_returns'.tr(),
+          type: 'return',
+          isCashIn: false,
+          amount: retUsd,
+          date: ret.createdAt,
+          currency: AppCurrency.usdCode,
+          partyName: custName,
+          referenceNumber: ref,
+        ));
+      } else {
+        movements.add(CashMovementItem(
+          id: ret.id,
+          title: 'reports.cash_returns'.tr(),
+          type: 'return',
+          isCashIn: false,
+          amount: retSyp,
+          date: ret.createdAt,
+          currency: AppCurrency.sypCode,
+          partyName: custName,
+          referenceNumber: ref,
+        ));
+      }
     }
 
     double totalExpensesSyp = 0.0;
@@ -1024,12 +1193,32 @@ class ReportsRepository {
           ..where((t) => t.createdAt.isBiggerOrEqualValue(start) & t.createdAt.isSmallerOrEqualValue(end)))
         .get();
 
+    final invoiceIds = sales.map((i) => i.id).toSet();
+    final items = invoiceIds.isEmpty
+        ? <InvoiceItem>[]
+        : await (_db.select(_db.invoiceItems)..where((t) => t.invoiceId.isIn(invoiceIds))).get();
+
     double totalSales = 0.0;
     for (final sale in sales) {
+      final saleItems = items.where((i) => i.invoiceId == sale.id).toList();
+      double saleSyp = 0.0;
+      if (saleItems.isNotEmpty &&
+          saleItems.any((i) => i.currency == 'USD') &&
+          saleItems.any((i) => i.currency != 'USD')) {
+        saleSyp = saleItems
+            .where((i) => i.currency != 'USD')
+            .fold<double>(0.0, (sum, i) => sum + (i.priceUsed * i.quantity - i.discount));
+        if (sale.discount > 0) {
+          saleSyp = (saleSyp - sale.discount).clamp(0.0, double.infinity);
+        }
+      } else {
+        if (sale.currency != 'USD') saleSyp = sale.totalAmount;
+      }
+
       if (sale.type == 'sale' && sale.paymentType != 'debt') {
-        totalSales += sale.totalAmount;
+        totalSales += saleSyp;
       } else if (sale.type == 'return') {
-        totalSales -= sale.totalAmount;
+        totalSales -= saleSyp;
       }
     }
     if (totalSales < 0) totalSales = 0.0;
@@ -1039,7 +1228,9 @@ class ReportsRepository {
           ..where((t) => t.createdAt.isBiggerOrEqualValue(start) & t.createdAt.isSmallerOrEqualValue(end)))
         .get();
 
-    final totalPurchases = purchases.fold<double>(0.0, (sum, p) => sum + p.totalAmount);
+    final totalPurchases = purchases
+        .where((p) => p.currency != 'USD')
+        .fold<double>(0.0, (sum, p) => sum + p.totalAmount);
 
     return PurchasesSalesSummary(
       totalPurchases: totalPurchases,

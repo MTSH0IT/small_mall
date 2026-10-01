@@ -311,5 +311,59 @@ void main() {
       expect(item.costPriceUsd, equals(0.55));
       expect(item.hasDualCostPrices, isTrue);
     });
+
+    test('Updating product with initialStock modifies initial stock and current balance', () async {
+      await repository.addProduct(
+        name: 'منتج رصيد أولي',
+        categoryId: null,
+        costPrice: 5000.0,
+        minStockAlert: 2.0,
+        initialStock: 10.0,
+        prices: [
+          {'price_label': 'retail', 'price_value': 7000.0, 'currency': 'SYP'},
+        ],
+      );
+
+      var products = await repository.getProducts();
+      var item = products.firstWhere((p) => p.product.name == 'منتج رصيد أولي');
+      expect(item.initialStock, equals(10.0));
+      expect(item.currentStock, equals(10.0));
+
+      // Update initial stock to 25.0
+      await repository.updateProduct(
+        id: item.product.id,
+        name: item.product.name,
+        categoryId: item.product.categoryId,
+        costPrice: item.product.costPrice,
+        minStockAlert: item.product.minStockAlert,
+        prices: [
+          {'price_label': 'retail', 'price_value': 7000.0, 'currency': 'SYP'},
+        ],
+        initialStock: 25.0,
+      );
+
+      products = await repository.getProducts();
+      item = products.firstWhere((p) => p.product.id == item.product.id);
+      expect(item.initialStock, equals(25.0));
+      expect(item.currentStock, equals(25.0));
+
+      // Update initial stock to 0.0
+      await repository.updateProduct(
+        id: item.product.id,
+        name: item.product.name,
+        categoryId: item.product.categoryId,
+        costPrice: item.product.costPrice,
+        minStockAlert: item.product.minStockAlert,
+        prices: [
+          {'price_label': 'retail', 'price_value': 7000.0, 'currency': 'SYP'},
+        ],
+        initialStock: 0.0,
+      );
+
+      products = await repository.getProducts();
+      item = products.firstWhere((p) => p.product.id == item.product.id);
+      expect(item.initialStock, equals(0.0));
+      expect(item.currentStock, equals(0.0));
+    });
   });
 }

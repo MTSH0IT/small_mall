@@ -282,16 +282,35 @@ class POSRepository {
             .get();
 
         if (debts.isNotEmpty) {
-          final debt = debts.first;
-          final newRemaining = (debt.remainingAmount - totalReturnVal).clamp(0.0, double.infinity);
-          final newStatus = newRemaining <= 0 ? 'paid' : 'partial';
+          double returnSyp = 0.0;
+          double returnUsd = 0.0;
+          for (final item in itemsToReturn) {
+            final qty = (item['quantity'] as num).toDouble();
+            final priceUsed = (item['priceUsed'] as num).toDouble();
+            final prodId = item['productId'] as String;
+            final itemCurr = (item['currency'] as String?) ?? origItemMap[prodId]?.currency ?? originalInvoice.currency;
+            if (itemCurr == AppCurrency.usdCode) {
+              returnUsd += qty * priceUsed;
+            } else {
+              returnSyp += qty * priceUsed;
+            }
+          }
 
-          await (_db.update(_db.debts)..where((t) => t.id.equals(debt.id)))
-              .write(DebtsCompanion(
-                remainingAmount: Value(newRemaining),
-                status: Value(newStatus),
-                syncedAt: const Value(null),
-              ));
+          for (final debt in debts) {
+            final isUsd = debt.currency == AppCurrency.usdCode;
+            final returnAmount = isUsd ? returnUsd : returnSyp;
+            if (returnAmount > 0) {
+              final newRemaining = (debt.remainingAmount - returnAmount).clamp(0.0, double.infinity);
+              final newStatus = newRemaining <= 0 ? 'paid' : 'partial';
+
+              await (_db.update(_db.debts)..where((t) => t.id.equals(debt.id)))
+                  .write(DebtsCompanion(
+                    remainingAmount: Value(newRemaining),
+                    status: Value(newStatus),
+                    syncedAt: const Value(null),
+                  ));
+            }
+          }
         }
       }
     });
@@ -585,34 +604,75 @@ class POSRepository {
       // 4. Handle debt updates
       final existingDebts = await (_db.select(_db.debts)..where((t) => t.invoiceId.equals(invoiceId))).get();
       if (paymentType == 'debt' && customerId != null) {
-        if (existingDebts.isNotEmpty) {
-          final debt = existingDebts.first;
-          final payments = await (_db.select(_db.debtPayments)..where((t) => t.debtId.equals(debt.id))).get();
-          final totalPaid = payments.fold<double>(0.0, (sum, p) => sum + p.amountPaid);
-          final newRemaining = (newTotalAmount - totalPaid).clamp(0.0, double.infinity);
-          final newStatus = newRemaining <= 0 ? 'paid' : (totalPaid > 0 ? 'partial' : 'open');
+        final usdItems = items.where((i) => ((i['currency'] as String?) ?? invoice.currency) == AppCurrency.usdCode);
+        final sypItems = items.where((i) => ((i['currency'] as String?) ?? invoice.currency) != AppCurrency.usdCode);
 
-          await (_db.update(_db.debts)..where((t) => t.id.equals(debt.id)))
-              .write(DebtsCompanion(
-                customerId: Value(customerId),
-                amount: Value(newTotalAmount),
-                remainingAmount: Value(newRemaining),
-                status: Value(newStatus),
-                syncedAt: const Value(null),
+        final totalUsd = usdItems.fold<double>(
+          0.0,
+          (sum, i) => sum + ((i['priceUsed'] as num).toDouble() * (i['quantity'] as num).toDouble() - ((i['discount'] as num?)?.toDouble() ?? 0.0)),
+        );
+        final rawTotalSyp = sypItems.fold<double>(
+          0.0,
+          (sum, i) => sum + ((i['priceUsed'] as num).toDouble() * (i['quantity'] as num).toDouble() - ((i['discount'] as num?)?.toDouble() ?? 0.0)),
+        );
+        final totalSyp = (rawTotalSyp - (usdItems.isNotEmpty ? discount : 0.0)).clamp(0.0, double.infinity);
+
+        Future<void> syncDebtForCurrency(String curr, double targetAmount) async {
+          final debt = existingDebts.where((d) => d.currency == curr).firstOrNull;
+          if (targetAmount > 0) {
+            if (debt != null) {
+              final payments = await (_db.select(_db.debtPayments)..where((t) => t.debtId.equals(debt.id))).get();
+              final totalPaid = payments.fold<double>(0.0, (sum, p) => sum + p.amountPaid);
+              final newRemaining = (targetAmount - totalPaid).clamp(0.0, double.infinity);
+              final newStatus = newRemaining <= 0 ? 'paid' : (totalPaid > 0 ? 'partial' : 'open');
+
+              await (_db.update(_db.debts)..where((t) => t.id.equals(debt.id)))
+                  .write(DebtsCompanion(
+                    customerId: Value(customerId),
+                    amount: Value(targetAmount),
+                    remainingAmount: Value(newRemaining),
+                    status: Value(newStatus),
+                    syncedAt: const Value(null),
+                  ));
+            } else {
+              final debtId = _uuid.v4();
+              await _db.into(_db.debts).insert(Debt(
+                id: debtId,
+                customerId: customerId,
+                invoiceId: invoiceId,
+                amount: targetAmount,
+                remainingAmount: targetAmount,
+                status: 'open',
+                createdAt: now,
+                currency: curr,
               ));
+            }
+          } else if (debt != null) {
+            final payments = await (_db.select(_db.debtPayments)..where((t) => t.debtId.equals(debt.id))).get();
+            if (payments.isEmpty) {
+              await (_db.delete(_db.debts)..where((t) => t.id.equals(debt.id))).go();
+              await _db.into(_db.deletedRecords).insert(
+                    DeletedRecordsCompanion.insert(
+                      id: _uuid.v4(),
+                      targetTable: 'debts',
+                      recordId: debt.id,
+                      createdAt: now,
+                    ),
+                  );
+            }
+          }
+        }
+
+        if (usdItems.isNotEmpty && sypItems.isNotEmpty) {
+          await syncDebtForCurrency(AppCurrency.usdCode, totalUsd);
+          await syncDebtForCurrency(AppCurrency.sypCode, totalSyp);
+        } else if (usdItems.isNotEmpty) {
+          await syncDebtForCurrency(AppCurrency.usdCode, totalUsd);
+          await syncDebtForCurrency(AppCurrency.sypCode, 0.0);
         } else {
-          final debtId = _uuid.v4();
-          final debt = Debt(
-            id: debtId,
-            customerId: customerId,
-            invoiceId: invoiceId,
-            amount: newTotalAmount,
-            remainingAmount: newTotalAmount,
-            status: 'open',
-            createdAt: now,
-            currency: invoice.currency,
-          );
-          await _db.into(_db.debts).insert(debt);
+          final singleCurr = invoice.currency == AppCurrency.usdCode ? AppCurrency.usdCode : AppCurrency.sypCode;
+          await syncDebtForCurrency(singleCurr, newTotalAmount);
+          await syncDebtForCurrency(singleCurr == AppCurrency.usdCode ? AppCurrency.sypCode : AppCurrency.usdCode, 0.0);
         }
       } else {
         // Cash payment: remove existing debts if no payments exist

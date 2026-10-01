@@ -1029,7 +1029,13 @@ class _ProductsScreenState extends State<ProductsScreen> {
               ? defaultMinStock.toInt().toString()
               : defaultMinStock.toString()),
     );
-    final initialStockController = TextEditingController(text: '0');
+    final initialStockController = TextEditingController(
+      text: existing != null
+          ? (existing.initialStock % 1 == 0
+              ? existing.initialStock.toInt().toString()
+              : existing.initialStock.toString())
+          : '0',
+    );
 
     String? selectedCatId = existing?.product.categoryId;
     final retailSyp = existing?.prices.firstWhere(
@@ -1353,16 +1359,14 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                 : null,
                           ),
                         ),
-                        if (existing == null) ...[
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: AppTextField(
-                              label: 'inventory.initial_stock'.tr(),
-                              controller: initialStockController,
-                              keyboardType: TextInputType.number,
-                            ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: AppTextField(
+                            label: 'inventory.initial_stock'.tr(),
+                            controller: initialStockController,
+                            keyboardType: TextInputType.number,
                           ),
-                        ],
+                        ),
                       ],
                     ),
                     const SizedBox(height: 18),
@@ -1858,6 +1862,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                           currency: primaryCurrency,
                           minStockAlert: minStock,
                           prices: prices,
+                          initialStock: initialStock,
                         );
                       }
                       Navigator.pop(ctx);

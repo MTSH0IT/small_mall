@@ -360,10 +360,11 @@ class InventoryRepository {
     double costPriceUsd = 0.0,
     required double minStockAlert,
     required List<Map<String, dynamic>> prices,
+    double? initialStock,
     String? currency,
   }) async {
     _logger.info(
-      'Updating product: $id, name=$name, cost=$costPrice, costUsd=$costPriceUsd, currency=$currency',
+      'Updating product: $id, name=$name, cost=$costPrice, costUsd=$costPriceUsd, initialStock=$initialStock, currency=$currency',
       context: LogContext.inventory,
     );
     final now = DateTime.now();
@@ -427,6 +428,74 @@ class InventoryRepository {
         );
 
         await _db.into(_db.productPrices).insert(prodPrice);
+      }
+
+      // Handle Initial Stock Movement
+      if (initialStock != null) {
+        final existingInitialMovements = await (_db.select(_db.stockMovements)
+              ..where(
+                (t) =>
+                    t.productId.equals(id) &
+                    t.referenceId.equals('initial_stock'),
+              ))
+            .get();
+
+        if (initialStock > 0) {
+          if (existingInitialMovements.isNotEmpty) {
+            // Update existing initial stock movement
+            final firstMovement = existingInitialMovements.first;
+            await (_db.update(_db.stockMovements)
+                  ..where((t) => t.id.equals(firstMovement.id)))
+                .write(
+              StockMovementsCompanion(
+                quantity: Value(initialStock),
+                syncedAt: const Value(null),
+              ),
+            );
+
+            // Clean up any extra initial movements if duplicates exist
+            for (var i = 1; i < existingInitialMovements.length; i++) {
+              await _db.into(_db.deletedRecords).insert(
+                    DeletedRecordsCompanion.insert(
+                      id: _uuid.v4(),
+                      targetTable: 'stock_movements',
+                      recordId: existingInitialMovements[i].id,
+                      createdAt: now,
+                    ),
+                  );
+              await (_db.delete(_db.stockMovements)
+                    ..where((t) => t.id.equals(existingInitialMovements[i].id)))
+                  .go();
+            }
+          } else {
+            // Create new initial stock movement
+            final movementId = _uuid.v4();
+            final movement = StockMovement(
+              id: movementId,
+              productId: id,
+              type: 'adjustment',
+              quantity: initialStock,
+              createdAt: now,
+              referenceId: 'initial_stock',
+            );
+            await _db.into(_db.stockMovements).insert(movement);
+          }
+        } else {
+          // If initialStock is 0, delete any existing initial stock movements
+          for (final movement in existingInitialMovements) {
+            await _db.into(_db.deletedRecords).insert(
+                  DeletedRecordsCompanion.insert(
+                    id: _uuid.v4(),
+                    targetTable: 'stock_movements',
+                    recordId: movement.id,
+                    createdAt: now,
+                  ),
+                );
+            await (_db.delete(_db.stockMovements)
+                  ..where((t) => t.id.equals(movement.id)))
+                .go();
+          }
+        }
       }
     });
 

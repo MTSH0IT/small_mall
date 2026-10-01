@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart' as intl;
+import 'package:small_mall/core/constants/app_currency.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/core/widgets/app_toast.dart';
@@ -113,6 +114,7 @@ class _ReturnDialogState extends State<ReturnDialog> {
             'productId': item.productId,
             'quantity': qty,
             'priceUsed': item.priceUsed,
+            'currency': item.currency,
           });
         }
       }
@@ -518,7 +520,7 @@ class _ReturnDialogState extends State<ReturnDialog> {
                             Text(productName,
                                 style: const TextStyle(fontWeight: FontWeight.bold)),
                             Text(
-                              '${'common.price'.tr()}: ${item.priceUsed.toStringAsFixed(2)}',
+                              '${'common.price'.tr()}: ${item.priceUsed.toStringAsFixed(2)} ${AppCurrency.getSymbol(item.currency)}',
                               style: theme.textTheme.bodySmall,
                             ),
                           ],

@@ -67,6 +67,7 @@ class InventoryCubit extends Cubit<InventoryState> {
     double costPriceUsd = 0.0,
     required double minStockAlert,
     required List<Map<String, dynamic>> prices,
+    double? initialStock,
     String? currency,
   }) async {
     try {
@@ -80,6 +81,7 @@ class InventoryCubit extends Cubit<InventoryState> {
         costPriceUsd: costPriceUsd,
         minStockAlert: minStockAlert,
         prices: prices,
+        initialStock: initialStock,
         currency: currency,
       );
       await loadInventory();
