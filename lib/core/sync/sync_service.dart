@@ -736,6 +736,7 @@ class SyncService {
                   'name': c.name,
                   'type': c.type,
                   'description': c.description,
+                  'parent_id': c.parentId,
                   'created_at': c.createdAt.toIso8601String(),
                 },
               )
@@ -753,6 +754,7 @@ class SyncService {
           error: e,
           context: LogContext.syncQueue,
         );
+        hasErrors = true;
       }
 
       // 15. Sync Treasury Transactions
@@ -771,6 +773,8 @@ class SyncService {
                   'currency': tx.currency,
                   'category_id': tx.categoryId,
                   'category_name': tx.categoryName,
+                  'subcategory_id': tx.subcategoryId,
+                  'subcategory_name': tx.subcategoryName,
                   'person_name': tx.personName,
                   'notes': tx.notes,
                   'created_at': tx.createdAt.toIso8601String(),
@@ -790,6 +794,7 @@ class SyncService {
           error: e,
           context: LogContext.syncQueue,
         );
+        hasErrors = true;
       }
 
       await updatePendingCount();
@@ -861,6 +866,8 @@ class SyncService {
         'expense_categories',
         'expenses',
         'exchange_invoices',
+        'treasury_categories',
+        'treasury_transactions',
       ];
 
       for (final tableName in tableNames) {
@@ -881,6 +888,8 @@ class SyncService {
 
         // Delete all existing data in reverse dependency order
         for (final table in [
+          _db.treasuryTransactions,
+          _db.treasuryCategories,
           _db.expenses,
           _db.expenseCategories,
           _db.exchangeInvoices,
@@ -1174,6 +1183,48 @@ class SyncService {
                   toCurrency: json['to_currency'] as String,
                   toAmount: (json['to_amount'] as num).toDouble(),
                   exchangeRate: (json['exchange_rate'] as num).toDouble(),
+                  notes: Value(json['notes'] as String?),
+                  createdAt: DateTime.parse(json['created_at'] as String),
+                  syncedAt: Value(now),
+                ),
+              );
+        }
+
+        // Insert treasury_categories (marked synced)
+        for (final row in serverData['treasury_categories']!) {
+          final json = row as Map<String, dynamic>;
+          await _db
+              .into(_db.treasuryCategories)
+              .insert(
+                TreasuryCategoriesCompanion.insert(
+                  id: json['id'] as String,
+                  name: json['name'] as String,
+                  type: json['type'] as String? ?? 'both',
+                  description: Value(json['description'] as String?),
+                  parentId: Value(json['parent_id'] as String?),
+                  createdAt: DateTime.parse(json['created_at'] as String),
+                  syncedAt: Value(now),
+                ),
+              );
+        }
+
+        // Insert treasury_transactions (marked synced)
+        for (final row in serverData['treasury_transactions']!) {
+          final json = row as Map<String, dynamic>;
+          await _db
+              .into(_db.treasuryTransactions)
+              .insert(
+                TreasuryTransactionsCompanion.insert(
+                  id: json['id'] as String,
+                  serialNumber: Value(json['serial_number'] as int?),
+                  type: json['type'] as String,
+                  amount: (json['amount'] as num).toDouble(),
+                  currency: Value(json['currency'] as String? ?? 'SYP'),
+                  categoryId: Value(json['category_id'] as String?),
+                  categoryName: Value(json['category_name'] as String?),
+                  subcategoryId: Value(json['subcategory_id'] as String?),
+                  subcategoryName: Value(json['subcategory_name'] as String?),
+                  personName: Value(json['person_name'] as String?),
                   notes: Value(json['notes'] as String?),
                   createdAt: DateTime.parse(json['created_at'] as String),
                   syncedAt: Value(now),
