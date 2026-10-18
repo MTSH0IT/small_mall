@@ -27,6 +27,12 @@ class _InventoryScreenState extends State<InventoryScreen> {
   bool _filterLowStockOnly = false;
 
   @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return BlocProvider<InventoryCubit>(
       create: (context) => InventoryCubit(getIt<InventoryRepository>())..loadInventory(),
@@ -126,88 +132,93 @@ class _InventoryScreenState extends State<InventoryScreen> {
     );
   }
 
-  void _showAdjustStockDialog(BuildContext context, InventoryCubit cubit, ProductWithDetails item) {
+  Future<void> _showAdjustStockDialog(BuildContext context, InventoryCubit cubit, ProductWithDetails item) async {
     final formKey = GlobalKey<FormState>();
     final qtyController = TextEditingController();
     final reasonController = TextEditingController();
     String direction = 'add'; // 'add' or 'subtract'
 
-    showDialog(
-      context: context,
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (dialogCtx, setStateDialog) {
-            return AlertDialog(
-              title: Text('${'inventory.adjust_stock'.tr()}: ${item.product.name}',
-                  style: const TextStyle(color: AppColors.primary)),
-              content: Form(
-                key: formKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    RadioGroup<String>(
-                      groupValue: direction,
-                      onChanged: (val) {
-                        if (val != null) setStateDialog(() => direction = val);
-                      },
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: RadioListTile<String>(
-                              title: Text('(+) ${'inventory.stock_in'.tr()}'),
-                              value: 'add',
+    try {
+      await showDialog(
+        context: context,
+        builder: (ctx) {
+          return StatefulBuilder(
+            builder: (dialogCtx, setStateDialog) {
+              return AlertDialog(
+                title: Text('${'inventory.adjust_stock'.tr()}: ${item.product.name}',
+                    style: const TextStyle(color: AppColors.primary)),
+                content: Form(
+                  key: formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      RadioGroup<String>(
+                        groupValue: direction,
+                        onChanged: (val) {
+                          if (val != null) setStateDialog(() => direction = val);
+                        },
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: RadioListTile<String>(
+                                title: Text('(+) ${'inventory.stock_in'.tr()}'),
+                                value: 'add',
+                              ),
                             ),
-                          ),
-                          Expanded(
-                            child: RadioListTile<String>(
-                              title: Text('(-) ${'inventory.stock_out'.tr()}'),
-                              value: 'subtract',
+                            Expanded(
+                              child: RadioListTile<String>(
+                                title: Text('(-) ${'inventory.stock_out'.tr()}'),
+                                value: 'subtract',
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    AppTextField(
-                      label: '${'common.quantity'.tr()} *',
-                      controller: qtyController,
-                      keyboardType: TextInputType.number,
-                      validator: (val) {
-                        if (val == null || val.isEmpty) return 'common.required_field'.tr();
-                        final numVal = double.tryParse(val);
-                        if (numVal == null || numVal <= 0) return 'common.required_field'.tr();
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    AppTextField(
-                      label: '${'inventory.adjust_reason'.tr()} *',
-                      controller: reasonController,
-                      validator: (val) => val == null || val.isEmpty ? 'common.required_field'.tr() : null,
-                    ),
-                  ],
+                      const SizedBox(height: 12),
+                      AppTextField(
+                        label: '${'common.quantity'.tr()} *',
+                        controller: qtyController,
+                        keyboardType: TextInputType.number,
+                        validator: (val) {
+                          if (val == null || val.isEmpty) return 'common.required_field'.tr();
+                          final numVal = double.tryParse(val);
+                          if (numVal == null || numVal <= 0) return 'common.required_field'.tr();
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      AppTextField(
+                        label: '${'inventory.adjust_reason'.tr()} *',
+                        controller: reasonController,
+                        validator: (val) => val == null || val.isEmpty ? 'common.required_field'.tr() : null,
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              actions: [
-                TextButton(onPressed: () => Navigator.pop(dialogCtx), child: Text('common.cancel'.tr())),
-                PrimaryButton(
-                  label: 'common.confirm'.tr(),
-                  onPressed: () {
-                    if (formKey.currentState?.validate() ?? false) {
-                      double qty = double.parse(qtyController.text);
-                      if (direction == 'subtract') {
-                        qty = -qty;
+                actions: [
+                  TextButton(onPressed: () => Navigator.pop(dialogCtx), child: Text('common.cancel'.tr())),
+                  PrimaryButton(
+                    label: 'common.confirm'.tr(),
+                    onPressed: () {
+                      if (formKey.currentState?.validate() ?? false) {
+                        double qty = double.parse(qtyController.text);
+                        if (direction == 'subtract') {
+                          qty = -qty;
+                        }
+                        cubit.adjustStock(item.product.id, qty, reasonController.text);
+                        Navigator.pop(dialogCtx);
                       }
-                      cubit.adjustStock(item.product.id, qty, reasonController.text);
-                      Navigator.pop(dialogCtx);
-                    }
-                  },
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
+                    },
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+    } finally {
+      qtyController.dispose();
+      reasonController.dispose();
+    }
   }
 }

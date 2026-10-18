@@ -123,104 +123,109 @@ class _EditInvoiceDialogState extends State<EditInvoiceDialog> {
     final lineTotalController = TextEditingController(text: item.total.toStringAsFixed(2));
     bool isUpdating = false;
 
-    await showDialog(
-      context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
+    try {
+      await showDialog(
+        context: context,
+        builder: (ctx) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.edit_outlined, color: AppColors.primary, size: 20),
                 ),
-                child: const Icon(Icons.edit_outlined, color: AppColors.primary, size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('pos.edit_price_title'.tr(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      Text(item.productName, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: unitPriceController,
+                  autofocus: true,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  style: AppTheme.numericStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                  decoration: InputDecoration(
+                    labelText: 'pos.unit_price'.tr(),
+                    prefixIcon: const Icon(Icons.sell_outlined, size: 18),
+                    suffixText: item.currencySymbol,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  onChanged: (val) {
+                    if (isUpdating) return;
+                    isUpdating = true;
+                    final parsedUnit = double.tryParse(val) ?? 0.0;
+                    lineTotalController.text = (parsedUnit * qty).toStringAsFixed(2);
+                    isUpdating = false;
+                  },
+                ),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: lineTotalController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  style: AppTheme.numericStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                  decoration: InputDecoration(
+                    labelText: 'pos.final_line_price'.tr(),
+                    helperText: '(${qty.toStringAsFixed(qty % 1 == 0 ? 0 : 1)} ${'pos.units_count'.tr(namedArgs: {'count': ''}).trim()})',
+                    prefixIcon: const Icon(Icons.calculate_outlined, size: 18),
+                    suffixText: item.currencySymbol,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  onChanged: (val) {
+                    if (isUpdating) return;
+                    isUpdating = true;
+                    final parsedTotal = double.tryParse(val) ?? 0.0;
+                    final computedUnit = qty > 0 ? parsedTotal / qty : parsedTotal;
+                    unitPriceController.text = computedUnit.toStringAsFixed(2);
+                    isUpdating = false;
+                  },
+                ),
+              ],
+            ),
+            actionsAlignment: MainAxisAlignment.spaceBetween,
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text('common.cancel'.tr()),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('pos.edit_price_title'.tr(), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                    Text(item.productName, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                  ],
+              FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
+                onPressed: () {
+                  final newPrice = double.tryParse(unitPriceController.text.trim());
+                  if (newPrice != null && newPrice >= 0) {
+                    setState(() {
+                      item.priceUsed = newPrice;
+                    });
+                  }
+                  Navigator.pop(ctx);
+                },
+                child: Text('common.save'.tr()),
               ),
             ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: unitPriceController,
-                autofocus: true,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                style: AppTheme.numericStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                decoration: InputDecoration(
-                  labelText: 'pos.unit_price'.tr(),
-                  prefixIcon: const Icon(Icons.sell_outlined, size: 18),
-                  suffixText: item.currencySymbol,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                ),
-                onChanged: (val) {
-                  if (isUpdating) return;
-                  isUpdating = true;
-                  final parsedUnit = double.tryParse(val) ?? 0.0;
-                  lineTotalController.text = (parsedUnit * qty).toStringAsFixed(2);
-                  isUpdating = false;
-                },
-              ),
-              const SizedBox(height: 14),
-              TextField(
-                controller: lineTotalController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                style: AppTheme.numericStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                decoration: InputDecoration(
-                  labelText: 'pos.final_line_price'.tr(),
-                  helperText: '(${qty.toStringAsFixed(qty % 1 == 0 ? 0 : 1)} ${'pos.units_count'.tr(namedArgs: {'count': ''}).trim()})',
-                  prefixIcon: const Icon(Icons.calculate_outlined, size: 18),
-                  suffixText: item.currencySymbol,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                ),
-                onChanged: (val) {
-                  if (isUpdating) return;
-                  isUpdating = true;
-                  final parsedTotal = double.tryParse(val) ?? 0.0;
-                  final computedUnit = qty > 0 ? parsedTotal / qty : parsedTotal;
-                  unitPriceController.text = computedUnit.toStringAsFixed(2);
-                  isUpdating = false;
-                },
-              ),
-            ],
-          ),
-          actionsAlignment: MainAxisAlignment.spaceBetween,
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text('common.cancel'.tr()),
-            ),
-            FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-              onPressed: () {
-                final newPrice = double.tryParse(unitPriceController.text.trim());
-                if (newPrice != null && newPrice >= 0) {
-                  setState(() {
-                    item.priceUsed = newPrice;
-                  });
-                }
-                Navigator.pop(ctx);
-              },
-              child: Text('common.save'.tr()),
-            ),
-          ],
-        );
-      },
-    );
+          );
+        },
+      );
+    } finally {
+      unitPriceController.dispose();
+      lineTotalController.dispose();
+    }
   }
 
   Future<void> _handleSave() async {

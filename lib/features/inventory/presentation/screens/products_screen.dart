@@ -368,15 +368,16 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
 
 
-  void _showAddCategoryDialog(BuildContext context, InventoryCubit cubit) {
+  Future<void> _showAddCategoryDialog(BuildContext context, InventoryCubit cubit) async {
     final addController = TextEditingController();
     final searchController = TextEditingController();
     final formKey = GlobalKey<FormState>();
     String searchQuery = '';
 
-    showDialog(
-      context: context,
-      builder: (ctx) {
+    try {
+      await showDialog(
+        context: context,
+        builder: (ctx) {
         return BlocProvider.value(
           value: cubit,
           child: StatefulBuilder(
@@ -792,17 +793,22 @@ class _ProductsScreenState extends State<ProductsScreen> {
         );
       },
     );
+    } finally {
+      addController.dispose();
+      searchController.dispose();
+    }
   }
 
-  void _showEditCategoryDialog(
+  Future<void> _showEditCategoryDialog(
     BuildContext context,
     InventoryCubit cubit,
     Category category,
-  ) {
+  ) async {
     final controller = TextEditingController(text: category.name);
     final formKey = GlobalKey<FormState>();
 
-    showDialog(
+    try {
+      await showDialog(
       context: context,
       builder: (ctx) {
         return AlertDialog(
@@ -900,6 +906,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
         );
       },
     );
+    } finally {
+      controller.dispose();
+    }
   }
 
   void _showDeleteCategoryDialog(
@@ -1143,7 +1152,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
     if (!context.mounted) return;
 
-    showDialog(
+    try {
+      await showDialog(
       context: context,
       builder: (ctx) {
         return StatefulBuilder(
@@ -1877,6 +1887,19 @@ class _ProductsScreenState extends State<ProductsScreen> {
         );
       },
     );
+    } finally {
+      idController.dispose();
+      codeController.dispose();
+      nameController.dispose();
+      costSypController.dispose();
+      costUsdController.dispose();
+      minStockController.dispose();
+      initialStockController.dispose();
+      retailSypController.dispose();
+      wholesaleSypController.dispose();
+      retailUsdController.dispose();
+      wholesaleUsdController.dispose();
+    }
   }
 
   void _showDeleteConfirmDialog(

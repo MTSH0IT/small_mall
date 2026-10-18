@@ -125,102 +125,107 @@ class _EditPurchaseInvoiceDialogState extends State<EditPurchaseInvoiceDialog> {
     final lineTotalController = TextEditingController(text: item.total.toStringAsFixed(2));
     bool isUpdating = false;
 
-    await showDialog(
-      context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF2563EB).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(Icons.edit_outlined, color: Color(0xFF2563EB), size: 20),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('تعديل سعر التكلفة للقطعة', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                    Text(item.productName, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          content: SizedBox(
-            width: 320,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+    try {
+      await showDialog(
+        context: context,
+        builder: (ctx) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Row(
               children: [
-                TextField(
-                  controller: unitCostController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: InputDecoration(
-                    labelText: 'سعر التكلفة (${item.currencySymbol})',
-                    border: const OutlineInputBorder(),
-                    isDense: true,
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2563EB).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  onChanged: (val) {
-                    if (isUpdating) return;
-                    isUpdating = true;
-                    final unitCost = double.tryParse(val) ?? 0.0;
-                    lineTotalController.text = (unitCost * qty).toStringAsFixed(2);
-                    isUpdating = false;
-                  },
+                  child: const Icon(Icons.edit_outlined, color: Color(0xFF2563EB), size: 20),
                 ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: lineTotalController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: InputDecoration(
-                    labelText: 'الإجمالي للبند (${item.currencySymbol})',
-                    border: const OutlineInputBorder(),
-                    isDense: true,
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('تعديل سعر التكلفة للقطعة', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      Text(item.productName, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                    ],
                   ),
-                  onChanged: (val) {
-                    if (isUpdating) return;
-                    isUpdating = true;
-                    final total = double.tryParse(val) ?? 0.0;
-                    if (qty > 0) {
-                      unitCostController.text = (total / qty).toStringAsFixed(2);
-                    }
-                    isUpdating = false;
-                  },
                 ),
               ],
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: Text('common.cancel'.tr()),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                final newCost = double.tryParse(unitCostController.text);
-                if (newCost != null && newCost >= 0) {
-                  setState(() {
-                    item.unitCost = newCost;
-                  });
-                }
-                Navigator.of(ctx).pop();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2563EB),
-                foregroundColor: Colors.white,
+            content: SizedBox(
+              width: 320,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  TextField(
+                    controller: unitCostController,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(
+                      labelText: 'سعر التكلفة (${item.currencySymbol})',
+                      border: const OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                    onChanged: (val) {
+                      if (isUpdating) return;
+                      isUpdating = true;
+                      final unitCost = double.tryParse(val) ?? 0.0;
+                      lineTotalController.text = (unitCost * qty).toStringAsFixed(2);
+                      isUpdating = false;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: lineTotalController,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(
+                      labelText: 'الإجمالي للبند (${item.currencySymbol})',
+                      border: const OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                    onChanged: (val) {
+                      if (isUpdating) return;
+                      isUpdating = true;
+                      final total = double.tryParse(val) ?? 0.0;
+                      if (qty > 0) {
+                        unitCostController.text = (total / qty).toStringAsFixed(2);
+                      }
+                      isUpdating = false;
+                    },
+                  ),
+                ],
               ),
-              child: Text('common.save'.tr()),
             ),
-          ],
-        );
-      },
-    );
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: Text('common.cancel'.tr()),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  final newCost = double.tryParse(unitCostController.text);
+                  if (newCost != null && newCost >= 0) {
+                    setState(() {
+                      item.unitCost = newCost;
+                    });
+                  }
+                  Navigator.of(ctx).pop();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2563EB),
+                  foregroundColor: Colors.white,
+                ),
+                child: Text('common.save'.tr()),
+              ),
+            ],
+          );
+        },
+      );
+    } finally {
+      unitCostController.dispose();
+      lineTotalController.dispose();
+    }
   }
 
   Future<void> _handleSave() async {

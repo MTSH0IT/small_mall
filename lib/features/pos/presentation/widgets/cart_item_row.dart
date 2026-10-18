@@ -69,180 +69,185 @@ class _CartItemRowState extends State<CartItemRow> {
 
     bool isUpdating = false;
 
-    await showDialog<void>(
-      context: context,
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              backgroundColor: AppColors.surfaceElevated,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              title: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.12),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.price_change_outlined, color: AppColors.primary, size: 22),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'pos.edit_price'.tr(),
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                        ),
-                        Text(
-                          widget.item.productDetails.product.name,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textSecondary,
-                            fontWeight: FontWeight.normal,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              content: SizedBox(
-                width: 380,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+    try {
+      await showDialog<void>(
+        context: context,
+        builder: (ctx) {
+          return StatefulBuilder(
+            builder: (context, setDialogState) {
+              return AlertDialog(
+                backgroundColor: AppColors.surfaceElevated,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                title: Row(
                   children: [
-                    // Original price info banner
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppColors.border),
+                        color: AppColors.primary.withValues(alpha: 0.12),
+                        shape: BoxShape.circle,
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      child: const Icon(Icons.price_change_outlined, color: AppColors.primary, size: 22),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'pos.original_price'.tr(namedArgs: {'price': originalPrice.toStringAsFixed(2)}),
-                            style: AppTheme.numericStyle(color: AppColors.textSecondary, fontSize: 12.5),
+                            'pos.edit_price'.tr(),
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                           ),
-                          if (widget.item.hasCustomPrice)
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: Colors.amber.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(4),
-                                border: Border.all(color: Colors.amber.shade700, width: 0.8),
-                              ),
-                              child: Text(
-                                'pos.modified_price'.tr(),
-                                style: TextStyle(
-                                  color: Colors.amber.shade800,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
+                          Text(
+                            widget.item.productDetails.product.name,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                              fontWeight: FontWeight.normal,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 16),
-
-                    // Unit Price Field
-                    TextField(
-                      controller: unitPriceController,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      style: AppTheme.numericStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                      decoration: InputDecoration(
-                        labelText: 'pos.unit_price'.tr(),
-                        prefixIcon: const Icon(Icons.sell_outlined, size: 18),
-                        suffixText: widget.item.currencySymbol,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
-                      onChanged: (val) {
-                        if (isUpdating) return;
-                        isUpdating = true;
-                        final parsedUnit = double.tryParse(val) ?? 0.0;
-                        lineTotalController.text = (parsedUnit * qty).toStringAsFixed(2);
-                        isUpdating = false;
-                      },
-                    ),
-                    const SizedBox(height: 14),
-
-                    // Final Line Total Field
-                    TextField(
-                      controller: lineTotalController,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      style: AppTheme.numericStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                      decoration: InputDecoration(
-                        labelText: 'pos.final_line_price'.tr(),
-                        helperText: '(${qty.toStringAsFixed(qty % 1 == 0 ? 0 : 1)} ${'pos.units_count'.tr(namedArgs: {'count': ''}).trim()})',
-                        prefixIcon: const Icon(Icons.calculate_outlined, size: 18),
-                        suffixText: widget.item.currencySymbol,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
-                      onChanged: (val) {
-                        if (isUpdating) return;
-                        isUpdating = true;
-                        final parsedTotal = double.tryParse(val) ?? 0.0;
-                        final computedUnit = qty > 0 ? parsedTotal / qty : parsedTotal;
-                        unitPriceController.text = computedUnit.toStringAsFixed(2);
-                        isUpdating = false;
-                      },
-                    ),
                   ],
                 ),
-              ),
-              actionsAlignment: MainAxisAlignment.spaceBetween,
-              actions: [
-                if (widget.item.hasCustomPrice)
-                  TextButton.icon(
-                    style: TextButton.styleFrom(foregroundColor: AppColors.textSecondary),
-                    icon: const Icon(Icons.restore_rounded, size: 16),
-                    label: Text('pos.reset_price'.tr()),
-                    onPressed: () {
-                      widget.onPriceChanged(null);
-                      Navigator.pop(ctx);
-                    },
-                  )
-                else
-                  const SizedBox.shrink(),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      child: Text('common.cancel'.tr()),
-                    ),
-                    const SizedBox(width: 8),
-                    FilledButton(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                content: SizedBox(
+                  width: 380,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Original price info banner
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AppColors.border),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'pos.original_price'.tr(namedArgs: {'price': originalPrice.toStringAsFixed(2)}),
+                              style: AppTheme.numericStyle(color: AppColors.textSecondary, fontSize: 12.5),
+                            ),
+                            if (widget.item.hasCustomPrice)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.amber.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(color: Colors.amber.shade700, width: 0.8),
+                                ),
+                                child: Text(
+                                  'pos.modified_price'.tr(),
+                                  style: TextStyle(
+                                    color: Colors.amber.shade800,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
+                      const SizedBox(height: 16),
+
+                      // Unit Price Field
+                      TextField(
+                        controller: unitPriceController,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        style: AppTheme.numericStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                        decoration: InputDecoration(
+                          labelText: 'pos.unit_price'.tr(),
+                          prefixIcon: const Icon(Icons.sell_outlined, size: 18),
+                          suffixText: widget.item.currencySymbol,
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                        onChanged: (val) {
+                          if (isUpdating) return;
+                          isUpdating = true;
+                          final parsedUnit = double.tryParse(val) ?? 0.0;
+                          lineTotalController.text = (parsedUnit * qty).toStringAsFixed(2);
+                          isUpdating = false;
+                        },
+                      ),
+                      const SizedBox(height: 14),
+
+                      // Final Line Total Field
+                      TextField(
+                        controller: lineTotalController,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        style: AppTheme.numericStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                        decoration: InputDecoration(
+                          labelText: 'pos.final_line_price'.tr(),
+                          helperText: '(${qty.toStringAsFixed(qty % 1 == 0 ? 0 : 1)} ${'pos.units_count'.tr(namedArgs: {'count': ''}).trim()})',
+                          prefixIcon: const Icon(Icons.calculate_outlined, size: 18),
+                          suffixText: widget.item.currencySymbol,
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                        onChanged: (val) {
+                          if (isUpdating) return;
+                          isUpdating = true;
+                          final parsedTotal = double.tryParse(val) ?? 0.0;
+                          final computedUnit = qty > 0 ? parsedTotal / qty : parsedTotal;
+                          unitPriceController.text = computedUnit.toStringAsFixed(2);
+                          isUpdating = false;
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                actionsAlignment: MainAxisAlignment.spaceBetween,
+                actions: [
+                  if (widget.item.hasCustomPrice)
+                    TextButton.icon(
+                      style: TextButton.styleFrom(foregroundColor: AppColors.textSecondary),
+                      icon: const Icon(Icons.restore_rounded, size: 16),
+                      label: Text('pos.reset_price'.tr()),
                       onPressed: () {
-                        final newPrice = double.tryParse(unitPriceController.text);
-                        if (newPrice != null && newPrice >= 0) {
-                          widget.onPriceChanged(newPrice);
-                        }
+                        widget.onPriceChanged(null);
                         Navigator.pop(ctx);
                       },
-                      child: Text('common.save'.tr()),
-                    ),
-                  ],
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
+                    )
+                  else
+                    const SizedBox.shrink(),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: Text('common.cancel'.tr()),
+                      ),
+                      const SizedBox(width: 8),
+                      FilledButton(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                        onPressed: () {
+                          final newPrice = double.tryParse(unitPriceController.text);
+                          if (newPrice != null && newPrice >= 0) {
+                            widget.onPriceChanged(newPrice);
+                          }
+                          Navigator.pop(ctx);
+                        },
+                        child: Text('common.save'.tr()),
+                      ),
+                    ],
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+    } finally {
+      unitPriceController.dispose();
+      lineTotalController.dispose();
+    }
   }
 
   @override

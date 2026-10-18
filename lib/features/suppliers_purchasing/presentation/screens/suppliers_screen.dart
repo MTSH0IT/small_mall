@@ -157,57 +157,69 @@ class _SuppliersScreenState extends State<SuppliersScreen> {
     );
   }
 
-  void _showEditSupplierDialog(BuildContext context, SuppliersPurchasingCubit cubit, Supplier supplier) {
+  Future<void> _showEditSupplierDialog(BuildContext context, SuppliersPurchasingCubit cubit, Supplier supplier) async {
     final nameController = TextEditingController(text: supplier.name);
     final phoneController = TextEditingController(text: supplier.phone);
     final notesController = TextEditingController(text: supplier.notes);
 
-    showDialog(
-      context: context,
-      builder: (_) => EntityFormDialog(
-        title: 'suppliers.edit_supplier'.tr(),
-        saveLabel: 'common.save'.tr(),
-        nameLabel: 'suppliers.supplier_name'.tr(),
-        notesLabel: 'common.notes'.tr(),
-        nameController: nameController,
-        phoneController: phoneController,
-        notesController: notesController,
-        onSave: () async {
-          await cubit.updateSupplier(
-            id: supplier.id,
-            name: nameController.text,
-            phone: phoneController.text.isNotEmpty ? phoneController.text : null,
-            notes: notesController.text.isNotEmpty ? notesController.text : null,
-          );
-        },
-      ),
-    );
+    try {
+      await showDialog(
+        context: context,
+        builder: (_) => EntityFormDialog(
+          title: 'suppliers.edit_supplier'.tr(),
+          saveLabel: 'common.save'.tr(),
+          nameLabel: 'suppliers.supplier_name'.tr(),
+          notesLabel: 'common.notes'.tr(),
+          nameController: nameController,
+          phoneController: phoneController,
+          notesController: notesController,
+          onSave: () async {
+            await cubit.updateSupplier(
+              id: supplier.id,
+              name: nameController.text,
+              phone: phoneController.text.isNotEmpty ? phoneController.text : null,
+              notes: notesController.text.isNotEmpty ? notesController.text : null,
+            );
+          },
+        ),
+      );
+    } finally {
+      nameController.dispose();
+      phoneController.dispose();
+      notesController.dispose();
+    }
   }
 
-  void _showAddSupplierDialog(BuildContext context, SuppliersPurchasingCubit cubit) {
+  Future<void> _showAddSupplierDialog(BuildContext context, SuppliersPurchasingCubit cubit) async {
     final nameController = TextEditingController();
     final phoneController = TextEditingController();
     final notesController = TextEditingController();
 
-    showDialog(
-      context: context,
-      builder: (_) => EntityFormDialog(
-        title: 'suppliers.add_supplier'.tr(),
-        saveLabel: 'common.save'.tr(),
-        nameLabel: 'suppliers.supplier_name'.tr(),
-        notesLabel: 'common.notes'.tr(),
-        nameController: nameController,
-        phoneController: phoneController,
-        notesController: notesController,
-        onSave: () async {
-          await cubit.addSupplier(
-            name: nameController.text,
-            phone: phoneController.text.isNotEmpty ? phoneController.text : null,
-            notes: notesController.text.isNotEmpty ? notesController.text : null,
-          );
-        },
-      ),
-    );
+    try {
+      await showDialog(
+        context: context,
+        builder: (_) => EntityFormDialog(
+          title: 'suppliers.add_supplier'.tr(),
+          saveLabel: 'common.save'.tr(),
+          nameLabel: 'suppliers.supplier_name'.tr(),
+          notesLabel: 'common.notes'.tr(),
+          nameController: nameController,
+          phoneController: phoneController,
+          notesController: notesController,
+          onSave: () async {
+            await cubit.addSupplier(
+              name: nameController.text,
+              phone: phoneController.text.isNotEmpty ? phoneController.text : null,
+              notes: notesController.text.isNotEmpty ? notesController.text : null,
+            );
+          },
+        ),
+      );
+    } finally {
+      nameController.dispose();
+      phoneController.dispose();
+      notesController.dispose();
+    }
   }
 
   Future<void> _showDeleteSupplierDialog(

@@ -254,125 +254,130 @@ class _ProductOperationsDialogState extends State<ProductOperationsDialog> {
   }
 
   // --- Modal Dialog Actions ---
-  void _showAdjustStockInlineDialog() {
+  Future<void> _showAdjustStockInlineDialog() async {
     final formKey = GlobalKey<FormState>();
     final qtyController = TextEditingController();
     final reasonController = TextEditingController();
     String direction = 'add';
 
-    showDialog(
-      context: context,
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (dialogCtx, setStateDialog) {
-            return AlertDialog(
-              title: Row(
-                children: [
-                  const Icon(Icons.swap_vert, color: AppColors.primary),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      '${'inventory.adjust_stock'.tr()}: ${widget.productDetails.product.name}',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              content: Form(
-                key: formKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
+    try {
+      await showDialog(
+        context: context,
+        builder: (ctx) {
+          return StatefulBuilder(
+            builder: (dialogCtx, setStateDialog) {
+              return AlertDialog(
+                title: Row(
                   children: [
-                    RadioGroup<String>(
-                      groupValue: direction,
-                      onChanged: (val) {
-                        if (val != null) setStateDialog(() => direction = val);
-                      },
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: RadioListTile<String>(
-                              title: Text(
-                                '(+) ${'inventory.stock_in'.tr()}',
-                                style: const TextStyle(fontSize: 13),
-                              ),
-                              value: 'add',
-                            ),
-                          ),
-                          Expanded(
-                            child: RadioListTile<String>(
-                              title: Text(
-                                '(-) ${'inventory.stock_out'.tr()}',
-                                style: const TextStyle(fontSize: 13),
-                              ),
-                              value: 'subtract',
-                            ),
-                          ),
-                        ],
+                    const Icon(Icons.swap_vert, color: AppColors.primary),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '${'inventory.adjust_stock'.tr()}: ${widget.productDetails.product.name}',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    AppTextField(
-                      label: '${'common.quantity'.tr()} *',
-                      controller: qtyController,
-                      keyboardType: TextInputType.number,
-                      validator: (val) {
-                        if (val == null || val.isEmpty) {
-                          return 'common.required_field'.tr();
-                        }
-                        final numVal = double.tryParse(val);
-                        if (numVal == null || numVal <= 0) {
-                          return 'common.required_field'.tr();
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    AppTextField(
-                      label: '${'inventory.adjust_reason'.tr()} *',
-                      controller: reasonController,
-                      validator: (val) => val == null || val.isEmpty
-                          ? 'common.required_field'.tr()
-                          : null,
                     ),
                   ],
                 ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogCtx),
-                  child: Text('common.cancel'.tr()),
+                content: Form(
+                  key: formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      RadioGroup<String>(
+                        groupValue: direction,
+                        onChanged: (val) {
+                          if (val != null) setStateDialog(() => direction = val);
+                        },
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: RadioListTile<String>(
+                                title: Text(
+                                  '(+) ${'inventory.stock_in'.tr()}',
+                                  style: const TextStyle(fontSize: 13),
+                                ),
+                                value: 'add',
+                              ),
+                            ),
+                            Expanded(
+                              child: RadioListTile<String>(
+                                title: Text(
+                                  '(-) ${'inventory.stock_out'.tr()}',
+                                  style: const TextStyle(fontSize: 13),
+                                ),
+                                value: 'subtract',
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      AppTextField(
+                        label: '${'common.quantity'.tr()} *',
+                        controller: qtyController,
+                        keyboardType: TextInputType.number,
+                        validator: (val) {
+                          if (val == null || val.isEmpty) {
+                            return 'common.required_field'.tr();
+                          }
+                          final numVal = double.tryParse(val);
+                          if (numVal == null || numVal <= 0) {
+                            return 'common.required_field'.tr();
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      AppTextField(
+                        label: '${'inventory.adjust_reason'.tr()} *',
+                        controller: reasonController,
+                        validator: (val) => val == null || val.isEmpty
+                            ? 'common.required_field'.tr()
+                            : null,
+                      ),
+                    ],
+                  ),
                 ),
-                PrimaryButton(
-                  label: 'common.confirm'.tr(),
-                  onPressed: () async {
-                    if (formKey.currentState?.validate() ?? false) {
-                      double qty = double.parse(qtyController.text);
-                      if (direction == 'subtract') {
-                        qty = -qty;
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(dialogCtx),
+                    child: Text('common.cancel'.tr()),
+                  ),
+                  PrimaryButton(
+                    label: 'common.confirm'.tr(),
+                    onPressed: () async {
+                      if (formKey.currentState?.validate() ?? false) {
+                        double qty = double.parse(qtyController.text);
+                        if (direction == 'subtract') {
+                          qty = -qty;
+                        }
+                        Navigator.pop(dialogCtx);
+                        await widget.cubit.adjustStock(
+                          widget.productDetails.product.id,
+                          qty,
+                          reasonController.text,
+                        );
+                        if (mounted) {
+                          _fetchOperations();
+                        }
                       }
-                      Navigator.pop(dialogCtx);
-                      await widget.cubit.adjustStock(
-                        widget.productDetails.product.id,
-                        qty,
-                        reasonController.text,
-                      );
-                      if (mounted) {
-                        _fetchOperations();
-                      }
-                    }
-                  },
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
+                    },
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+    } finally {
+      qtyController.dispose();
+      reasonController.dispose();
+    }
   }
 
   Future<void> _selectCustomDateRange() async {

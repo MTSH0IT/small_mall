@@ -829,67 +829,77 @@ class _POSScreenState extends State<POSScreen> {
     );
   }
 
-
-
-  void _showAddCustomerDialog(BuildContext context, POSCubit cubit) {
+  Future<void> _showAddCustomerDialog(BuildContext context, POSCubit cubit) async {
     final nameController = TextEditingController();
     final phoneController = TextEditingController();
     final notesController = TextEditingController();
 
-    showDialog(
-      context: context,
-      builder: (_) => EntityFormDialog(
-        title: 'customers.add_customer'.tr(),
-        saveLabel: 'common.save'.tr(),
-        nameController: nameController,
-        phoneController: phoneController,
-        notesController: notesController,
-        onSave: () async {
-          final repo = getIt<CustomersDebtsRepository>();
-          final customer = await repo.addCustomer(
-            name: nameController.text,
-            phone: phoneController.text.isNotEmpty ? phoneController.text : null,
-            notes: notesController.text.isNotEmpty ? notesController.text : null,
-          );
-          await cubit.loadPOSData();
-          cubit.selectCustomer(customer);
-        },
-      ),
-    );
+    try {
+      await showDialog(
+        context: context,
+        builder: (_) => EntityFormDialog(
+          title: 'customers.add_customer'.tr(),
+          saveLabel: 'common.save'.tr(),
+          nameController: nameController,
+          phoneController: phoneController,
+          notesController: notesController,
+          onSave: () async {
+            final repo = getIt<CustomersDebtsRepository>();
+            final customer = await repo.addCustomer(
+              name: nameController.text,
+              phone: phoneController.text.isNotEmpty ? phoneController.text : null,
+              notes: notesController.text.isNotEmpty ? notesController.text : null,
+            );
+            await cubit.loadPOSData();
+            cubit.selectCustomer(customer);
+          },
+        ),
+      );
+    } finally {
+      nameController.dispose();
+      phoneController.dispose();
+      notesController.dispose();
+    }
   }
 
-  void _showEditCustomerDialog(BuildContext context, POSCubit cubit, Customer customer) {
+  Future<void> _showEditCustomerDialog(BuildContext context, POSCubit cubit, Customer customer) async {
     final nameController = TextEditingController(text: customer.name);
     final phoneController = TextEditingController(text: customer.phone ?? '');
     final notesController = TextEditingController(text: customer.notes ?? '');
 
-    showDialog(
-      context: context,
-      builder: (_) => EntityFormDialog(
-        title: 'customers.edit_customer'.tr(),
-        saveLabel: 'common.save'.tr(),
-        nameController: nameController,
-        phoneController: phoneController,
-        notesController: notesController,
-        onSave: () async {
-          final repo = getIt<CustomersDebtsRepository>();
-          final phone = phoneController.text.trim().isNotEmpty ? phoneController.text.trim() : null;
-          final notes = notesController.text.trim().isNotEmpty ? notesController.text.trim() : null;
-          await repo.updateCustomer(
-            id: customer.id,
-            name: nameController.text.trim(),
-            phone: phone,
-            notes: notes,
-          );
-          await cubit.loadPOSData();
-          final updatedCustomer = customer.copyWith(
-            name: nameController.text.trim(),
-            phone: Value(phone),
-            notes: Value(notes),
-          );
-          cubit.selectCustomer(updatedCustomer);
-        },
-      ),
-    );
+    try {
+      await showDialog(
+        context: context,
+        builder: (_) => EntityFormDialog(
+          title: 'customers.edit_customer'.tr(),
+          saveLabel: 'common.save'.tr(),
+          nameController: nameController,
+          phoneController: phoneController,
+          notesController: notesController,
+          onSave: () async {
+            final repo = getIt<CustomersDebtsRepository>();
+            final phone = phoneController.text.trim().isNotEmpty ? phoneController.text.trim() : null;
+            final notes = notesController.text.trim().isNotEmpty ? notesController.text.trim() : null;
+            await repo.updateCustomer(
+              id: customer.id,
+              name: nameController.text.trim(),
+              phone: phone,
+              notes: notes,
+            );
+            await cubit.loadPOSData();
+            final updatedCustomer = customer.copyWith(
+              name: nameController.text.trim(),
+              phone: Value(phone),
+              notes: Value(notes),
+            );
+            cubit.selectCustomer(updatedCustomer);
+          },
+        ),
+      );
+    } finally {
+      nameController.dispose();
+      phoneController.dispose();
+      notesController.dispose();
+    }
   }
 }

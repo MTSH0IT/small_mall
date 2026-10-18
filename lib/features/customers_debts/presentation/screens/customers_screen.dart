@@ -134,113 +134,129 @@ class _CustomersScreenState extends State<CustomersScreen> {
     return const SizedBox();
   }
 
-  void _showAddCustomerDialog(BuildContext context, CustomersDebtsCubit cubit) {
+  Future<void> _showAddCustomerDialog(BuildContext context, CustomersDebtsCubit cubit) async {
     final nameController = TextEditingController();
     final phoneController = TextEditingController();
     final notesController = TextEditingController();
 
-    showDialog(
-      context: context,
-      builder: (_) => EntityFormDialog(
-        title: 'customers.add_customer'.tr(),
-        saveLabel: 'common.save'.tr(),
-        nameController: nameController,
-        phoneController: phoneController,
-        notesController: notesController,
-        onSave: () async {
-          await cubit.addCustomer(
-            name: nameController.text,
-            phone: phoneController.text.isNotEmpty ? phoneController.text : null,
-            notes: notesController.text.isNotEmpty ? notesController.text : null,
-          );
-        },
-      ),
-    );
+    try {
+      await showDialog(
+        context: context,
+        builder: (_) => EntityFormDialog(
+          title: 'customers.add_customer'.tr(),
+          saveLabel: 'common.save'.tr(),
+          nameController: nameController,
+          phoneController: phoneController,
+          notesController: notesController,
+          onSave: () async {
+            await cubit.addCustomer(
+              name: nameController.text,
+              phone: phoneController.text.isNotEmpty ? phoneController.text : null,
+              notes: notesController.text.isNotEmpty ? notesController.text : null,
+            );
+          },
+        ),
+      );
+    } finally {
+      nameController.dispose();
+      phoneController.dispose();
+      notesController.dispose();
+    }
   }
 
-  void _showEditCustomerDialog(BuildContext context, CustomersDebtsCubit cubit, Customer customer) {
+  Future<void> _showEditCustomerDialog(BuildContext context, CustomersDebtsCubit cubit, Customer customer) async {
     final nameController = TextEditingController(text: customer.name);
     final phoneController = TextEditingController(text: customer.phone);
     final notesController = TextEditingController(text: customer.notes);
 
-    showDialog(
-      context: context,
-      builder: (_) => EntityFormDialog(
-        title: 'customers.edit_customer'.tr(),
-        saveLabel: 'common.save'.tr(),
-        nameController: nameController,
-        phoneController: phoneController,
-        notesController: notesController,
-        onSave: () async {
-          await cubit.updateCustomer(
-            id: customer.id,
-            name: nameController.text,
-            phone: phoneController.text.isNotEmpty ? phoneController.text : null,
-            notes: notesController.text.isNotEmpty ? notesController.text : null,
-          );
-        },
-      ),
-    );
+    try {
+      await showDialog(
+        context: context,
+        builder: (_) => EntityFormDialog(
+          title: 'customers.edit_customer'.tr(),
+          saveLabel: 'common.save'.tr(),
+          nameController: nameController,
+          phoneController: phoneController,
+          notesController: notesController,
+          onSave: () async {
+            await cubit.updateCustomer(
+              id: customer.id,
+              name: nameController.text,
+              phone: phoneController.text.isNotEmpty ? phoneController.text : null,
+              notes: notesController.text.isNotEmpty ? notesController.text : null,
+            );
+          },
+        ),
+      );
+    } finally {
+      nameController.dispose();
+      phoneController.dispose();
+      notesController.dispose();
+    }
   }
 
-  void _showRecordPaymentDialog(
+  Future<void> _showRecordPaymentDialog(
     BuildContext context,
     CustomersDebtsCubit cubit,
     String customerId,
     DebtWithPayments debtData,
-  ) {
+  ) async {
     final formKey = GlobalKey<FormState>();
     final amountController = TextEditingController(text: debtData.debt.remainingAmount.toString());
 
-    showDialog(
-      context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          title: Text('customers.record_payment_title'.tr(), style: const TextStyle(color: AppColors.primary)),
-          content: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('${'customers.max_payment'.tr()} ${debtData.debt.remainingAmount.toStringAsFixed(2)} ${AppCurrency.getSymbol(debtData.debt.currency)}'),
-                const SizedBox(height: 12),
-                AppTextField(
-                  label: '${'customers.payment_amount'.tr()} (${AppCurrency.getSymbol(debtData.debt.currency)}) *',
-                  controller: amountController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  validator: (val) {
-                    if (val == null || val.isEmpty) return 'common.required_field'.tr();
-                    final parsed = double.tryParse(val);
-                    if (parsed == null || parsed <= 0) return 'common.required_field'.tr();
-                    if (parsed > debtData.debt.remainingAmount) return 'customers.payment_exceeds_debt'.tr();
-                    return null;
-                  },
-                ),
-              ],
+    try {
+      await showDialog(
+        context: context,
+        builder: (ctx) {
+          return AlertDialog(
+            title: Text('customers.record_payment_title'.tr(), style: const TextStyle(color: AppColors.primary)),
+            content: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('${'customers.max_payment'.tr()} ${debtData.debt.remainingAmount.toStringAsFixed(2)} ${AppCurrency.getSymbol(debtData.debt.currency)}'),
+                  const SizedBox(height: 12),
+                  AppTextField(
+                    label: '${'customers.payment_amount'.tr()} (${AppCurrency.getSymbol(debtData.debt.currency)}) *',
+                    controller: amountController,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    validator: (val) {
+                      if (val == null || val.isEmpty) return 'common.required_field'.tr();
+                      final parsed = double.tryParse(val);
+                      if (parsed == null || parsed <= 0) return 'common.required_field'.tr();
+                      if (parsed > debtData.debt.remainingAmount) return 'customers.payment_exceeds_debt'.tr();
+                      return null;
+                    },
+                  ),
+                ],
+              ),
             ),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: Text('common.cancel'.tr())),
-            PrimaryButton(
-              label: 'customers.confirm_payment'.tr(),
-              onPressed: () {
-                if (formKey.currentState?.validate() ?? false) {
-                  final amount = double.tryParse(amountController.text);
-                  if (amount != null && amount > 0) {
-                    cubit.recordPayment(
-                      customerId: customerId,
-                      debtId: debtData.debt.id,
-                      amountPaid: amount,
-                    );
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: Text('common.cancel'.tr())),
+              PrimaryButton(
+                label: 'customers.confirm_payment'.tr(),
+                onPressed: () {
+                  if (formKey.currentState?.validate() ?? false) {
+                    final amount = double.tryParse(amountController.text);
+                    if (amount != null && amount > 0) {
+                      cubit.recordPayment(
+                        customerId: customerId,
+                        debtId: debtData.debt.id,
+                        amountPaid: amount,
+                      );
+                    }
+                    Navigator.pop(ctx);
                   }
-                  Navigator.pop(ctx);
-                }
-              },
-            ),
-          ],
-        );
-      },
-    );
+                },
+              ),
+            ],
+          );
+        },
+      );
+    } finally {
+      amountController.dispose();
+    }
   }
 
   Future<void> _showDeleteCustomerDialog(

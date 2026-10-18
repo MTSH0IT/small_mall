@@ -30,7 +30,7 @@ void main() {
   group('Treasury Repository & Operations Tests', () {
     test('Can add and retrieve categories and subcategories', () async {
       // 1. Add Main Categories
-      final catIn = await repository.addCategory(
+      await repository.addCategory(
         name: 'تغذية الصندوق',
         type: 'in',
         description: 'ضخ سيولة',
