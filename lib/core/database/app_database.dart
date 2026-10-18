@@ -216,7 +216,8 @@ class Expenses extends Table {
 class ExchangeInvoices extends Table {
   TextColumn get id => text()();
   IntColumn get serialNumber => integer().nullable()();
-  TextColumn get actionType => text()(); // 'buy_usd' (SYP -> USD) or 'sell_usd' (USD -> SYP)
+  TextColumn get actionType =>
+      text()(); // 'buy_usd' (SYP -> USD) or 'sell_usd' (USD -> SYP)
   TextColumn get fromCurrency => text()(); // 'SYP' or 'USD'
   RealColumn get fromAmount => real()();
   TextColumn get toCurrency => text()(); // 'USD' or 'SYP'
@@ -230,137 +231,347 @@ class ExchangeInvoices extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-@DriftDatabase(tables: [
-  Categories,
-  Products,
-  ProductPrices,
-  StockMovements,
-  Customers,
-  Invoices,
-  InvoiceItems,
-  Debts,
-  DebtPayments,
-  Suppliers,
-  PurchaseInvoices,
-  PurchaseItems,
-  DeletedRecords,
-  SyncQueue,
-  ExpenseCategories,
-  Expenses,
-  ExchangeInvoices,
-])
+class TreasuryCategories extends Table {
+  TextColumn get id => text()();
+  TextColumn get name => text()();
+  TextColumn get type => text()(); // 'in', 'out', or 'both'
+  TextColumn get description => text().nullable()();
+  TextColumn get parentId => text().nullable()();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get syncedAt => dateTime().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+class TreasuryTransactions extends Table {
+  TextColumn get id => text()();
+  IntColumn get serialNumber => integer().nullable()();
+  TextColumn get type => text()(); // 'in' or 'out'
+  RealColumn get amount => real()();
+  TextColumn get currency => text().withDefault(const Constant('SYP'))();
+  TextColumn get categoryId => text().nullable()();
+  TextColumn get categoryName => text().nullable()();
+  TextColumn get subcategoryId => text().nullable()();
+  TextColumn get subcategoryName => text().nullable()();
+  TextColumn get personName => text().nullable()();
+  TextColumn get notes => text().nullable()();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get syncedAt => dateTime().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+@DriftDatabase(
+  tables: [
+    Categories,
+    Products,
+    ProductPrices,
+    StockMovements,
+    Customers,
+    Invoices,
+    InvoiceItems,
+    Debts,
+    DebtPayments,
+    Suppliers,
+    PurchaseInvoices,
+    PurchaseItems,
+    DeletedRecords,
+    SyncQueue,
+    ExpenseCategories,
+    Expenses,
+    ExchangeInvoices,
+    TreasuryCategories,
+    TreasuryTransactions,
+  ],
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 14;
+  int get schemaVersion => 17;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-        onCreate: (m) async {
-          await m.createAll();
-        },
-        onUpgrade: (m, from, to) async {
-          if (from < 2) {
-            await m.addColumn(categories, categories.syncedAt);
-            await m.addColumn(stockMovements, stockMovements.syncedAt);
-            await m.addColumn(customers, customers.syncedAt);
-            await m.addColumn(debts, debts.syncedAt);
-            await m.addColumn(debtPayments, debtPayments.syncedAt);
-            await m.addColumn(suppliers, suppliers.syncedAt);
-            await m.addColumn(purchaseInvoices, purchaseInvoices.syncedAt);
-            await m.createTable(deletedRecords);
+    onCreate: (m) async {
+      await m.createAll();
+    },
+    onUpgrade: (m, from, to) async {
+      if (from < 2) {
+        await m.addColumn(categories, categories.syncedAt);
+        await m.addColumn(stockMovements, stockMovements.syncedAt);
+        await m.addColumn(customers, customers.syncedAt);
+        await m.addColumn(debts, debts.syncedAt);
+        await m.addColumn(debtPayments, debtPayments.syncedAt);
+        await m.addColumn(suppliers, suppliers.syncedAt);
+        await m.addColumn(purchaseInvoices, purchaseInvoices.syncedAt);
+        await m.createTable(deletedRecords);
+      }
+      if (from < 3) {
+        await m.addColumn(products, products.code);
+      }
+      if (from < 4) {
+        await m.addColumn(products, products.serialNumber);
+      }
+      if (from < 5) {
+        await m.addColumn(invoices, invoices.serialNumber);
+        // Backfill serial numbers for existing invoices ordered by createdAt
+        final existingInvoices = await (select(
+          invoices,
+        )..orderBy([(t) => OrderingTerm.asc(t.createdAt)])).get();
+        for (int i = 0; i < existingInvoices.length; i++) {
+          final inv = existingInvoices[i];
+          if (inv.serialNumber == null) {
+            await (update(invoices)..where((t) => t.id.equals(inv.id))).write(
+              InvoicesCompanion(serialNumber: Value(i + 1)),
+            );
           }
-          if (from < 3) {
-            await m.addColumn(products, products.code);
-          }
-          if (from < 4) {
-            await m.addColumn(products, products.serialNumber);
-          }
-          if (from < 5) {
-            await m.addColumn(invoices, invoices.serialNumber);
-            // Backfill serial numbers for existing invoices ordered by createdAt
-            final existingInvoices = await (select(invoices)
-                  ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
-                .get();
-            for (int i = 0; i < existingInvoices.length; i++) {
-              final inv = existingInvoices[i];
-              if (inv.serialNumber == null) {
-                await (update(invoices)..where((t) => t.id.equals(inv.id)))
-                    .write(InvoicesCompanion(serialNumber: Value(i + 1)));
-              }
-            }
-          }
-          if (from < 6) {
-            await m.createTable(expenseCategories);
-            await m.createTable(expenses);
+        }
+      }
+      if (from < 6) {
+        await m.createTable(expenseCategories);
+        await m.createTable(expenses);
 
-            final defaultCategories = [
-              'الرواتب والأجور',
-              'الإيجار',
-              'فواتير ومرافق',
-              'طعام وضيافة',
-              'صيانة ونظافة',
-              'شحن ونقل وتوصيل',
-              'مصاريف عامة أخرى',
-            ];
-            final now = DateTime.now();
-            for (final catName in defaultCategories) {
-              await into(expenseCategories).insert(
-                ExpenseCategoriesCompanion.insert(
-                  id: 'exp-cat-${catName.hashCode.abs()}',
-                  name: catName,
-                  createdAt: now,
+        final defaultCategories = [
+          'الرواتب والأجور',
+          'الإيجار',
+          'فواتير ومرافق',
+          'طعام وضيافة',
+          'صيانة ونظافة',
+          'شحن ونقل وتوصيل',
+          'مصاريف عامة أخرى',
+        ];
+        final now = DateTime.now();
+        for (final catName in defaultCategories) {
+          await into(expenseCategories).insert(
+            ExpenseCategoriesCompanion.insert(
+              id: 'exp-cat-${catName.hashCode.abs()}',
+              name: catName,
+              createdAt: now,
+            ),
+          );
+        }
+      }
+      if (from < 7) {
+        try {
+          await customStatement(
+            'ALTER TABLE expenses DROP COLUMN payment_method;',
+          );
+        } catch (_) {}
+      }
+      if (from < 8) {
+        await m.addColumn(categories, categories.serialNumber);
+        // Backfill serial numbers for existing categories
+        final existingCategories = await (select(categories)).get();
+        for (int i = 0; i < existingCategories.length; i++) {
+          final cat = existingCategories[i];
+          if (cat.serialNumber == null) {
+            await (update(categories)..where((t) => t.id.equals(cat.id))).write(
+              CategoriesCompanion(serialNumber: Value(i + 1)),
+            );
+          }
+        }
+      }
+      if (from < 9) {
+        await m.addColumn(expenseCategories, expenseCategories.parentId);
+        await m.addColumn(expenses, expenses.subcategoryId);
+      }
+      if (from < 10) {
+        await m.addColumn(products, products.currency);
+        await m.addColumn(productPrices, productPrices.currency);
+      }
+      if (from < 11) {
+        await m.addColumn(products, products.costPriceUsd);
+      }
+      if (from < 12) {
+        await m.addColumn(invoices, invoices.currency);
+        await m.addColumn(invoiceItems, invoiceItems.currency);
+        await m.addColumn(purchaseInvoices, purchaseInvoices.currency);
+        await m.addColumn(purchaseItems, purchaseItems.currency);
+        await m.addColumn(debts, debts.currency);
+        await m.addColumn(debtPayments, debtPayments.currency);
+        await m.addColumn(expenses, expenses.currency);
+      }
+      if (from < 13) {
+        await m.createTable(exchangeInvoices);
+      }
+      if (from < 14) {
+        await m.addColumn(invoiceItems, invoiceItems.costPrice);
+      }
+      if (from < 15) {
+        await m.createTable(treasuryCategories);
+        await m.createTable(treasuryTransactions);
+
+        final defaultCategories = [
+          {
+            'name': 'تغذية الصندوق',
+            'type': 'both',
+            'desc': 'إيداع أو ضخ سيولة إضافية في الصندوق',
+          },
+          {
+            'name': 'رأس مال إضافي',
+            'type': 'both',
+            'desc': 'زيادة رأس المال نقداً في الصندوق',
+          },
+          {
+            'name': 'سداد سلفة / استرداد عهدة',
+            'type': 'both',
+            'desc': 'إعادة مبلغ سلفة أو عهدة سابقة',
+          },
+          {
+            'name': 'إيراد إضافي / متفرقات',
+            'type': 'both',
+            'desc': 'إيرادات نقدية غير مرتبطة بالمبيعات',
+          },
+          {
+            'name': 'تحويل من البنك',
+            'type': 'both',
+            'desc': 'سحب من حساب بنكي وإيداعه في الصندوق',
+          },
+          {
+            'name': 'سلفة لشخص / موظف',
+            'type': 'both',
+            'desc': 'سحب مبلغ كسلفة لشخص أو موظف',
+          },
+          {
+            'name': 'مسحوبات شخصية',
+            'type': 'both',
+            'desc': 'مسحوبات نقدية خاصة بمالك المتجر / الشريك',
+          },
+          {
+            'name': 'عهدة نقدية',
+            'type': 'both',
+            'desc': 'تسليم عهدة نقدية لشخص للشراء أو العمل',
+          },
+          {
+            'name': 'إيداع في البنك',
+            'type': 'both',
+            'desc': 'توريد نقدية من الصندوق إلى الحساب البنكي',
+          },
+          {
+            'name': 'مصاريف طارئة / نثرية',
+            'type': 'both',
+            'desc': 'مبالغ مصروفة بشكل مباشر طارئ',
+          },
+          {'name': 'أخرى', 'type': 'both', 'desc': 'حركات نقدية أخرى'},
+        ];
+        final now = DateTime.now();
+        for (final item in defaultCategories) {
+          await into(treasuryCategories).insert(
+            TreasuryCategoriesCompanion.insert(
+              id: 'tr-cat-${item['name'].hashCode.abs()}',
+              name: item['name']!,
+              type: item['type']!,
+              description: Value(item['desc']),
+              createdAt: now,
+            ),
+          );
+        }
+      }
+      if (from < 16) {
+        // Ensure treasury_transactions has missing columns if upgraded from earlier draft
+        try {
+          await customStatement(
+            'ALTER TABLE treasury_transactions ADD COLUMN serial_number INTEGER;',
+          );
+        } catch (_) {}
+        try {
+          await customStatement(
+            'ALTER TABLE treasury_transactions ADD COLUMN category_name TEXT;',
+          );
+        } catch (_) {}
+        try {
+          await customStatement(
+            'ALTER TABLE treasury_transactions ADD COLUMN person_name TEXT;',
+          );
+        } catch (_) {}
+
+        // Migrate older type names ('deposit' -> 'in', 'withdrawal' -> 'out')
+        try {
+          await customStatement(
+            "UPDATE treasury_transactions SET type = 'in' WHERE type = 'deposit';",
+          );
+          await customStatement(
+            "UPDATE treasury_transactions SET type = 'out' WHERE type = 'withdrawal';",
+          );
+        } catch (_) {}
+
+        try {
+          await customStatement(
+            "UPDATE treasury_categories SET type = 'in' WHERE type = 'deposit';",
+          );
+          await customStatement(
+            "UPDATE treasury_categories SET type = 'out' WHERE type = 'withdrawal';",
+          );
+        } catch (_) {}
+
+        // Populate category_name for any existing treasury transaction from category_id
+        try {
+          await customStatement('''
+            UPDATE treasury_transactions
+            SET category_name = COALESCE(
+              (SELECT name FROM treasury_categories WHERE treasury_categories.id = treasury_transactions.category_id),
+              'تغذية نقدية عامة'
+            )
+            WHERE category_name IS NULL OR category_name = '';
+          ''');
+        } catch (_) {}
+
+        // Backfill serial_number for any existing treasury transactions
+        try {
+          final existingTx = await (select(treasuryTransactions)
+                ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
+              .get();
+          for (int i = 0; i < existingTx.length; i++) {
+            final tx = existingTx[i];
+            if (tx.serialNumber == null) {
+              await (update(treasuryTransactions)..where((t) => t.id.equals(tx.id)))
+                  .write(
+                TreasuryTransactionsCompanion(
+                  serialNumber: Value(i + 1),
                 ),
               );
             }
           }
-          if (from < 7) {
-            try {
-              await customStatement('ALTER TABLE expenses DROP COLUMN payment_method;');
-            } catch (_) {}
-          }
-          if (from < 8) {
-            await m.addColumn(categories, categories.serialNumber);
-            // Backfill serial numbers for existing categories
-            final existingCategories = await (select(categories)).get();
-            for (int i = 0; i < existingCategories.length; i++) {
-              final cat = existingCategories[i];
-              if (cat.serialNumber == null) {
-                await (update(categories)..where((t) => t.id.equals(cat.id)))
-                    .write(CategoriesCompanion(serialNumber: Value(i + 1)));
-              }
-            }
-          }
-          if (from < 9) {
-            await m.addColumn(expenseCategories, expenseCategories.parentId);
-            await m.addColumn(expenses, expenses.subcategoryId);
-          }
-          if (from < 10) {
-            await m.addColumn(products, products.currency);
-            await m.addColumn(productPrices, productPrices.currency);
-          }
-          if (from < 11) {
-            await m.addColumn(products, products.costPriceUsd);
-          }
-          if (from < 12) {
-            await m.addColumn(invoices, invoices.currency);
-            await m.addColumn(invoiceItems, invoiceItems.currency);
-            await m.addColumn(purchaseInvoices, purchaseInvoices.currency);
-            await m.addColumn(purchaseItems, purchaseItems.currency);
-            await m.addColumn(debts, debts.currency);
-            await m.addColumn(debtPayments, debtPayments.currency);
-            await m.addColumn(expenses, expenses.currency);
-          }
-          if (from < 13) {
-            await m.createTable(exchangeInvoices);
-          }
-          if (from < 14) {
-            await m.addColumn(invoiceItems, invoiceItems.costPrice);
-          }
-        },
-      );
+        } catch (_) {}
+      }
+      if (from < 17) {
+        try {
+          await customStatement(
+            'ALTER TABLE treasury_categories ADD COLUMN parent_id TEXT;',
+          );
+        } catch (_) {}
+        try {
+          await customStatement(
+            'ALTER TABLE treasury_transactions ADD COLUMN subcategory_id TEXT;',
+          );
+        } catch (_) {}
+        try {
+          await customStatement(
+            'ALTER TABLE treasury_transactions ADD COLUMN subcategory_name TEXT;',
+          );
+        } catch (_) {}
+      }
+    },
+    beforeOpen: (details) async {
+      try {
+        await customStatement(
+          "UPDATE treasury_categories SET type = 'both' WHERE type != 'both';",
+        );
+      } catch (_) {}
+    },
+  );
+
+  /// Get the next available treasury transaction serial number
+  Future<int> getNextTreasurySerialNumber() async {
+    final maxExp = treasuryTransactions.serialNumber.max();
+    final query = selectOnly(treasuryTransactions)..addColumns([maxExp]);
+    final row = await query.getSingleOrNull();
+    final currentMax = row?.read(maxExp) ?? 0;
+    return currentMax + 1;
+  }
 
   /// Get the next available exchange invoice serial number
   Future<int> getNextExchangeSerialNumber() async {
@@ -400,9 +611,9 @@ class AppDatabase extends _$AppDatabase {
 
   /// Get chronological serial numbers for all purchase invoices (1, 2, 3...)
   Future<Map<String, int>> getPurchaseSerialNumbers() async {
-    final list = await (select(purchaseInvoices)
-          ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
-        .get();
+    final list = await (select(
+      purchaseInvoices,
+    )..orderBy([(t) => OrderingTerm.asc(t.createdAt)])).get();
     final map = <String, int>{};
     for (int i = 0; i < list.length; i++) {
       map[list[i].id] = i + 1;
@@ -412,10 +623,11 @@ class AppDatabase extends _$AppDatabase {
 
   /// Get chronological serial numbers for all stock adjustments (1, 2, 3...)
   Future<Map<String, int>> getAdjustmentSerialNumbers() async {
-    final list = await (select(stockMovements)
-          ..where((t) => t.type.equals('adjustment'))
-          ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
-        .get();
+    final list =
+        await (select(stockMovements)
+              ..where((t) => t.type.equals('adjustment'))
+              ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
+            .get();
     final map = <String, int>{};
     for (int i = 0; i < list.length; i++) {
       map[list[i].id] = i + 1;
@@ -456,8 +668,10 @@ class AppDatabase extends _$AppDatabase {
     final qtySum = stockMovements.quantity.sum();
     final query = selectOnly(stockMovements)
       ..addColumns([qtySum])
-      ..where(stockMovements.productId.equals(prodId) &
-          stockMovements.referenceId.equals('initial_stock'));
+      ..where(
+        stockMovements.productId.equals(prodId) &
+            stockMovements.referenceId.equals('initial_stock'),
+      );
     final row = await query.getSingleOrNull();
     return row?.read(qtySum) ?? 0.0;
   }
@@ -497,7 +711,8 @@ class AppDatabase extends _$AppDatabase {
   }
 
   /// Fast SQL sum of remaining debts per customer broken down by currency
-  Future<Map<String, Map<String, double>>> getCustomerDebtTotalsByCurrency() async {
+  Future<Map<String, Map<String, double>>>
+  getCustomerDebtTotalsByCurrency() async {
     final remainingSum = debts.remainingAmount.sum();
     final query = selectOnly(debts)
       ..addColumns([debts.customerId, debts.currency, remainingSum])
@@ -548,8 +763,10 @@ class AppDatabase extends _$AppDatabase {
     final amountSum = expenses.amount.sum();
     final query = selectOnly(expenses)
       ..addColumns([amountSum])
-      ..where(expenses.createdAt.isBiggerOrEqualValue(start) &
-          expenses.createdAt.isSmallerOrEqualValue(end));
+      ..where(
+        expenses.createdAt.isBiggerOrEqualValue(start) &
+            expenses.createdAt.isSmallerOrEqualValue(end),
+      );
     final row = await query.getSingleOrNull();
     return row?.read(amountSum) ?? 0.0;
   }

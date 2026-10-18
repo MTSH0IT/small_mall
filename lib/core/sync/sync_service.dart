@@ -166,6 +166,16 @@ class SyncService {
               ..where(_db.exchangeInvoices.syncedAt.isNull()))
             .map((r) => r.read(_db.exchangeInvoices.id.count()) ?? 0)
             .getSingle(),
+        (_db.selectOnly(_db.treasuryCategories)
+              ..addColumns([_db.treasuryCategories.id.count()])
+              ..where(_db.treasuryCategories.syncedAt.isNull()))
+            .map((r) => r.read(_db.treasuryCategories.id.count()) ?? 0)
+            .getSingle(),
+        (_db.selectOnly(_db.treasuryTransactions)
+              ..addColumns([_db.treasuryTransactions.id.count()])
+              ..where(_db.treasuryTransactions.syncedAt.isNull()))
+            .map((r) => r.read(_db.treasuryTransactions.id.count()) ?? 0)
+            .getSingle(),
       ]);
 
       pendingCount.value = counts.fold<int>(0, (sum, count) => sum + count);
@@ -711,6 +721,75 @@ class SyncService {
           context: LogContext.syncQueue,
         );
         hasErrors = true;
+      }
+
+      // 14. Sync Treasury Categories
+      try {
+        final unsynced = await (_db.select(
+          _db.treasuryCategories,
+        )..where((t) => t.syncedAt.isNull())).get();
+        if (unsynced.isNotEmpty) {
+          final payload = unsynced
+              .map(
+                (c) => {
+                  'id': c.id,
+                  'name': c.name,
+                  'type': c.type,
+                  'description': c.description,
+                  'created_at': c.createdAt.toIso8601String(),
+                },
+              )
+              .toList();
+          await client.from('treasury_categories').upsert(payload);
+
+          final now = DateTime.now();
+          final ids = unsynced.map((c) => c.id).toList();
+          await (_db.update(_db.treasuryCategories)..where((t) => t.id.isIn(ids)))
+              .write(TreasuryCategoriesCompanion(syncedAt: Value(now)));
+        }
+      } catch (e) {
+        _logger.error(
+          'Failed to sync treasury categories',
+          error: e,
+          context: LogContext.syncQueue,
+        );
+      }
+
+      // 15. Sync Treasury Transactions
+      try {
+        final unsynced = await (_db.select(
+          _db.treasuryTransactions,
+        )..where((t) => t.syncedAt.isNull())).get();
+        if (unsynced.isNotEmpty) {
+          final payload = unsynced
+              .map(
+                (tx) => {
+                  'id': tx.id,
+                  'serial_number': tx.serialNumber,
+                  'type': tx.type,
+                  'amount': tx.amount,
+                  'currency': tx.currency,
+                  'category_id': tx.categoryId,
+                  'category_name': tx.categoryName,
+                  'person_name': tx.personName,
+                  'notes': tx.notes,
+                  'created_at': tx.createdAt.toIso8601String(),
+                },
+              )
+              .toList();
+          await client.from('treasury_transactions').upsert(payload);
+
+          final now = DateTime.now();
+          final ids = unsynced.map((tx) => tx.id).toList();
+          await (_db.update(_db.treasuryTransactions)..where((t) => t.id.isIn(ids)))
+              .write(TreasuryTransactionsCompanion(syncedAt: Value(now)));
+        }
+      } catch (e) {
+        _logger.error(
+          'Failed to sync treasury transactions',
+          error: e,
+          context: LogContext.syncQueue,
+        );
       }
 
       await updatePendingCount();

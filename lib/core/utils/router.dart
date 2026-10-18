@@ -10,6 +10,7 @@ import 'package:small_mall/features/pos/presentation/screens/pos_screen.dart';
 import 'package:small_mall/features/reports/presentation/screens/reports_screen.dart';
 import 'package:small_mall/features/settings/presentation/screens/settings_screen.dart';
 import 'package:small_mall/features/suppliers_purchasing/presentation/screens/suppliers_screen.dart';
+import 'package:small_mall/features/treasury/presentation/screens/treasury_screen.dart';
 
 final GoRouter appRouter = GoRouter(
   initialLocation: '/login',
@@ -38,6 +39,14 @@ final GoRouter appRouter = GoRouter(
           builder: (context, state) => const InventoryScreen(),
         ),
         GoRoute(
+          path: '/treasury',
+          builder: (context, state) => const TreasuryScreen(),
+        ),
+        GoRoute(
+          path: '/expenses',
+          builder: (context, state) => const ExpensesScreen(),
+        ),
+        GoRoute(
           path: '/customers',
           builder: (context, state) => const CustomersScreen(),
         ),
@@ -52,10 +61,6 @@ final GoRouter appRouter = GoRouter(
         GoRoute(
           path: '/invoices',
           builder: (context, state) => const InvoicesScreen(),
-        ),
-        GoRoute(
-          path: '/expenses',
-          builder: (context, state) => const ExpensesScreen(),
         ),
         GoRoute(
           path: '/settings',

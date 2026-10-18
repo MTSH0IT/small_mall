@@ -7,4 +7,5 @@ enum LogContext {
   inventory,
   debts,
   expenses,
+  treasury,
 }

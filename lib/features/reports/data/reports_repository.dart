@@ -964,17 +964,65 @@ class ReportsRepository {
       }
     }
 
+    // 7. Treasury transactions (حركات الصندوق: إدخال وإخراج)
+    final treasuryList = await (_db.select(_db.treasuryTransactions)
+          ..where((t) =>
+              t.createdAt.isBiggerOrEqualValue(start) &
+              t.createdAt.isSmallerOrEqualValue(end)))
+        .get();
+
+    double treasuryInSyp = 0.0;
+    double treasuryInUsd = 0.0;
+    double treasuryOutSyp = 0.0;
+    double treasuryOutUsd = 0.0;
+
+    for (final tx in treasuryList) {
+      final isUsd = tx.currency == 'USD';
+      final isIn = tx.type == 'in';
+      if (isIn) {
+        if (isUsd) {
+          treasuryInUsd += tx.amount;
+        } else {
+          treasuryInSyp += tx.amount;
+        }
+      } else {
+        if (isUsd) {
+          treasuryOutUsd += tx.amount;
+        } else {
+          treasuryOutSyp += tx.amount;
+        }
+      }
+
+      final catName = tx.categoryName ?? (isIn ? 'تغذية نقدية' : 'سحب نقدي');
+      final title = isIn
+          ? 'إدخال: $catName'
+          : 'إخراج: $catName';
+
+      movements.add(CashMovementItem(
+        id: tx.id,
+        title: title,
+        type: isIn ? 'treasury_in' : 'treasury_out',
+        isCashIn: isIn,
+        amount: tx.amount,
+        date: tx.createdAt,
+        currency: tx.currency,
+        partyName: tx.personName,
+        referenceNumber: tx.serialNumber != null ? '#${tx.serialNumber}' : null,
+        notes: tx.notes,
+      ));
+    }
+
     final netExchangeSyp = exchangeInSyp - exchangeOutSyp;
     final netExchangeUsd = exchangeInUsd - exchangeOutUsd;
 
     // Sort movements by date descending (newest first)
     movements.sort((a, b) => b.date.compareTo(a.date));
 
-    final totalCashInSyp = totalCashSalesSyp + totalDebtPaymentsSyp + exchangeInSyp;
-    final totalCashInUsd = totalCashSalesUsd + totalDebtPaymentsUsd + exchangeInUsd;
+    final totalCashInSyp = totalCashSalesSyp + totalDebtPaymentsSyp + exchangeInSyp + treasuryInSyp;
+    final totalCashInUsd = totalCashSalesUsd + totalDebtPaymentsUsd + exchangeInUsd + treasuryInUsd;
 
-    final totalCashOutSyp = totalCashReturnsSyp + totalExpensesSyp + totalPurchasesSyp + exchangeOutSyp;
-    final totalCashOutUsd = totalCashReturnsUsd + totalExpensesUsd + totalPurchasesUsd + exchangeOutUsd;
+    final totalCashOutSyp = totalCashReturnsSyp + totalExpensesSyp + totalPurchasesSyp + exchangeOutSyp + treasuryOutSyp;
+    final totalCashOutUsd = totalCashReturnsUsd + totalExpensesUsd + totalPurchasesUsd + exchangeOutUsd + treasuryOutUsd;
 
     final netCashFlowSyp = totalCashInSyp - totalCashOutSyp;
     final netCashFlowUsd = totalCashInUsd - totalCashOutUsd;

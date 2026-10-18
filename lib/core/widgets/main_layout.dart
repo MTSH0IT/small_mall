@@ -41,6 +41,12 @@ class _MainLayoutState extends State<MainLayout> {
         route: '/inventory',
       ),
       _NavItem(
+        icon: Icons.savings_outlined,
+        activeIcon: Icons.savings,
+        label: 'nav.treasury'.tr(),
+        route: '/treasury',
+      ),
+      _NavItem(
         icon: Icons.account_balance_wallet_outlined,
         activeIcon: Icons.account_balance_wallet,
         label: 'nav.expenses'.tr(),
