@@ -224,7 +224,7 @@ class ExchangeReportCard extends StatelessWidget {
           Text(
             '${showSign && sypAmount > 0 ? '+' : ''}${sypAmount.toStringAsFixed(2)} ${AppCurrency.primarySymbol}',
             style: AppTheme.numericStyle(
-              fontSize: 16,
+              fontSize: 15,
               fontWeight: FontWeight.bold,
               color: isHighlighted ? baseColor : AppColors.textPrimary,
             ),
@@ -233,7 +233,7 @@ class ExchangeReportCard extends StatelessWidget {
           Text(
             '${showSign && usdAmount > 0 ? '+' : ''}${usdAmount.toStringAsFixed(2)} \$',
             style: AppTheme.numericStyle(
-              fontSize: 14,
+              fontSize: 15,
               fontWeight: FontWeight.bold,
               color: const Color(0xFF059669),
             ),
@@ -312,7 +312,7 @@ class ExchangeReportCard extends StatelessWidget {
               Text(
                 '${usdNet >= 0 ? '+' : ''}${usdNet.toStringAsFixed(2)} \$',
                 style: AppTheme.numericStyle(
-                  fontSize: 14,
+                  fontSize: 15,
                   fontWeight: FontWeight.bold,
                   color: usdColor,
                 ),

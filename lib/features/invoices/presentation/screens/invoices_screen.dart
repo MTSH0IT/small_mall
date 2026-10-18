@@ -507,7 +507,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
             if ((amountUsd ?? 0.0) != 0.0)
               Text(
                 '${NumberFormat('#,##0.00').format(amountUsd ?? 0.0)} ${AppCurrency.usdSymbol}',
-                style: AppTheme.numericStyle(fontSize: 10, fontWeight: FontWeight.w600, color: color.withValues(alpha: 0.85)),
+                style: AppTheme.numericStyle(fontSize: 11, fontWeight: FontWeight.bold, color: color),
               ),
           ],
         ],

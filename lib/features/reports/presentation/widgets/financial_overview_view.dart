@@ -187,7 +187,7 @@ class FinancialOverviewView extends StatelessWidget {
                                   Text(
                                     '${profitData.netProfit.toStringAsFixed(2)} ل.س',
                                     style: AppTheme.numericStyle(
-                                      fontSize: 18,
+                                      fontSize: 16,
                                       fontWeight: FontWeight.bold,
                                       color: profitData.netProfit >= 0 ? AppColors.success : AppColors.danger,
                                     ),
@@ -195,7 +195,7 @@ class FinancialOverviewView extends StatelessWidget {
                                   Text(
                                     '${profitData.netProfitUsd.toStringAsFixed(2)} \$',
                                     style: AppTheme.numericStyle(
-                                      fontSize: 15,
+                                      fontSize: 16,
                                       fontWeight: FontWeight.bold,
                                       color: profitData.netProfitUsd >= 0 ? const Color(0xFF059669) : AppColors.danger,
                                     ),
@@ -333,7 +333,7 @@ class FinancialOverviewView extends StatelessWidget {
                   '/ $signUsd$formattedUsd \$',
                   style: AppTheme.numericStyle(
                     fontWeight: isBold ? FontWeight.bold : FontWeight.w600,
-                    fontSize: isBold ? 13 : 12,
+                    fontSize: isBold ? 14 : 13,
                     color: const Color(0xFF059669),
                   ),
                 ),

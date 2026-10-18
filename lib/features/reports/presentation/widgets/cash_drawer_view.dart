@@ -157,7 +157,7 @@ class _CashDrawerViewState extends State<CashDrawerView> {
                                 Text(
                                   '+${data.totalCashIn.toStringAsFixed(2)} ل.س',
                                   style: AppTheme.numericStyle(
-                                    fontSize: 18,
+                                    fontSize: 17,
                                     fontWeight: FontWeight.bold,
                                     color: AppColors.success,
                                   ),
@@ -166,7 +166,7 @@ class _CashDrawerViewState extends State<CashDrawerView> {
                                 Text(
                                   '+${data.totalCashInUsd.toStringAsFixed(2)} \$',
                                   style: AppTheme.numericStyle(
-                                    fontSize: 16,
+                                    fontSize: 17,
                                     fontWeight: FontWeight.bold,
                                     color: const Color(0xFF059669),
                                   ),
@@ -219,7 +219,7 @@ class _CashDrawerViewState extends State<CashDrawerView> {
                                 Text(
                                   '-${data.totalCashOut.toStringAsFixed(2)} ل.س',
                                   style: AppTheme.numericStyle(
-                                    fontSize: 18,
+                                    fontSize: 17,
                                     fontWeight: FontWeight.bold,
                                     color: AppColors.danger,
                                   ),
@@ -228,7 +228,7 @@ class _CashDrawerViewState extends State<CashDrawerView> {
                                 Text(
                                   '-${data.totalCashOutUsd.toStringAsFixed(2)} \$',
                                   style: AppTheme.numericStyle(
-                                    fontSize: 16,
+                                    fontSize: 17,
                                     fontWeight: FontWeight.bold,
                                     color: AppColors.danger,
                                   ),
@@ -283,7 +283,7 @@ class _CashDrawerViewState extends State<CashDrawerView> {
                                 Text(
                                   '${data.netCashFlow >= 0 ? '+' : ''}${data.netCashFlow.toStringAsFixed(2)} ل.س',
                                   style: AppTheme.numericStyle(
-                                    fontSize: 18,
+                                    fontSize: 17,
                                     fontWeight: FontWeight.bold,
                                     color: statusColor,
                                   ),
@@ -293,7 +293,7 @@ class _CashDrawerViewState extends State<CashDrawerView> {
                                   Text(
                                     '${data.netCashFlowUsd >= 0 ? '+' : ''}${data.netCashFlowUsd.toStringAsFixed(2)} \$',
                                     style: AppTheme.numericStyle(
-                                      fontSize: 16,
+                                      fontSize: 17,
                                       fontWeight: FontWeight.bold,
                                       color: data.netCashFlowUsd >= 0 ? const Color(0xFF059669) : AppColors.danger,
                                     ),
@@ -554,7 +554,7 @@ class _CashDrawerViewState extends State<CashDrawerView> {
               Text(
                 '/ ${amountUsd.toStringAsFixed(1)} \$',
                 style: AppTheme.numericStyle(
-                  fontSize: 11,
+                  fontSize: 12,
                   fontWeight: FontWeight.bold,
                   color: const Color(0xFF059669),
                 ),

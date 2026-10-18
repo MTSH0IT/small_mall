@@ -176,11 +176,12 @@ class ProductsTable extends StatelessWidget {
         AppTableColumn<ProductWithDetails>(
           title: 'inventory.cost_price'.tr(),
           cellBuilder: (item) {
+            final hasSypCost = item.costPriceSyp > 0;
             final hasUsdCost = item.costPriceUsd > 0;
-            return Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+
+            final costWidgets = <Widget>[];
+            if (hasSypCost || !hasUsdCost) {
+              costWidgets.add(
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -190,7 +191,7 @@ class ProductsTable extends StatelessWidget {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      AppCurrency.primarySymbol,
+                      AppCurrency.sypSymbol,
                       style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
@@ -199,30 +200,40 @@ class ProductsTable extends StatelessWidget {
                     ),
                   ],
                 ),
-                if (hasUsdCost) ...[
-                  const SizedBox(height: 2),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        item.costPriceUsd.toStringAsFixed(2),
-                        style: AppTheme.numericStyle(
-                          color: const Color(0xFF059669),
-                        ),
+              );
+            }
+            if (hasUsdCost) {
+              if (costWidgets.isNotEmpty) {
+                costWidgets.add(const SizedBox(height: 2));
+              }
+              costWidgets.add(
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      item.costPriceUsd.toStringAsFixed(2),
+                      style: AppTheme.numericStyle(
+                        color: const Color(0xFF059669),
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        AppCurrency.secondarySymbol,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF059669),
-                        ),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      AppCurrency.usdSymbol,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF059669),
                       ),
-                    ],
-                  ),
-                ],
-              ],
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            return Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: costWidgets,
             );
           },
         ),

@@ -478,22 +478,24 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        '${state.totalSyp.toStringAsFixed(2)} ${AppCurrency.sypSymbol}',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: state.selectedCategoryId == null
-                              ? AppColors.primary
-                              : AppColors.textPrimary,
+                      if (state.totalSyp > 0 || state.totalUsd == 0)
+                        Text(
+                          '${state.totalSyp.toStringAsFixed(2)} ${AppCurrency.sypSymbol}',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: state.selectedCategoryId == null
+                                ? AppColors.primary
+                                : AppColors.textPrimary,
+                          ),
                         ),
-                      ),
                       if (state.totalUsd > 0) ...[
-                        const SizedBox(height: 2),
+                        if (state.totalSyp > 0)
+                          const SizedBox(height: 2),
                         Text(
                           '${state.totalUsd.toStringAsFixed(2)} ${AppCurrency.usdSymbol}',
                           style: const TextStyle(
-                            fontSize: 13,
+                            fontSize: 14,
                             fontWeight: FontWeight.bold,
                             color: Color(0xFF059669),
                           ),
@@ -631,21 +633,22 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                                     Column(
                                       crossAxisAlignment: CrossAxisAlignment.end,
                                       children: [
-                                        Text(
-                                          '${catTotalSyp.toStringAsFixed(2)} ${AppCurrency.sypSymbol}',
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.bold,
-                                            color: isSelected
-                                                ? AppColors.primary
-                                                : AppColors.textPrimary,
+                                        if (catTotalSyp > 0 || catTotalUsd == 0)
+                                          Text(
+                                            '${catTotalSyp.toStringAsFixed(2)} ${AppCurrency.sypSymbol}',
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.bold,
+                                              color: isSelected
+                                                  ? AppColors.primary
+                                                  : AppColors.textPrimary,
+                                            ),
                                           ),
-                                        ),
                                         if (catTotalUsd > 0)
                                           Text(
                                             '${catTotalUsd.toStringAsFixed(2)} ${AppCurrency.usdSymbol}',
                                             style: const TextStyle(
-                                              fontSize: 12,
+                                              fontSize: 13,
                                               fontWeight: FontWeight.bold,
                                               color: Color(0xFF059669),
                                             ),
@@ -843,21 +846,22 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                                                         crossAxisAlignment: CrossAxisAlignment.end,
                                                         mainAxisSize: MainAxisSize.min,
                                                         children: [
-                                                          Text(
-                                                            '${subTotalSyp.toStringAsFixed(2)} ${AppCurrency.sypSymbol}',
-                                                            style: TextStyle(
-                                                              fontSize: 11,
-                                                              fontWeight: FontWeight.bold,
-                                                              color: isSubSelected
-                                                                  ? AppColors.primary
-                                                                  : AppColors.textPrimary,
+                                                          if (subTotalSyp > 0 || subTotalUsd == 0)
+                                                            Text(
+                                                              '${subTotalSyp.toStringAsFixed(2)} ${AppCurrency.sypSymbol}',
+                                                              style: TextStyle(
+                                                                fontSize: 11,
+                                                                fontWeight: FontWeight.bold,
+                                                                color: isSubSelected
+                                                                    ? AppColors.primary
+                                                                    : AppColors.textPrimary,
+                                                              ),
                                                             ),
-                                                          ),
                                                           if (subTotalUsd > 0)
                                                             Text(
                                                               '${subTotalUsd.toStringAsFixed(2)} ${AppCurrency.usdSymbol}',
                                                               style: const TextStyle(
-                                                                fontSize: 10,
+                                                                fontSize: 11,
                                                                 fontWeight: FontWeight.bold,
                                                                 color: Color(0xFF059669),
                                                               ),
@@ -1121,20 +1125,22 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      '${state.filteredTotalSyp.toStringAsFixed(2)} ${AppCurrency.sypSymbol}',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.warning,
+                    if (state.filteredTotalSyp > 0 || state.filteredTotalUsd == 0)
+                      Text(
+                        '${state.filteredTotalSyp.toStringAsFixed(2)} ${AppCurrency.sypSymbol}',
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.warning,
+                        ),
                       ),
-                    ),
                     if (state.filteredTotalUsd > 0) ...[
-                      const SizedBox(height: 2),
+                      if (state.filteredTotalSyp > 0)
+                        const SizedBox(height: 2),
                       Text(
                         '${state.filteredTotalUsd.toStringAsFixed(2)} ${AppCurrency.usdSymbol}',
                         style: const TextStyle(
-                          fontSize: 16,
+                          fontSize: 17,
                           fontWeight: FontWeight.bold,
                           color: Color(0xFF059669),
                         ),

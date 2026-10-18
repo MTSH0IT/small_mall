@@ -399,7 +399,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 Text(
                   '/ ${amountUsd.toStringAsFixed(2)} \$',
                   style: AppTheme.numericStyle(
-                    fontSize: 12,
+                    fontSize: 13,
                     fontWeight: FontWeight.bold,
                     color: const Color(0xFF059669),
                   ),
@@ -430,7 +430,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 Text(
                   '/ ${amountUsd.toStringAsFixed(2)} \$',
                   style: AppTheme.numericStyle(
-                    fontSize: 13,
+                    fontSize: 14,
                     fontWeight: FontWeight.bold,
                     color: const Color(0xFF059669),
                   ),

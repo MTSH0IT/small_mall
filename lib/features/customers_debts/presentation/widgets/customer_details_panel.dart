@@ -118,25 +118,26 @@ class CustomerDetailsPanel extends StatelessWidget {
                       children: [
                         Text('${'customers.balance'.tr()}:', style: theme.textTheme.labelSmall),
                         const SizedBox(height: 4),
-                        Text(
-                          '${customerData.totalDebtSyp.toStringAsFixed(2)} ل.س',
-                          style: AppTheme.numericStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: customerData.totalDebtSyp > 0 ? AppColors.accent : AppColors.success,
+                        if (customerData.totalDebtSyp > 0 || customerData.totalDebtUsd == 0)
+                          Text(
+                            '${customerData.totalDebtSyp.toStringAsFixed(2)} ل.س',
+                            style: AppTheme.numericStyle(
+                              fontSize: (customerData.totalDebtSyp > 0 && customerData.totalDebtUsd > 0) ? 20 : 22,
+                              fontWeight: FontWeight.bold,
+                              color: customerData.totalDebtSyp > 0 ? AppColors.accent : AppColors.success,
+                            ),
                           ),
-                        ),
-                        if (customerData.totalDebtUsd > 0) ...[
-                          const SizedBox(height: 2),
+                        if (customerData.totalDebtSyp > 0 && customerData.totalDebtUsd > 0)
+                          const SizedBox(height: 3),
+                        if (customerData.totalDebtUsd > 0)
                           Text(
                             '${customerData.totalDebtUsd.toStringAsFixed(2)} \$',
                             style: AppTheme.numericStyle(
-                              fontSize: 18,
+                              fontSize: (customerData.totalDebtSyp > 0 && customerData.totalDebtUsd > 0) ? 20 : 22,
                               fontWeight: FontWeight.bold,
                               color: const Color(0xFF059669),
                             ),
                           ),
-                        ],
                       ],
                     ),
                   ],

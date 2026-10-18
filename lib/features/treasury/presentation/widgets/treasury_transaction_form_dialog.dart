@@ -539,7 +539,7 @@ class _TreasuryTransactionFormDialogState
                     ),
                     const SizedBox(width: 8),
                     ChoiceChip(
-                      label: Text(AppCurrency.primaryCode),
+                      label: Text('${AppCurrency.sypCode} (${AppCurrency.sypSymbol})'),
                       selected: _selectedCurrency == AppCurrency.primaryCode,
                       selectedColor: accentColor.withValues(alpha: 0.2),
                       labelStyle: TextStyle(
@@ -558,7 +558,7 @@ class _TreasuryTransactionFormDialogState
                     ),
                     const SizedBox(width: 8),
                     ChoiceChip(
-                      label: const Text('USD (\$)'),
+                      label: Text('${AppCurrency.usdCode} (${AppCurrency.usdSymbol})'),
                       selected: _selectedCurrency == 'USD',
                       selectedColor: const Color(0xFF059669).withValues(alpha: 0.2),
                       labelStyle: TextStyle(

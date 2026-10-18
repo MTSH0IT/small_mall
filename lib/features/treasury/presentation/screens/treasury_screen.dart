@@ -615,26 +615,30 @@ class _TreasuryScreenState extends State<TreasuryScreen> {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        '${state.netSyp >= 0 ? '+' : ''}${state.netSyp.toStringAsFixed(2)} ${AppCurrency.sypSymbol}',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: state.selectedCategoryId == null
-                              ? AppColors.primary
-                              : (state.netSyp >= 0
-                                  ? AppColors.success
-                                  : const Color(0xFFDC2626)),
+                      if (state.netSyp != 0 || state.netUsd == 0)
+                        Text(
+                          '${state.netSyp >= 0 ? '+' : ''}${state.netSyp.toStringAsFixed(2)} ${AppCurrency.sypSymbol}',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: state.selectedCategoryId == null
+                                ? AppColors.primary
+                                : (state.netSyp >= 0
+                                    ? AppColors.success
+                                    : const Color(0xFFDC2626)),
+                          ),
                         ),
-                      ),
                       if (state.netUsd != 0) ...[
-                        const SizedBox(height: 2),
+                        if (state.netSyp != 0 || state.netUsd == 0)
+                          const SizedBox(height: 2),
                         Text(
                           '${state.netUsd >= 0 ? '+' : ''}${state.netUsd.toStringAsFixed(2)} ${AppCurrency.usdSymbol}',
-                          style: const TextStyle(
-                            fontSize: 13,
+                          style: TextStyle(
+                            fontSize: 14,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF059669),
+                            color: state.netUsd >= 0
+                                ? const Color(0xFF059669)
+                                : const Color(0xFFDC2626),
                           ),
                         ),
                       ],
@@ -777,23 +781,24 @@ class _TreasuryScreenState extends State<TreasuryScreen> {
                                       crossAxisAlignment:
                                           CrossAxisAlignment.end,
                                       children: [
-                                        Text(
-                                          '${catTotalSyp >= 0 ? '+' : ''}${catTotalSyp.toStringAsFixed(2)} ${AppCurrency.sypSymbol}',
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.bold,
-                                            color: isSelected
-                                                ? AppColors.primary
-                                                : (catTotalSyp >= 0
-                                                    ? AppColors.success
-                                                    : const Color(0xFFDC2626)),
+                                        if (catTotalSyp != 0 || catTotalUsd == 0)
+                                          Text(
+                                            '${catTotalSyp >= 0 ? '+' : ''}${catTotalSyp.toStringAsFixed(2)} ${AppCurrency.sypSymbol}',
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.bold,
+                                              color: isSelected
+                                                  ? AppColors.primary
+                                                  : (catTotalSyp >= 0
+                                                      ? AppColors.success
+                                                      : const Color(0xFFDC2626)),
+                                            ),
                                           ),
-                                        ),
                                         if (catTotalUsd != 0)
                                           Text(
                                             '${catTotalUsd >= 0 ? '+' : ''}${catTotalUsd.toStringAsFixed(2)} ${AppCurrency.usdSymbol}',
                                             style: TextStyle(
-                                              fontSize: 12,
+                                              fontSize: 13,
                                               fontWeight: FontWeight.bold,
                                               color: catTotalUsd >= 0
                                                   ? const Color(0xFF059669)
@@ -1071,29 +1076,30 @@ class _TreasuryScreenState extends State<TreasuryScreen> {
                                                         mainAxisSize:
                                                             MainAxisSize.min,
                                                         children: [
-                                                          Text(
-                                                            '${subTotalSyp >= 0 ? '+' : ''}${subTotalSyp.toStringAsFixed(2)} ${AppCurrency.sypSymbol}',
-                                                            style: TextStyle(
-                                                              fontSize: 11,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .bold,
-                                                              color: isSubSelected
-                                                                  ? AppColors
-                                                                      .primary
-                                                                  : (subTotalSyp >= 0
-                                                                      ? AppColors
-                                                                          .success
-                                                                      : const Color(
-                                                                          0xFFDC2626)),
+                                                          if (subTotalSyp != 0 || subTotalUsd == 0)
+                                                            Text(
+                                                              '${subTotalSyp >= 0 ? '+' : ''}${subTotalSyp.toStringAsFixed(2)} ${AppCurrency.sypSymbol}',
+                                                              style: TextStyle(
+                                                                fontSize: 11,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold,
+                                                                color: isSubSelected
+                                                                    ? AppColors
+                                                                        .primary
+                                                                    : (subTotalSyp >= 0
+                                                                        ? AppColors
+                                                                            .success
+                                                                        : const Color(
+                                                                            0xFFDC2626)),
+                                                              ),
                                                             ),
-                                                          ),
                                                           if (subTotalUsd != 0)
                                                             Text(
                                                               '${subTotalUsd >= 0 ? '+' : ''}${subTotalUsd.toStringAsFixed(2)} ${AppCurrency.usdSymbol}',
                                                               style:
                                                                   TextStyle(
-                                                                fontSize: 10,
+                                                                fontSize: 11,
                                                                 fontWeight:
                                                                     FontWeight
                                                                         .bold,
@@ -1474,25 +1480,33 @@ class _TreasuryScreenState extends State<TreasuryScreen> {
                             color: AppColors.success,
                           ),
                           const SizedBox(width: 4),
-                          Text(
-                            '+${state.filteredTotalInSyp.toStringAsFixed(0)} ${AppCurrency.sypSymbol}',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.success,
-                            ),
-                          ),
-                          if (state.filteredTotalInUsd > 0) ...[
-                            const SizedBox(width: 4),
+                          if (state.filteredTotalInSyp > 0 || state.filteredTotalInUsd == 0)
                             Text(
-                              '(+${state.filteredTotalInUsd.toStringAsFixed(0)} \$)',
+                              '+${state.filteredTotalInSyp.toStringAsFixed(0)} ${AppCurrency.sypSymbol}',
                               style: const TextStyle(
-                                fontSize: 11,
+                                fontSize: 12,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFF059669),
+                                color: AppColors.success,
                               ),
                             ),
-                          ],
+                          if (state.filteredTotalInSyp > 0 && state.filteredTotalInUsd > 0)
+                            const Text(
+                              ' | ',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.success,
+                              ),
+                            ),
+                          if (state.filteredTotalInUsd > 0)
+                            Text(
+                              '+${state.filteredTotalInUsd.toStringAsFixed(0)} ${AppCurrency.usdSymbol}',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.success,
+                              ),
+                            ),
                         ],
                       ),
                     ),
@@ -1513,25 +1527,33 @@ class _TreasuryScreenState extends State<TreasuryScreen> {
                             color: Color(0xFFDC2626),
                           ),
                           const SizedBox(width: 4),
-                          Text(
-                            '-${state.filteredTotalOutSyp.toStringAsFixed(0)} ${AppCurrency.sypSymbol}',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFFDC2626),
-                            ),
-                          ),
-                          if (state.filteredTotalOutUsd > 0) ...[
-                            const SizedBox(width: 4),
+                          if (state.filteredTotalOutSyp > 0 || state.filteredTotalOutUsd == 0)
                             Text(
-                              '(-${state.filteredTotalOutUsd.toStringAsFixed(0)} \$)',
+                              '-${state.filteredTotalOutSyp.toStringAsFixed(0)} ${AppCurrency.sypSymbol}',
                               style: const TextStyle(
-                                fontSize: 11,
+                                fontSize: 12,
                                 fontWeight: FontWeight.bold,
                                 color: Color(0xFFDC2626),
                               ),
                             ),
-                          ],
+                          if (state.filteredTotalOutSyp > 0 && state.filteredTotalOutUsd > 0)
+                            const Text(
+                              ' | ',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFFDC2626),
+                              ),
+                            ),
+                          if (state.filteredTotalOutUsd > 0)
+                            Text(
+                              '-${state.filteredTotalOutUsd.toStringAsFixed(0)} ${AppCurrency.usdSymbol}',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFFDC2626),
+                              ),
+                            ),
                         ],
                       ),
                     ),
@@ -1540,24 +1562,28 @@ class _TreasuryScreenState extends State<TreasuryScreen> {
                       crossAxisAlignment: CrossAxisAlignment.end,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(
-                          '${state.filteredNetSyp >= 0 ? '+' : ''}${state.filteredNetSyp.toStringAsFixed(2)} ${AppCurrency.sypSymbol}',
-                          style: TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.bold,
-                            color: state.filteredNetSyp >= 0
-                                ? AppColors.success
-                                : const Color(0xFFDC2626),
+                        if (state.filteredNetSyp != 0 || state.filteredNetUsd == 0)
+                          Text(
+                            '${state.filteredNetSyp >= 0 ? '+' : ''}${state.filteredNetSyp.toStringAsFixed(2)} ${AppCurrency.sypSymbol}',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: state.filteredNetSyp >= 0
+                                  ? AppColors.success
+                                  : const Color(0xFFDC2626),
+                            ),
                           ),
-                        ),
                         if (state.filteredNetUsd != 0) ...[
-                          const SizedBox(height: 2),
+                          if (state.filteredNetSyp != 0 || state.filteredNetUsd == 0)
+                            const SizedBox(height: 2),
                           Text(
                             '${state.filteredNetUsd >= 0 ? '+' : ''}${state.filteredNetUsd.toStringAsFixed(2)} ${AppCurrency.usdSymbol}',
-                            style: const TextStyle(
-                              fontSize: 14,
+                            style: TextStyle(
+                              fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF059669),
+                              color: state.filteredNetUsd >= 0
+                                  ? const Color(0xFF059669)
+                                  : const Color(0xFFDC2626),
                             ),
                           ),
                         ],
