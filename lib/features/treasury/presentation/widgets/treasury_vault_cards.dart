@@ -140,7 +140,7 @@ class TreasuryVaultCards extends StatelessWidget {
               ElevatedButton.icon(
                 onPressed: onCashIn,
                 icon: const Icon(Icons.arrow_downward, size: 16),
-                label: Text('treasury.cash_in'.tr()),
+                label: Text('treasury.deposit_cash_btn'.tr()),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.success,
                   foregroundColor: Colors.white,
@@ -153,7 +153,7 @@ class TreasuryVaultCards extends StatelessWidget {
               ElevatedButton.icon(
                 onPressed: onCashOut,
                 icon: const Icon(Icons.arrow_upward, size: 16),
-                label: Text('treasury.cash_out'.tr()),
+                label: Text('treasury.withdraw_cash_btn'.tr()),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.danger,
                   foregroundColor: Colors.white,
@@ -166,7 +166,7 @@ class TreasuryVaultCards extends StatelessWidget {
               OutlinedButton.icon(
                 onPressed: onExchange,
                 icon: const Icon(Icons.currency_exchange, size: 16),
-                label: Text('invoices.currency_exchange'.tr()),
+                label: Text('treasury.exchange_currency_btn'.tr()),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),

@@ -91,7 +91,7 @@ class TreasuryLedgerView extends StatelessWidget {
                 label: Text(
                   startDate != null && endDate != null
                       ? '${DateFormat('yyyy/MM/dd').format(startDate!)} - ${DateFormat('yyyy/MM/dd').format(endDate!)}'
-                      : 'reports.all_time'.tr(),
+                      : 'treasury.all_time'.tr(),
                 ),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -105,7 +105,7 @@ class TreasuryLedgerView extends StatelessWidget {
                 IconButton(
                   onPressed: onClearDateRange,
                   icon: const Icon(Icons.clear, size: 18),
-                  tooltip: 'reports.reset_dates'.tr(),
+                  tooltip: 'common.cancel'.tr(),
                 ),
               ],
             ],
@@ -219,13 +219,13 @@ class TreasuryLedgerView extends StatelessWidget {
                             ),
                             child: Row(
                               children: [
-                                _headerCell('treasury.date'.tr(), flex: 3),
-                                _headerCell('treasury.movement_type'.tr(), flex: 3),
+                                _headerCell('treasury.date'.tr(), flex: 2),
+                                _headerCell('treasury.movement_type'.tr(), flex: 4),
                                 _headerCell('treasury.person_name'.tr(), flex: 4),
                                 _headerCell('treasury.serial'.tr(), flex: 2),
                                 _headerCell('treasury.inflow'.tr(), flex: 3, align: TextAlign.end),
                                 _headerCell('treasury.outflow'.tr(), flex: 3, align: TextAlign.end),
-                                _headerCell('treasury.running_balance'.tr(), flex: 4, align: TextAlign.end),
+                                _headerCell('treasury.running_balance'.tr(), flex: 3, align: TextAlign.end),
                               ],
                             ),
                           ),
@@ -278,7 +278,7 @@ class TreasuryLedgerView extends StatelessWidget {
         children: [
           // Date & Time
           Expanded(
-            flex: 3,
+            flex: 2,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
@@ -297,12 +297,10 @@ class TreasuryLedgerView extends StatelessWidget {
 
           // Movement Type Badge
           Expanded(
-            flex: 3,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildTypeBadge(item),
-              ],
+            flex: 4,
+            child: Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: _buildTypeBadge(item),
             ),
           ),
 
@@ -373,7 +371,7 @@ class TreasuryLedgerView extends StatelessWidget {
 
           // Running Balance
           Expanded(
-            flex: 4,
+            flex: 3,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
@@ -440,27 +438,34 @@ class TreasuryLedgerView extends StatelessWidget {
         icon = Icons.account_balance_wallet_outlined;
     }
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: color.withValues(alpha: 0.25)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 13, color: color),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: color,
+    return Tooltip(
+      message: label,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: color.withValues(alpha: 0.25)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 13, color: color),
+            const SizedBox(width: 4),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

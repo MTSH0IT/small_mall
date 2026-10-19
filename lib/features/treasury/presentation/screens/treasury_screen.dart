@@ -520,13 +520,68 @@ class _TreasuryScreenState extends State<TreasuryScreen> {
     TreasuryCubit cubit,
     TreasuryLoaded state,
   ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // 1. Hero Vault Balances & Quick Actions Header
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-          child: TreasuryVaultCards(
+    if (state.selectedTabIndex == 0) {
+      // 1. SIMPLIFIED HUB / OVERVIEW (No top bar)
+      return _buildHubView(context, cubit, state);
+    } else if (state.selectedTabIndex == 1) {
+      // 2. DEDICATED FULL-SCREEN UNIFIED LEDGER
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildCompactVaultBar(context, cubit, state),
+          Expanded(
+            child: TreasuryLedgerView(
+              ledger: state.filteredLedger,
+              selectedTypeFilter: state.ledgerTypeFilter,
+              selectedCurrencyFilter: state.ledgerCurrencyFilter,
+              searchQuery: state.ledgerSearchQuery,
+              startDate: state.startDate,
+              endDate: state.endDate,
+              onTypeFilterChanged: (type) => cubit.setLedgerTypeFilter(type),
+              onCurrencyFilterChanged: (curr) => cubit.setLedgerCurrencyFilter(curr),
+              onSearchChanged: (q) => cubit.setLedgerSearchQuery(q),
+              onSelectDateRange: () => _selectDateRange(
+                context,
+                cubit,
+                state.startDate,
+                state.endDate,
+              ),
+              onClearDateRange: () => cubit.setDateRange(null, null),
+            ),
+          ),
+        ],
+      );
+    } else {
+      // 3. DEDICATED FULL-SCREEN CATEGORIES & MANUAL VOUCHERS
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildCompactVaultBar(context, cubit, state),
+          Expanded(
+            child: SplitPaneLayout(
+              leftFlex: 2,
+              rightFlex: 3,
+              leftChild: _buildLeftPane(context, cubit, state),
+              rightChild: _buildRightPane(context, cubit, state),
+            ),
+          ),
+        ],
+      );
+    }
+  }
+
+  Widget _buildHubView(
+    BuildContext context,
+    TreasuryCubit cubit,
+    TreasuryLoaded state,
+  ) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // 1. Hero Live Vault Balances & Quick Actions
+          TreasuryVaultCards(
             vaultBalanceSyp: state.vaultBalanceSyp,
             vaultBalanceUsd: state.vaultBalanceUsd,
             onCashIn: () => _showAddTransactionDialog(
@@ -550,136 +605,239 @@ class _TreasuryScreenState extends State<TreasuryScreen> {
             onExchange: () => _showExchangeDialog(context, cubit),
             onRefresh: () => cubit.loadTreasury(),
           ),
-        ),
+          const SizedBox(height: 20),
 
-        // 2. Navigation Tabs (Ledger, Categories/Manual Vouchers)
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
-          child: Container(
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Row(
-              children: [
-                _buildTabButton(
-                  title: 'treasury.tab_ledger'.tr(),
-                  icon: Icons.receipt_long,
-                  badge: '${state.unifiedLedger.length}',
-                  isSelected: state.selectedTabIndex == 0,
-                  onTap: () => cubit.setTabIndex(0),
-                ),
-                _buildTabButton(
-                  title: 'treasury.tab_categories'.tr(),
-                  icon: Icons.category_outlined,
-                  isSelected: state.selectedTabIndex == 1,
-                  onTap: () => cubit.setTabIndex(1),
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        // 3. Tab Body
-        Expanded(
-          child: IndexedStack(
-            index: state.selectedTabIndex,
+          // 2. The Two Expressive Action Cards (Simple, no inner cards, highly descriptive buttons)
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Tab 0: Unified Running Balance Ledger
-              TreasuryLedgerView(
-                ledger: state.filteredLedger,
-                selectedTypeFilter: state.ledgerTypeFilter,
-                selectedCurrencyFilter: state.ledgerCurrencyFilter,
-                searchQuery: state.ledgerSearchQuery,
-                startDate: state.startDate,
-                endDate: state.endDate,
-                onTypeFilterChanged: (type) => cubit.setLedgerTypeFilter(type),
-                onCurrencyFilterChanged: (curr) => cubit.setLedgerCurrencyFilter(curr),
-                onSearchChanged: (q) => cubit.setLedgerSearchQuery(q),
-                onSelectDateRange: () => _selectDateRange(
-                  context,
-                  cubit,
-                  state.startDate,
-                  state.endDate,
+              // Section 1: Unified Running Ledger (كشف الحركات التراكمي الشامل)
+              Expanded(
+                child: _buildSimpleActionCard(
+                  title: 'treasury.tab_ledger'.tr(),
+                  description: 'treasury.hub_ledger_desc'.tr(),
+                  icon: Icons.receipt_long,
+                  accentColor: const Color(0xFF0284C7),
+                  buttonLabel: 'treasury.open_ledger_full'.tr(),
+                  onPressed: () => cubit.setTabIndex(1),
                 ),
-                onClearDateRange: () => cubit.setDateRange(null, null),
               ),
+              const SizedBox(width: 16),
 
-              // Tab 1: Manual Vouchers & Categories (SplitPaneLayout)
-              SplitPaneLayout(
-                leftFlex: 2,
-                rightFlex: 3,
-                leftChild: _buildLeftPane(context, cubit, state),
-                rightChild: _buildRightPane(context, cubit, state),
+              // Section 2: Categories & Manual Vouchers (البنود والتصنيفات والسندات اليدوية)
+              Expanded(
+                child: _buildSimpleActionCard(
+                  title: 'treasury.tab_categories'.tr(),
+                  description: 'treasury.hub_categories_desc'.tr(),
+                  icon: Icons.account_tree_outlined,
+                  accentColor: const Color(0xFF9333EA),
+                  buttonLabel: 'treasury.open_categories_full'.tr(),
+                  onPressed: () => cubit.setTabIndex(2),
+                ),
               ),
             ],
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
-  Widget _buildTabButton({
+  Widget _buildSimpleActionCard({
     required String title,
+    required String description,
     required IconData icon,
-    String? badge,
-    required bool isSelected,
-    required VoidCallback onTap,
+    required Color accentColor,
+    required String buttonLabel,
+    required VoidCallback onPressed,
   }) {
-    return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            color: isSelected ? AppColors.primary : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceElevated,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
             children: [
-              Icon(
-                icon,
-                size: 18,
-                color: isSelected ? Colors.white : AppColors.textSecondary,
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: accentColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: accentColor, size: 28),
               ),
-              const SizedBox(width: 8),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                  color: isSelected ? Colors.white : AppColors.textSecondary,
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
               ),
-              if (badge != null) ...[
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? Colors.white.withValues(alpha: 0.25)
-                        : AppColors.surfaceElevated,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: isSelected ? Colors.transparent : AppColors.border,
-                    ),
-                  ),
-                  child: Text(
-                    badge,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: isSelected ? Colors.white : AppColors.textSecondary,
-                    ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            description,
+            style: const TextStyle(
+              fontSize: 13,
+              color: AppColors.textSecondary,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 20),
+          ElevatedButton.icon(
+            onPressed: onPressed,
+            icon: const Icon(Icons.open_in_full, size: 18),
+            label: Text(
+              buttonLabel,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: accentColor,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              elevation: 0,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompactVaultBar(
+    BuildContext context,
+    TreasuryCubit cubit,
+    TreasuryLoaded state,
+  ) {
+    final isLedger = state.selectedTabIndex == 1;
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceElevated,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Back to Hub Button (Expressive label)
+          OutlinedButton.icon(
+            onPressed: () => cubit.setTabIndex(0),
+            icon: const Icon(Icons.arrow_back, size: 16),
+            label: Text('treasury.back_to_treasury'.tr()),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              side: const BorderSide(color: AppColors.border),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+          ),
+          const SizedBox(width: 12),
+
+          // Switch to other view button (Expressive label)
+          OutlinedButton.icon(
+            onPressed: () => cubit.setTabIndex(isLedger ? 2 : 1),
+            icon: const Icon(Icons.swap_horiz, size: 16),
+            label: Text(
+              isLedger
+                  ? 'treasury.switch_to_categories'.tr()
+                  : 'treasury.switch_to_ledger'.tr(),
+            ),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              side: BorderSide(
+                color: isLedger
+                    ? const Color(0xFF9333EA).withValues(alpha: 0.4)
+                    : const Color(0xFF0284C7).withValues(alpha: 0.4),
+              ),
+              foregroundColor: isLedger
+                  ? const Color(0xFF9333EA)
+                  : const Color(0xFF0284C7),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+          ),
+          const Spacer(),
+
+          // Mini Live Vault Balances
+          // SYP Badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1E3A8A).withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFF3B82F6).withValues(alpha: 0.25)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.money, size: 16, color: Color(0xFF1D4ED8)),
+                const SizedBox(width: 6),
+                Text(
+                  '${state.vaultBalanceSyp.toStringAsFixed(0)} ${AppCurrency.sypSymbol}',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1D4ED8),
                   ),
                 ),
               ],
-            ],
+            ),
           ),
-        ),
+          const SizedBox(width: 8),
+
+          // USD Badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: const Color(0xFF065F46).withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.25)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.attach_money, size: 16, color: Color(0xFF047857)),
+                const SizedBox(width: 4),
+                Text(
+                  '\$${state.vaultBalanceUsd.toStringAsFixed(2)}',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF047857),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
