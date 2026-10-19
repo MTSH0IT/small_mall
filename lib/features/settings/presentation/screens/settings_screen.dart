@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:small_mall/core/di/injection.dart';
 import 'package:small_mall/core/services/app_settings_service.dart';
+import 'package:small_mall/core/services/database_backup_service.dart';
 import 'package:small_mall/core/sync/sync_service.dart';
 import 'package:small_mall/core/utils/theme.dart';
 import 'package:small_mall/core/widgets/app_screen_scaffold.dart';
@@ -35,6 +38,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late final TextEditingController _exchangeRateController;
   late final TextEditingController _defaultMinStockController;
   final _syncService = getIt<SyncService>();
+  final _backupService = getIt<DatabaseBackupService>();
+  List<BackupFileInfo> _backups = [];
+  DatabaseStats? _dbStats;
+  bool _isLoadingBackups = false;
+  bool _isCreatingBackup = false;
+  bool _isRestoringLocalBackup = false;
+  final _backupLabelController = TextEditingController();
 
   @override
   void initState() {
@@ -44,6 +54,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _syncService.pendingCount.addListener(_onPendingCountChanged);
     _syncService.status.addListener(_onSyncStatusChanged);
     _loadDbPath();
+    _loadBackupsAndStats();
 
     final rate = AppSettingsService.usdExchangeRate;
     _exchangeRateController = TextEditingController(
@@ -350,6 +361,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _syncService.status.removeListener(_onSyncStatusChanged);
     _exchangeRateController.dispose();
     _defaultMinStockController.dispose();
+    _backupLabelController.dispose();
     super.dispose();
   }
 
@@ -366,6 +378,632 @@ class _SettingsScreenState extends State<SettingsScreen> {
         setState(() => _isManualSyncing = false);
       }
     }
+  }
+
+  Future<void> _loadBackupsAndStats() async {
+    setState(() => _isLoadingBackups = true);
+    try {
+      final list = await _backupService.listBackups();
+      final stats = await _backupService.getDatabaseStats();
+      if (mounted) {
+        setState(() {
+          _backups = list;
+          _dbStats = stats;
+        });
+      }
+    } catch (_) {
+      // Ignored
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingBackups = false);
+      }
+    }
+  }
+
+  Future<void> _handleCreateBackup() async {
+    if (_isCreatingBackup) return;
+    setState(() => _isCreatingBackup = true);
+    try {
+      final label = _backupLabelController.text.trim();
+      final backup = await _backupService.createBackup(
+        customLabel: label.isNotEmpty ? label : null,
+      );
+      _backupLabelController.clear();
+      await _loadBackupsAndStats();
+      if (mounted) {
+        AppToast.success(
+          context,
+          message: 'settings.backup_created_success'.tr(namedArgs: {'name': backup.fileName}),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        AppToast.error(context, message: e.toString());
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isCreatingBackup = false);
+      }
+    }
+  }
+
+  Future<void> _handleOpenBackupsFolder() async {
+    try {
+      await _backupService.openBackupsFolder();
+    } catch (e) {
+      if (mounted) {
+        AppToast.error(context, message: e.toString());
+      }
+    }
+  }
+
+  Future<void> _showLocalRestoreConfirmDialog(BackupFileInfo backup) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surfaceElevated,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.amber.shade700.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.settings_backup_restore_rounded, color: Colors.amber.shade700, size: 24),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'settings.restore_backup_confirm_title'.tr(),
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'settings.restore_backup_confirm_msg'.tr(namedArgs: {'name': backup.fileName}),
+              style: const TextStyle(fontSize: 13.5, height: 1.5, color: AppColors.textPrimary),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.shield_outlined, size: 18, color: AppColors.primary),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'settings.safety_checkpoint_notice'.tr(),
+                      style: const TextStyle(fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text('common.cancel'.tr()),
+          ),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.amber.shade700,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            icon: const Icon(Icons.restore_rounded, size: 18),
+            label: Text('settings.restore_now'.tr()),
+            onPressed: () => Navigator.of(ctx).pop(true),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      setState(() => _isRestoringLocalBackup = true);
+      try {
+        await _backupService.restoreBackup(backup.file);
+        if (mounted) {
+          await showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (ctx) => AlertDialog(
+              backgroundColor: AppColors.surfaceElevated,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.success.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 24),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'settings.restore_backup_success_title'.tr(),
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                  ),
+                ],
+              ),
+              content: Text(
+                'settings.restore_backup_success_restart_msg'.tr(),
+                style: const TextStyle(fontSize: 13.5, height: 1.5, color: AppColors.textPrimary),
+              ),
+              actions: [
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+                  ),
+                  icon: const Icon(Icons.exit_to_app_rounded, size: 18),
+                  label: Text(
+                    'settings.exit_app_btn'.tr(),
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  onPressed: () => exit(0),
+                ),
+              ],
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          AppToast.error(context, message: e.toString());
+        }
+      } finally {
+        if (mounted) {
+          setState(() => _isRestoringLocalBackup = false);
+        }
+      }
+    }
+  }
+
+  Future<void> _showDeleteBackupConfirmDialog(BackupFileInfo backup) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surfaceElevated,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.danger.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.delete_outline_rounded, color: AppColors.danger, size: 24),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'common.confirm_delete'.tr(),
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          'settings.delete_backup_confirm'.tr(),
+          style: const TextStyle(fontSize: 13.5, color: AppColors.textPrimary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text('common.cancel'.tr()),
+          ),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.danger,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            icon: const Icon(Icons.delete_rounded, size: 18),
+            label: Text('common.delete'.tr()),
+            onPressed: () => Navigator.of(ctx).pop(true),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      try {
+        await _backupService.deleteBackup(backup.file);
+        await _loadBackupsAndStats();
+        if (mounted) {
+          AppToast.success(context, message: 'settings.backup_deleted_success'.tr());
+        }
+      } catch (e) {
+        if (mounted) {
+          AppToast.error(context, message: e.toString());
+        }
+      }
+    }
+  }
+
+  Widget _buildDbStatItem({
+    required IconData icon,
+    required Color color,
+    required String label,
+    required String value,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 18, color: color),
+          const SizedBox(width: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                label,
+                style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w600),
+              ),
+              Text(
+                value,
+                style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLocalBackupSection() {
+    return SettingsSection(
+      title: 'settings.local_backup_title'.tr(),
+      subtitle: 'settings.local_backup_desc'.tr(),
+      icon: Icons.shield_rounded,
+      iconColor: const Color(0xFF0D9488),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Database stats row
+          if (_dbStats != null) ...[
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.analytics_outlined, size: 18, color: Color(0xFF0D9488)),
+                      const SizedBox(width: 8),
+                      Text(
+                        'settings.database_stats_title'.tr(),
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: Color(0xFF0D9488)),
+                      ),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0D9488).withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          'settings.db_file_size'.tr(namedArgs: {'size': _dbStats!.formattedSize}),
+                          style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF0D9488)),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: [
+                      _buildDbStatItem(
+                        icon: Icons.inventory_2_outlined,
+                        color: AppColors.primary,
+                        label: 'inventory.products_title'.tr(),
+                        value: '${_dbStats!.totalProducts}',
+                      ),
+                      _buildDbStatItem(
+                        icon: Icons.receipt_long_outlined,
+                        color: const Color(0xFF10B981),
+                        label: 'invoices.title'.tr(),
+                        value: '${_dbStats!.totalInvoices}',
+                      ),
+                      _buildDbStatItem(
+                        icon: Icons.people_outline_rounded,
+                        color: const Color(0xFF6366F1),
+                        label: 'nav.customers'.tr(),
+                        value: '${_dbStats!.totalCustomers}',
+                      ),
+                      _buildDbStatItem(
+                        icon: Icons.payments_outlined,
+                        color: const Color(0xFFF59E0B),
+                        label: 'expenses.title'.tr(),
+                        value: '${_dbStats!.totalExpenses}',
+                      ),
+                      _buildDbStatItem(
+                        icon: Icons.account_balance_wallet_outlined,
+                        color: const Color(0xFF0D9488),
+                        label: 'treasury.title'.tr(),
+                        value: '${_dbStats!.totalTreasuryTransactions}',
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+          ],
+
+          // Create backup & Open folder controls
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isNarrow = constraints.maxWidth < 620;
+                    final textField = AppTextField(
+                      label: 'settings.backup_label_hint'.tr(),
+                      controller: _backupLabelController,
+                      hint: 'settings.backup_label_hint'.tr(),
+                      prefixIcon: const Icon(Icons.bookmark_border_rounded, size: 18),
+                    );
+
+                    final createBtn = PrimaryButton(
+                      label: 'settings.create_backup_btn'.tr(),
+                      icon: Icons.add_circle_outline_rounded,
+                      isLoading: _isCreatingBackup,
+                      onPressed: _isCreatingBackup ? null : _handleCreateBackup,
+                    );
+
+                    final openFolderBtn = OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.textPrimary,
+                        side: const BorderSide(color: AppColors.border),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      ),
+                      icon: const Icon(Icons.folder_open_rounded, size: 18),
+                      label: Text('settings.open_backup_folder'.tr()),
+                      onPressed: _handleOpenBackupsFolder,
+                    );
+
+                    if (isNarrow) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          textField,
+                          const SizedBox(height: 10),
+                          createBtn,
+                          const SizedBox(height: 8),
+                          openFolderBtn,
+                        ],
+                      );
+                    }
+
+                    return Row(
+                      children: [
+                        Expanded(child: textField),
+                        const SizedBox(width: 12),
+                        createBtn,
+                        const SizedBox(width: 8),
+                        openFolderBtn,
+                      ],
+                    );
+                  },
+                ),
+                const SizedBox(height: 12),
+                // Safety notice
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0D9488).withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFF0D9488).withValues(alpha: 0.2)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.verified_user_outlined, size: 16, color: Color(0xFF0D9488)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'settings.safety_checkpoint_notice'.tr(),
+                          style: const TextStyle(fontSize: 11.5, color: Color(0xFF0F766E), fontWeight: FontWeight.w500),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+
+          // List of saved backups
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'common.actions'.tr(),
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, color: AppColors.textPrimary),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.refresh_rounded, size: 18, color: AppColors.textSecondary),
+                      tooltip: 'common.retry'.tr(),
+                      onPressed: _isLoadingBackups ? null : _loadBackupsAndStats,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                if (_isLoadingBackups)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24),
+                    child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                  )
+                else if (_backups.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 20),
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.inventory_2_outlined, size: 36, color: AppColors.textSecondary.withValues(alpha: 0.4)),
+                          const SizedBox(height: 8),
+                          Text(
+                            'settings.no_backups_found'.tr(),
+                            style: const TextStyle(fontSize: 12.5, color: AppColors.textSecondary),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                else
+                  ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: _backups.length,
+                    separatorBuilder: (context, index) => const Divider(height: 1, color: AppColors.border),
+                    itemBuilder: (context, index) {
+                      final item = _backups[index];
+                      final isSafetyPoint = item.fileName.startsWith('pre_restore_safety_');
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: (isSafetyPoint ? Colors.orange : const Color(0xFF0D9488)).withValues(alpha: 0.1),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                isSafetyPoint ? Icons.shield_rounded : Icons.backup_rounded,
+                                size: 18,
+                                color: isSafetyPoint ? Colors.orange : const Color(0xFF0D9488),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Flexible(
+                                        child: Text(
+                                          item.fileName,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12.5,
+                                            color: AppColors.textPrimary,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      if (isSafetyPoint) ...[
+                                        const SizedBox(width: 6),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: Colors.orange.withValues(alpha: 0.15),
+                                            borderRadius: BorderRadius.circular(4),
+                                          ),
+                                          child: const Text(
+                                            'أمان',
+                                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.orange),
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    '${item.formattedDate}  •  ${item.formattedSize}',
+                                    style: const TextStyle(fontSize: 11.5, color: AppColors.textSecondary),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            // Restore button
+                            ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                                foregroundColor: AppColors.primary,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              ),
+                              icon: const Icon(Icons.settings_backup_restore_rounded, size: 15),
+                              label: Text(
+                                'settings.restore_now'.tr(),
+                                style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold),
+                              ),
+                              onPressed: _isRestoringLocalBackup ? null : () => _showLocalRestoreConfirmDialog(item),
+                            ),
+                            const SizedBox(width: 4),
+                            // Delete button
+                            IconButton(
+                              icon: const Icon(Icons.delete_outline_rounded, size: 18, color: AppColors.danger),
+                              tooltip: 'common.delete'.tr(),
+                              onPressed: () => _showDeleteBackupConfirmDialog(item),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _showRestoreConfirmDialog() async {
@@ -1237,6 +1875,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ],
                   ),
                 ),
+                const SizedBox(height: 20),
+
+                // 4b. Local Backup & Recovery Section
+                _buildLocalBackupSection(),
                 const SizedBox(height: 20),
 
                 // 5. Session & Logout Section

@@ -37,63 +37,68 @@ class _POSProductCardState extends State<POSProductCard> {
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: (canAddMore && singlePrice != null)
-              ? () => widget.onPriceSelected(singlePrice)
-              : null,
-          borderRadius: BorderRadius.circular(10),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 160),
-            decoration: BoxDecoration(
-              color: hasInCart
-                  ? AppColors.primary.withValues(alpha: 0.04)
-                  : AppColors.surfaceElevated,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
+      child: AnimatedScale(
+        scale: _isHovered ? 1.015 : 1.0,
+        duration: const Duration(milliseconds: 160),
+        curve: Curves.easeOutCubic,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: (canAddMore && singlePrice != null)
+                ? () => widget.onPriceSelected(singlePrice)
+                : null,
+            borderRadius: BorderRadius.circular(10),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 160),
+              decoration: BoxDecoration(
                 color: hasInCart
-                    ? AppColors.primary
-                    : (_isHovered
-                        ? AppColors.primary.withValues(alpha: 0.5)
-                        : (item.isLowStock
-                            ? AppColors.danger.withValues(alpha: 0.4)
-                            : AppColors.border)),
-                width: hasInCart ? 1.5 : (_isHovered ? 1.2 : 1.0),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: _isHovered
-                      ? AppColors.primary.withValues(alpha: 0.08)
-                      : Colors.black.withValues(alpha: 0.025),
-                  blurRadius: _isHovered ? 8 : 4,
-                  offset: Offset(0, _isHovered ? 3 : 1),
+                    ? AppColors.primary.withValues(alpha: 0.04)
+                    : AppColors.surfaceElevated,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: hasInCart
+                      ? AppColors.primary
+                      : (_isHovered
+                          ? AppColors.primary.withValues(alpha: 0.5)
+                          : (item.isLowStock
+                              ? AppColors.danger.withValues(alpha: 0.4)
+                              : AppColors.border)),
+                  width: hasInCart ? 1.5 : (_isHovered ? 1.2 : 1.0),
                 ),
-              ],
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 6.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // --- TOP & MIDDLE: Header + Info ---
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _buildHeader(item, inStock, theme),
-                      const SizedBox(height: 4),
-                      _buildProductInfo(item, hasInCart, theme),
-                    ],
-                  ),
-
-                  // --- BOTTOM: Prices ---
-                  Padding(
-                    padding: const EdgeInsets.only(top: 3.0),
-                    child: _buildPriceSection(item, canAddMore, theme),
+                boxShadow: [
+                  BoxShadow(
+                    color: _isHovered
+                        ? AppColors.primary.withValues(alpha: 0.08)
+                        : Colors.black.withValues(alpha: 0.025),
+                    blurRadius: _isHovered ? 8 : 4,
+                    offset: Offset(0, _isHovered ? 3 : 1),
                   ),
                 ],
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 6.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // --- TOP & MIDDLE: Header + Info ---
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _buildHeader(item, inStock, theme),
+                        const SizedBox(height: 4),
+                        _buildProductInfo(item, hasInCart, theme),
+                      ],
+                    ),
+
+                    // --- BOTTOM: Prices ---
+                    Padding(
+                      padding: const EdgeInsets.only(top: 3.0),
+                      child: _buildPriceSection(item, canAddMore, theme),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

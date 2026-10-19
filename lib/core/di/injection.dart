@@ -2,6 +2,7 @@ import 'package:get_it/get_it.dart';
 import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/logging/app_logger.dart';
 import 'package:small_mall/core/services/app_settings_service.dart';
+import 'package:small_mall/core/services/database_backup_service.dart';
 import 'package:small_mall/core/sync/sync_service.dart';
 import 'package:small_mall/features/currency_exchange/data/currency_exchange_repository.dart';
 import 'package:small_mall/features/customers_debts/data/customers_debts_repository.dart';
@@ -27,6 +28,11 @@ Future<void> setupDependencyInjection() async {
   // Sync Service (Singleton)
   final syncService = SyncService(database, logger);
   getIt.registerSingleton<SyncService>(syncService);
+
+  // Database Backup Service (Lazy Singleton)
+  getIt.registerLazySingleton<DatabaseBackupService>(
+    () => DatabaseBackupService(database: database),
+  );
 
   // Repositories
   getIt.registerLazySingleton<InventoryRepository>(() => InventoryRepository(database, syncService, logger));
