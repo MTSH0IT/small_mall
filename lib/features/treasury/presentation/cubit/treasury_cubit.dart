@@ -1,6 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:small_mall/core/database/app_database.dart';
-import 'package:small_mall/features/treasury/data/models/treasury_closure.dart';
 import 'package:small_mall/features/treasury/data/treasury_repository.dart';
 import 'package:small_mall/features/treasury/presentation/cubit/treasury_state.dart';
 
@@ -62,7 +61,6 @@ class TreasuryCubit extends Cubit<TreasuryState> {
         startDate: currentStart,
         endDate: currentEnd,
       );
-      final closures = await _repository.getClosures();
 
       emit(
         TreasuryLoaded(
@@ -73,7 +71,6 @@ class TreasuryCubit extends Cubit<TreasuryState> {
           vaultBalanceSyp: vaultBalances['SYP'] ?? 0.0,
           vaultBalanceUsd: vaultBalances['USD'] ?? 0.0,
           unifiedLedger: ledger,
-          closures: closures,
           selectedTabIndex: currentTab,
           ledgerTypeFilter: currentLedgerType,
           ledgerCurrencyFilter: currentLedgerCurrency,
@@ -113,27 +110,6 @@ class TreasuryCubit extends Cubit<TreasuryState> {
   void setLedgerSearchQuery(String query) {
     if (state is TreasuryLoaded) {
       emit((state as TreasuryLoaded).copyWith(ledgerSearchQuery: query));
-    }
-  }
-
-  Future<void> saveClosure(
-    TreasuryClosure closure, {
-    bool createAdjustmentTransactions = false,
-  }) async {
-    try {
-      await _repository.saveClosure(
-        closure,
-        createAdjustmentTransactions: createAdjustmentTransactions,
-      );
-      await loadTreasury();
-    } catch (e) {
-      if (state is TreasuryLoaded) {
-        emit(
-          (state as TreasuryLoaded).copyWith(errorMessage: () => e.toString()),
-        );
-      } else {
-        emit(TreasuryError(e.toString()));
-      }
     }
   }
 

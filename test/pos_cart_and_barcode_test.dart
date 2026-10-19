@@ -185,7 +185,38 @@ void main() {
           .fold<double>(0.0, (sum, item) => sum + item.quantity);
 
       expect(totalInCart, 1.0);
-      expect(totalInCart + 1.0 > product.currentStock, isTrue);
+    });
+
+    test('can sell and increment quantity when current stock is 0 or negative', () {
+      final zeroStockProduct = ProductWithDetails(
+        product: Product(
+          id: 'p-zero',
+          name: 'منتج نافذ الكمية',
+          costPrice: 50.0,
+          costPriceUsd: 1.0,
+          currency: 'SYP',
+          isActive: true,
+          minStockAlert: 1.0,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+        category: null,
+        prices: const [
+          ProductPrice(id: 'price-1', productId: 'p-zero', priceLabel: 'retail', priceValue: 100.0, currency: 'SYP'),
+        ],
+        currentStock: 0.0,
+      );
+
+      final item = CartItem(
+        productDetails: zeroStockProduct,
+        selectedPrice: zeroStockProduct.prices.first,
+        quantity: 1.0,
+      );
+
+      expect(item.quantity, 1.0);
+      expect(zeroStockProduct.currentStock, 0.0);
+      final incremented = item.copyWith(quantity: item.quantity + 2.0);
+      expect(incremented.quantity, 3.0);
     });
   });
 }

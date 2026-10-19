@@ -23,13 +23,15 @@ class POSCubit extends Cubit<POSState> {
       final customers = await _customersRepository.getCustomers();
       final activeProducts = products.where((p) => p.product.isActive).toList();
 
-      emit(POSLoaded(
-        products: activeProducts,
-        customers: customers,
-        cart: [],
-        invoiceDiscount: 0.0,
-        paymentType: 'cash',
-      ));
+      emit(
+        POSLoaded(
+          products: activeProducts,
+          customers: customers,
+          cart: [],
+          invoiceDiscount: 0.0,
+          paymentType: 'cash',
+        ),
+      );
     } catch (e) {
       emit(POSError(e.toString()));
     }
@@ -38,16 +40,6 @@ class POSCubit extends Cubit<POSState> {
   void addToCart(ProductWithDetails product, ProductPrice price) {
     if (state is! POSLoaded) return;
     final loaded = state as POSLoaded;
-
-    // Calculate total quantity of this product already in the cart across ALL price tiers/currencies
-    final totalInCart = loaded.cart
-        .where((item) => item.productDetails.product.id == product.product.id)
-        .fold<double>(0.0, (sum, item) => sum + item.quantity);
-
-    // Prevent adding if total in cart would exceed current warehouse stock
-    if (totalInCart + 1.0 > product.currentStock) {
-      return;
-    }
 
     final existingIndex = loaded.cart.indexWhere(
       (item) =>
@@ -63,11 +55,9 @@ class POSCubit extends Cubit<POSState> {
         quantity: existingItem.quantity + 1.0,
       );
     } else {
-      updatedCart.add(CartItem(
-        productDetails: product,
-        selectedPrice: price,
-        quantity: 1.0,
-      ));
+      updatedCart.add(
+        CartItem(productDetails: product, selectedPrice: price, quantity: 1.0),
+      );
     }
 
     emit(loaded.copyWith(cart: updatedCart));
@@ -85,22 +75,7 @@ class POSCubit extends Cubit<POSState> {
         return;
       }
 
-      // Calculate quantity of other cart items for the same product
-      final otherItemsQty = loaded.cart
-          .asMap()
-          .entries
-          .where((entry) =>
-              entry.key != index &&
-              entry.value.productDetails.product.id == item.productDetails.product.id)
-          .fold<double>(0.0, (sum, entry) => sum + entry.value.quantity);
-
-      final maxAllowedForThisItem = (item.productDetails.currentStock - otherItemsQty).clamp(0.0, double.infinity);
-      if (maxAllowedForThisItem < 1.0) {
-        removeFromCart(index);
-        return;
-      }
-
-      final validQty = quantity.clamp(1.0, maxAllowedForThisItem);
+      final validQty = quantity < 1.0 ? 1.0 : quantity;
       updatedCart[index] = item.copyWith(quantity: validQty);
       emit(loaded.copyWith(cart: updatedCart));
     }
@@ -150,42 +125,53 @@ class POSCubit extends Cubit<POSState> {
   void clearCart() {
     if (state is! POSLoaded) return;
     final loaded = state as POSLoaded;
-    emit(loaded.copyWith(
-      cart: [],
-      clearCustomer: true,
-      invoiceDiscount: 0.0,
-      clearCustomTotalSyp: true,
-      clearCustomTotalUsd: true,
-      paymentType: 'cash',
-    ));
+    emit(
+      loaded.copyWith(
+        cart: [],
+        clearCustomer: true,
+        invoiceDiscount: 0.0,
+        clearCustomTotalSyp: true,
+        clearCustomTotalUsd: true,
+        paymentType: 'cash',
+      ),
+    );
   }
 
-  void setCustomTotal({double? syp, double? usd, bool clearSyp = false, bool clearUsd = false}) {
+  void setCustomTotal({
+    double? syp,
+    double? usd,
+    bool clearSyp = false,
+    bool clearUsd = false,
+  }) {
     if (state is! POSLoaded) return;
     final loaded = state as POSLoaded;
-    emit(loaded.copyWith(
-      customTotalSyp: syp,
-      clearCustomTotalSyp: clearSyp,
-      customTotalUsd: usd,
-      clearCustomTotalUsd: clearUsd,
-    ));
+    emit(
+      loaded.copyWith(
+        customTotalSyp: syp,
+        clearCustomTotalSyp: clearSyp,
+        customTotalUsd: usd,
+        clearCustomTotalUsd: clearUsd,
+      ),
+    );
   }
 
   void selectCustomer(Customer? customer) {
     if (state is! POSLoaded) return;
     final loaded = state as POSLoaded;
-    emit(loaded.copyWith(
-      selectedCustomer: customer,
-      clearCustomer: customer == null,
-    ));
+    emit(
+      loaded.copyWith(
+        selectedCustomer: customer,
+        clearCustomer: customer == null,
+      ),
+    );
   }
 
   void setInvoiceDiscount(double discount) {
     if (state is! POSLoaded) return;
     final loaded = state as POSLoaded;
-    emit(loaded.copyWith(
-      invoiceDiscount: discount.clamp(0.0, double.infinity),
-    ));
+    emit(
+      loaded.copyWith(invoiceDiscount: discount.clamp(0.0, double.infinity)),
+    );
   }
 
   void setPaymentType(String type) {
@@ -233,15 +219,20 @@ class POSCubit extends Cubit<POSState> {
     emit(loaded.copyWith(isCheckingOut: true));
 
     try {
-      final items = loaded.cart.map((item) => {
-            'productId': item.productDetails.product.id,
-            'priceUsed': item.unitPrice,
-            'quantity': item.quantity,
-            'discount': item.discount,
-            'currency': item.currency,
-          }).toList();
+      final items = loaded.cart
+          .map(
+            (item) => {
+              'productId': item.productDetails.product.id,
+              'priceUsed': item.unitPrice,
+              'quantity': item.quantity,
+              'discount': item.discount,
+              'currency': item.currency,
+            },
+          )
+          .toList();
 
-      final effectiveDiscount = (loaded.cartSubtotal - loaded.totalAmount).clamp(0.0, double.infinity);
+      final effectiveDiscount = (loaded.cartSubtotal - loaded.totalAmount)
+          .clamp(0.0, double.infinity);
 
       await _posRepository.createSale(
         customerId: loaded.selectedCustomer?.id,

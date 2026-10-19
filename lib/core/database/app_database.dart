@@ -521,17 +521,16 @@ class AppDatabase extends _$AppDatabase {
 
         // Backfill serial_number for any existing treasury transactions
         try {
-          final existingTx = await (select(treasuryTransactions)
-                ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
-              .get();
+          final existingTx = await (select(
+            treasuryTransactions,
+          )..orderBy([(t) => OrderingTerm.asc(t.createdAt)])).get();
           for (int i = 0; i < existingTx.length; i++) {
             final tx = existingTx[i];
             if (tx.serialNumber == null) {
-              await (update(treasuryTransactions)..where((t) => t.id.equals(tx.id)))
-                  .write(
-                TreasuryTransactionsCompanion(
-                  serialNumber: Value(i + 1),
-                ),
+              await (update(
+                treasuryTransactions,
+              )..where((t) => t.id.equals(tx.id))).write(
+                TreasuryTransactionsCompanion(serialNumber: Value(i + 1)),
               );
             }
           }

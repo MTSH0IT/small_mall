@@ -116,7 +116,7 @@ class _POSScreenState extends State<POSScreen> {
                 (p.product.code != null && p.product.code!.toLowerCase().contains(query))).first
             : null);
 
-    if (target != null && target.prices.isNotEmpty && target.currentStock > 0) {
+    if (target != null && target.prices.isNotEmpty) {
       cubit.addToCart(target, target.prices.first);
       AppToast.success(
         context,
@@ -781,20 +781,9 @@ class _POSScreenState extends State<POSScreen> {
                               itemCount: state.cart.length,
                               itemBuilder: (context, index) {
                                 final cartItem = state.cart[index];
-                                final otherItemsQty = state.cart
-                                    .asMap()
-                                    .entries
-                                    .where((entry) =>
-                                        entry.key != index &&
-                                        entry.value.productDetails.product.id ==
-                                            cartItem.productDetails.product.id)
-                                    .fold<double>(0.0, (sum, entry) => sum + entry.value.quantity);
-                                final maxAllowedQty = (cartItem.productDetails.currentStock - otherItemsQty)
-                                    .clamp(0.0, double.infinity);
-
                                 return CartItemRow(
                                   item: cartItem,
-                                  maxAllowedQuantity: maxAllowedQty,
+                                  maxAllowedQuantity: null,
                                   onRemove: () => cubit.removeFromCart(index),
                                   onQuantityChanged: (qty) =>
                                       cubit.updateCartItemQuantity(index, qty),

@@ -255,8 +255,9 @@ class _CartItemRowState extends State<CartItemRow> {
     final theme = Theme.of(context);
     final label = widget.item.selectedPrice.priceLabel.priceLabelDisplay;
     final color = widget.item.selectedPrice.priceLabel.priceLabelColor;
-    final maxStock = widget.maxAllowedQuantity ?? widget.item.productDetails.currentStock;
-    final canIncrement = widget.item.quantity + 1 <= maxStock;
+    final canIncrement = widget.maxAllowedQuantity != null
+        ? widget.item.quantity + 1 <= widget.maxAllowedQuantity!
+        : true;
     final canDecrement = widget.item.quantity > 1;
 
     return Container(

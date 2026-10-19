@@ -17,9 +17,7 @@ import 'package:small_mall/features/treasury/data/treasury_repository.dart';
 import 'package:small_mall/features/treasury/presentation/cubit/treasury_cubit.dart';
 import 'package:small_mall/features/treasury/presentation/cubit/treasury_state.dart';
 import 'package:small_mall/features/treasury/presentation/widgets/treasury_category_form_dialog.dart';
-import 'package:small_mall/features/treasury/presentation/widgets/treasury_closures_view.dart';
 import 'package:small_mall/features/treasury/presentation/widgets/treasury_ledger_view.dart';
-import 'package:small_mall/features/treasury/presentation/widgets/treasury_reconciliation_dialog.dart';
 import 'package:small_mall/features/treasury/presentation/widgets/treasury_transaction_form_dialog.dart';
 import 'package:small_mall/features/treasury/presentation/widgets/treasury_vault_cards.dart';
 
@@ -476,32 +474,6 @@ class _TreasuryScreenState extends State<TreasuryScreen> {
     }
   }
 
-  void _showReconciliationDialog(
-    BuildContext context,
-    TreasuryCubit cubit,
-    TreasuryLoaded state,
-  ) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => TreasuryReconciliationDialog(
-        expectedBalanceSyp: state.vaultBalanceSyp,
-        expectedBalanceUsd: state.vaultBalanceUsd,
-        onSave: (closure, {required createAdjustmentTransactions}) async {
-          await cubit.saveClosure(
-            closure,
-            createAdjustmentTransactions: createAdjustmentTransactions,
-          );
-          if (context.mounted) {
-            AppToast.success(
-              context,
-              message: 'treasury.closure_success'.tr(),
-            );
-          }
-        },
-      ),
-    );
-  }
 
   Future<void> _showExchangeDialog(
     BuildContext context,
@@ -557,7 +529,6 @@ class _TreasuryScreenState extends State<TreasuryScreen> {
           child: TreasuryVaultCards(
             vaultBalanceSyp: state.vaultBalanceSyp,
             vaultBalanceUsd: state.vaultBalanceUsd,
-            onReconcile: () => _showReconciliationDialog(context, cubit, state),
             onCashIn: () => _showAddTransactionDialog(
               context,
               cubit,
@@ -581,7 +552,7 @@ class _TreasuryScreenState extends State<TreasuryScreen> {
           ),
         ),
 
-        // 2. Navigation Tabs (Ledger, Closures, Categories/Manual Vouchers)
+        // 2. Navigation Tabs (Ledger, Categories/Manual Vouchers)
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
           child: Container(
@@ -600,17 +571,10 @@ class _TreasuryScreenState extends State<TreasuryScreen> {
                   onTap: () => cubit.setTabIndex(0),
                 ),
                 _buildTabButton(
-                  title: 'treasury.tab_closures'.tr(),
-                  icon: Icons.inventory_2_outlined,
-                  badge: '${state.closures.length}',
-                  isSelected: state.selectedTabIndex == 1,
-                  onTap: () => cubit.setTabIndex(1),
-                ),
-                _buildTabButton(
                   title: 'treasury.tab_categories'.tr(),
                   icon: Icons.category_outlined,
-                  isSelected: state.selectedTabIndex == 2,
-                  onTap: () => cubit.setTabIndex(2),
+                  isSelected: state.selectedTabIndex == 1,
+                  onTap: () => cubit.setTabIndex(1),
                 ),
               ],
             ),
@@ -642,13 +606,7 @@ class _TreasuryScreenState extends State<TreasuryScreen> {
                 onClearDateRange: () => cubit.setDateRange(null, null),
               ),
 
-              // Tab 1: Closures & Z-Reports History
-              TreasuryClosuresView(
-                closures: state.closures,
-                onStartClosure: () => _showReconciliationDialog(context, cubit, state),
-              ),
-
-              // Tab 2: Manual Vouchers & Categories (Existing SplitPaneLayout)
+              // Tab 1: Manual Vouchers & Categories (SplitPaneLayout)
               SplitPaneLayout(
                 leftFlex: 2,
                 rightFlex: 3,

@@ -1,4 +1,3 @@
-import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:small_mall/core/constants/app_currency.dart';
 import 'package:small_mall/core/database/app_database.dart';
@@ -31,7 +30,6 @@ class _POSProductCardState extends State<POSProductCard> {
     final item = widget.item;
     final inStock = item.currentStock > 0;
     final hasInCart = widget.quantityInCart > 0;
-    final canAddMore = (item.currentStock - widget.quantityInCart) > 0;
     final singlePrice = item.prices.length == 1 ? item.prices.first : null;
 
     return MouseRegion(
@@ -44,7 +42,7 @@ class _POSProductCardState extends State<POSProductCard> {
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            onTap: (canAddMore && singlePrice != null)
+            onTap: singlePrice != null
                 ? () => widget.onPriceSelected(singlePrice)
                 : null,
             borderRadius: BorderRadius.circular(10),
@@ -95,7 +93,7 @@ class _POSProductCardState extends State<POSProductCard> {
                     // --- BOTTOM: Prices ---
                     Padding(
                       padding: const EdgeInsets.only(top: 3.0),
-                      child: _buildPriceSection(item, canAddMore, theme),
+                      child: _buildPriceSection(item, inStock, theme),
                     ),
                   ],
                 ),
@@ -198,7 +196,7 @@ class _POSProductCardState extends State<POSProductCard> {
                 ? (item.isLowStock
                     ? AppColors.danger.withValues(alpha: 0.12)
                     : AppColors.success.withValues(alpha: 0.12))
-                : Colors.grey.withValues(alpha: 0.15),
+                : AppColors.danger.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(4),
           ),
           child: Row(
@@ -209,25 +207,23 @@ class _POSProductCardState extends State<POSProductCard> {
                     ? (item.isLowStock
                         ? Icons.warning_amber_rounded
                         : Icons.inventory_2_outlined)
-                    : Icons.block,
+                    : Icons.warning_amber_rounded,
                 size: 10,
                 color: inStock
                     ? (item.isLowStock ? AppColors.danger : AppColors.success)
-                    : AppColors.textSecondary,
+                    : AppColors.danger,
               ),
               const SizedBox(width: 2.5),
               Text(
-                inStock
-                    ? item.currentStock.toStringAsFixed(
-                        item.currentStock % 1 == 0 ? 0 : 1,
-                      )
-                    : 'pos.out_of_stock'.tr(),
+                item.currentStock.toStringAsFixed(
+                  item.currentStock % 1 == 0 ? 0 : 1,
+                ),
                 style: TextStyle(
                   fontSize: 9.0,
                   fontWeight: FontWeight.bold,
                   color: inStock
                       ? (item.isLowStock ? AppColors.danger : AppColors.success)
-                      : AppColors.textSecondary,
+                      : AppColors.danger,
                 ),
               ),
             ],
@@ -401,10 +397,10 @@ class _POSProductCardState extends State<POSProductCard> {
     bool inStock,
   ) {
     return Material(
-      color: inStock ? AppColors.primary : Colors.grey.shade300,
+      color: AppColors.primary,
       borderRadius: BorderRadius.circular(6),
       child: InkWell(
-        onTap: inStock ? () => widget.onPriceSelected(singlePrice) : null,
+        onTap: () => widget.onPriceSelected(singlePrice),
         borderRadius: BorderRadius.circular(6),
         child: Container(
           height: 23,
@@ -416,17 +412,17 @@ class _POSProductCardState extends State<POSProductCard> {
               mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
+                const Icon(
                   Icons.add_shopping_cart_rounded,
                   size: 11,
-                  color: inStock ? Colors.white : AppColors.textSecondary,
+                  color: Colors.white,
                 ),
                 const SizedBox(width: 4),
                 Text(
                   _formatPriceValue(singlePrice, item),
                   style: AppTheme.numericStyle(
                     fontSize: 10.5,
-                    color: inStock ? Colors.white : AppColors.textSecondary,
+                    color: Colors.white,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -450,10 +446,10 @@ class _POSProductCardState extends State<POSProductCard> {
         : price.priceLabel.priceLabelColor;
 
     return Material(
-      color: inStock ? color.withValues(alpha: 0.08) : Colors.grey.withValues(alpha: 0.08),
+      color: color.withValues(alpha: 0.08),
       borderRadius: BorderRadius.circular(5),
       child: InkWell(
-        onTap: inStock ? () => widget.onPriceSelected(price) : null,
+        onTap: () => widget.onPriceSelected(price),
         borderRadius: BorderRadius.circular(5),
         child: Container(
           height: 22.5,
@@ -462,7 +458,7 @@ class _POSProductCardState extends State<POSProductCard> {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(5),
             border: Border.all(
-              color: inStock ? color.withValues(alpha: 0.8) : Colors.grey.shade400,
+              color: color.withValues(alpha: 0.8),
               width: 0.8,
             ),
           ),
@@ -475,7 +471,7 @@ class _POSProductCardState extends State<POSProductCard> {
                 Text(
                   label,
                   style: TextStyle(
-                    color: inStock ? color : Colors.grey,
+                    color: color,
                     fontWeight: FontWeight.bold,
                     fontSize: 9.0,
                   ),
@@ -485,7 +481,7 @@ class _POSProductCardState extends State<POSProductCard> {
                   _formatPriceValue(price, item),
                   style: AppTheme.numericStyle(
                     fontSize: 9.5,
-                    color: inStock ? color : Colors.grey,
+                    color: color,
                     fontWeight: FontWeight.bold,
                   ),
                 ),

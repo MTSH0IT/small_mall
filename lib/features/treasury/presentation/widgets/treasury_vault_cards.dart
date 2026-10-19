@@ -2,14 +2,12 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:small_mall/core/constants/app_currency.dart';
 import 'package:small_mall/core/utils/theme.dart';
-import 'package:small_mall/core/widgets/primary_button.dart';
 
 class TreasuryVaultCards extends StatelessWidget {
   const TreasuryVaultCards({
     super.key,
     required this.vaultBalanceSyp,
     required this.vaultBalanceUsd,
-    required this.onReconcile,
     required this.onCashIn,
     required this.onCashOut,
     required this.onExchange,
@@ -18,7 +16,6 @@ class TreasuryVaultCards extends StatelessWidget {
 
   final double vaultBalanceSyp;
   final double vaultBalanceUsd;
-  final VoidCallback onReconcile;
   final VoidCallback onCashIn;
   final VoidCallback onCashOut;
   final VoidCallback onExchange;
@@ -139,14 +136,6 @@ class TreasuryVaultCards extends StatelessWidget {
             alignment: WrapAlignment.start,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              // Reconcile Button (Prominent)
-              PrimaryButton(
-                label: 'treasury.reconcile_btn'.tr(),
-                icon: Icons.fact_check_outlined,
-                backgroundColor: AppColors.primary,
-                onPressed: onReconcile,
-              ),
-
               // Cash In Button
               ElevatedButton.icon(
                 onPressed: onCashIn,

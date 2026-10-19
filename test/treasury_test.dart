@@ -4,8 +4,6 @@ import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/logging/app_logger.dart';
 import 'package:small_mall/core/sync/sync_service.dart';
 import 'package:small_mall/features/reports/data/reports_repository.dart';
-import 'package:small_mall/features/treasury/data/models/cash_denominations.dart';
-import 'package:small_mall/features/treasury/data/models/treasury_closure.dart';
 import 'package:small_mall/features/treasury/data/treasury_repository.dart';
 import 'package:small_mall/features/treasury/presentation/cubit/treasury_cubit.dart';
 import 'package:small_mall/features/treasury/presentation/cubit/treasury_state.dart';
@@ -361,95 +359,7 @@ void main() {
     });
   });
 
-  group('Main Treasury: Denominations, Closures & Unified Ledger Tests', () {
-    test('CashDenominations correctly calculates totals for SYP and USD bills', () {
-      final counter = CashDenominations(
-        syp5000: 10, // 50,000
-        syp2000: 5,  // 10,000
-        syp1000: 20, // 20,000
-        syp500: 4,   // 2,000
-        usd100: 15,  // 1500
-        usd50: 2,    // 100
-        usd20: 3,    // 60
-        usd10: 1,    // 10
-        usd5: 2,     // 10
-        usd1: 7,     // 7
-      );
-
-      expect(counter.totalSyp, equals(82000.0));
-      expect(counter.totalUsd, equals(1687.0));
-
-      final jsonSyp = counter.toJsonSyp();
-      final jsonUsd = counter.toJsonUsd();
-
-      final restored = CashDenominations.fromJsonStrings(
-        sypJson: jsonSyp,
-        usdJson: jsonUsd,
-      );
-
-      expect(restored.totalSyp, equals(82000.0));
-      expect(restored.totalUsd, equals(1687.0));
-      expect(restored.syp5000, equals(10));
-      expect(restored.usd100, equals(15));
-    });
-
-    test('Can save and retrieve daily treasury closures with serial numbers', () async {
-      final closure1 = TreasuryClosure(
-        id: 'closure-1',
-        closedAt: DateTime(2026, 10, 15, 20, 0),
-        expectedBalanceSyp: 500000.0,
-        expectedBalanceUsd: 1200.0,
-        actualBalanceSyp: 500000.0,
-        actualBalanceUsd: 1200.0,
-        differenceSyp: 0.0,
-        differenceUsd: 0.0,
-        denominations: CashDenominations(syp5000: 100, usd100: 12),
-        notes: 'جرد نهاية اليوم - مطابق تماماً',
-        status: 'balanced',
-      );
-
-      await repository.saveClosure(closure1);
-
-      final closures = await repository.getClosures();
-      expect(closures.length, equals(1));
-      expect(closures.first.serialNumber, equals(1));
-      expect(closures.first.isBalanced, isTrue);
-      expect(closures.first.expectedBalanceSyp, equals(500000.0));
-      expect(closures.first.actualBalanceUsd, equals(1200.0));
-
-      final latest = await repository.getLatestClosure();
-      expect(latest?.id, equals('closure-1'));
-    });
-
-    test('saveClosure with createAdjustmentTransactions automatically creates vouchers on shortage or surplus', () async {
-      final closureShortage = TreasuryClosure(
-        id: 'closure-shortage-1',
-        closedAt: DateTime(2026, 10, 16, 21, 0),
-        expectedBalanceSyp: 100000.0,
-        expectedBalanceUsd: 500.0,
-        actualBalanceSyp: 95000.0, // shortage 5000 SYP
-        actualBalanceUsd: 510.0,   // surplus 10 USD
-        differenceSyp: -5000.0,
-        differenceUsd: 10.0,
-        denominations: CashDenominations(syp5000: 19, usd100: 5, usd10: 1),
-        notes: 'جرد بوجود فروقات',
-        status: 'shortage',
-      );
-
-      await repository.saveClosure(closureShortage, createAdjustmentTransactions: true);
-
-      final txs = await repository.getTransactions();
-      final sypAdj = txs.firstWhere((t) => t.currency == 'SYP');
-      expect(sypAdj.type, equals('out'));
-      expect(sypAdj.amount, equals(5000.0));
-      expect(sypAdj.categoryName, contains('عجز'));
-
-      final usdAdj = txs.firstWhere((t) => t.currency == 'USD');
-      expect(usdAdj.type, equals('in'));
-      expect(usdAdj.amount, equals(10.0));
-      expect(usdAdj.categoryName, contains('فائض'));
-    });
-
+  group('Main Treasury: Unified Ledger & Vault Balances Tests', () {
     test('getUnifiedLedger computes cumulative running balances chronologically', () async {
       final t1 = DateTime(2026, 10, 10, 10, 0);
       final t2 = DateTime(2026, 10, 10, 11, 0);

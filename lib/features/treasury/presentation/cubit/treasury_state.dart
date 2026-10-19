@@ -1,5 +1,4 @@
 import 'package:small_mall/core/database/app_database.dart';
-import 'package:small_mall/features/treasury/data/models/treasury_closure.dart';
 import 'package:small_mall/features/treasury/data/models/treasury_ledger_item.dart';
 import 'package:small_mall/features/treasury/data/treasury_repository.dart';
 
@@ -20,8 +19,7 @@ class TreasuryLoaded extends TreasuryState {
     this.vaultBalanceSyp = 0.0,
     this.vaultBalanceUsd = 0.0,
     this.unifiedLedger = const [],
-    this.closures = const [],
-    this.selectedTabIndex = 0, // 0: Ledger, 1: Closures, 2: Categories/Vouchers
+    this.selectedTabIndex = 0, // 0: Unified Ledger, 1: Categories/Vouchers
     this.ledgerTypeFilter = 'all', // 'all', 'in', 'out'
     this.ledgerCurrencyFilter = 'all', // 'all', 'SYP', 'USD'
     this.ledgerSearchQuery = '',
@@ -42,7 +40,6 @@ class TreasuryLoaded extends TreasuryState {
   final double vaultBalanceSyp;
   final double vaultBalanceUsd;
   final List<TreasuryLedgerItem> unifiedLedger;
-  final List<TreasuryClosure> closures;
   final int selectedTabIndex;
   final String ledgerTypeFilter;
   final String ledgerCurrencyFilter;
@@ -201,7 +198,6 @@ class TreasuryLoaded extends TreasuryState {
     double? vaultBalanceSyp,
     double? vaultBalanceUsd,
     List<TreasuryLedgerItem>? unifiedLedger,
-    List<TreasuryClosure>? closures,
     int? selectedTabIndex,
     String? ledgerTypeFilter,
     String? ledgerCurrencyFilter,
@@ -223,7 +219,6 @@ class TreasuryLoaded extends TreasuryState {
       vaultBalanceSyp: vaultBalanceSyp ?? this.vaultBalanceSyp,
       vaultBalanceUsd: vaultBalanceUsd ?? this.vaultBalanceUsd,
       unifiedLedger: unifiedLedger ?? this.unifiedLedger,
-      closures: closures ?? this.closures,
       selectedTabIndex: selectedTabIndex ?? this.selectedTabIndex,
       ledgerTypeFilter: ledgerTypeFilter ?? this.ledgerTypeFilter,
       ledgerCurrencyFilter: ledgerCurrencyFilter ?? this.ledgerCurrencyFilter,
