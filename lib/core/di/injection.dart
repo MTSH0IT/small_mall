@@ -43,7 +43,7 @@ Future<void> setupDependencyInjection() async {
   getIt.registerLazySingleton<ExpensesRepository>(() => ExpensesRepository(database, syncService, logger));
   getIt.registerLazySingleton<ReportsRepository>(() => ReportsRepository(database, logger));
   getIt.registerLazySingleton<CurrencyExchangeRepository>(() => CurrencyExchangeRepository(database, syncService, logger));
-  getIt.registerLazySingleton<TreasuryRepository>(() => TreasuryRepository(database, syncService, logger));
+  getIt.registerLazySingleton<TreasuryRepository>(() => TreasuryRepository(database, syncService, logger, reportsRepo: getIt<ReportsRepository>()));
 
   // Initialize App Settings (Exchange rate & Defaults)
   await AppSettingsService.init();

@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:small_mall/core/database/app_database.dart';
+import 'package:small_mall/features/treasury/data/models/treasury_closure.dart';
 import 'package:small_mall/features/treasury/data/treasury_repository.dart';
 import 'package:small_mall/features/treasury/presentation/cubit/treasury_state.dart';
 
@@ -30,6 +31,18 @@ class TreasuryCubit extends Cubit<TreasuryState> {
     final currentQuery = state is TreasuryLoaded
         ? (state as TreasuryLoaded).searchQuery
         : '';
+    final currentTab = state is TreasuryLoaded
+        ? (state as TreasuryLoaded).selectedTabIndex
+        : 0;
+    final currentLedgerType = state is TreasuryLoaded
+        ? (state as TreasuryLoaded).ledgerTypeFilter
+        : 'all';
+    final currentLedgerCurrency = state is TreasuryLoaded
+        ? (state as TreasuryLoaded).ledgerCurrencyFilter
+        : 'all';
+    final currentLedgerQuery = state is TreasuryLoaded
+        ? (state as TreasuryLoaded).ledgerSearchQuery
+        : '';
 
     emit(TreasuryLoading());
     try {
@@ -44,12 +57,27 @@ class TreasuryCubit extends Cubit<TreasuryState> {
         endDate: currentEnd,
       );
 
+      final vaultBalances = await _repository.getCurrentVaultBalances();
+      final ledger = await _repository.getUnifiedLedger(
+        startDate: currentStart,
+        endDate: currentEnd,
+      );
+      final closures = await _repository.getClosures();
+
       emit(
         TreasuryLoaded(
           categories: mainCategories,
           subcategories: subcategories,
           categorySummaries: summaries,
           transactions: transactions,
+          vaultBalanceSyp: vaultBalances['SYP'] ?? 0.0,
+          vaultBalanceUsd: vaultBalances['USD'] ?? 0.0,
+          unifiedLedger: ledger,
+          closures: closures,
+          selectedTabIndex: currentTab,
+          ledgerTypeFilter: currentLedgerType,
+          ledgerCurrencyFilter: currentLedgerCurrency,
+          ledgerSearchQuery: currentLedgerQuery,
           selectedCategoryId: currentCatId,
           selectedSubcategoryId: currentSubId,
           selectedTypeFilter: currentType,
@@ -61,6 +89,51 @@ class TreasuryCubit extends Cubit<TreasuryState> {
       );
     } catch (e) {
       emit(TreasuryError(e.toString()));
+    }
+  }
+
+  void setTabIndex(int index) {
+    if (state is TreasuryLoaded) {
+      emit((state as TreasuryLoaded).copyWith(selectedTabIndex: index));
+    }
+  }
+
+  void setLedgerTypeFilter(String type) {
+    if (state is TreasuryLoaded) {
+      emit((state as TreasuryLoaded).copyWith(ledgerTypeFilter: type));
+    }
+  }
+
+  void setLedgerCurrencyFilter(String currency) {
+    if (state is TreasuryLoaded) {
+      emit((state as TreasuryLoaded).copyWith(ledgerCurrencyFilter: currency));
+    }
+  }
+
+  void setLedgerSearchQuery(String query) {
+    if (state is TreasuryLoaded) {
+      emit((state as TreasuryLoaded).copyWith(ledgerSearchQuery: query));
+    }
+  }
+
+  Future<void> saveClosure(
+    TreasuryClosure closure, {
+    bool createAdjustmentTransactions = false,
+  }) async {
+    try {
+      await _repository.saveClosure(
+        closure,
+        createAdjustmentTransactions: createAdjustmentTransactions,
+      );
+      await loadTreasury();
+    } catch (e) {
+      if (state is TreasuryLoaded) {
+        emit(
+          (state as TreasuryLoaded).copyWith(errorMessage: () => e.toString()),
+        );
+      } else {
+        emit(TreasuryError(e.toString()));
+      }
     }
   }
 

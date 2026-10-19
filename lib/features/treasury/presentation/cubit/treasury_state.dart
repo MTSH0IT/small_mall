@@ -1,4 +1,6 @@
 import 'package:small_mall/core/database/app_database.dart';
+import 'package:small_mall/features/treasury/data/models/treasury_closure.dart';
+import 'package:small_mall/features/treasury/data/models/treasury_ledger_item.dart';
 import 'package:small_mall/features/treasury/data/treasury_repository.dart';
 
 abstract class TreasuryState {
@@ -15,6 +17,14 @@ class TreasuryLoaded extends TreasuryState {
     this.subcategories = const [],
     required this.categorySummaries,
     required this.transactions,
+    this.vaultBalanceSyp = 0.0,
+    this.vaultBalanceUsd = 0.0,
+    this.unifiedLedger = const [],
+    this.closures = const [],
+    this.selectedTabIndex = 0, // 0: Ledger, 1: Closures, 2: Categories/Vouchers
+    this.ledgerTypeFilter = 'all', // 'all', 'in', 'out'
+    this.ledgerCurrencyFilter = 'all', // 'all', 'SYP', 'USD'
+    this.ledgerSearchQuery = '',
     this.selectedCategoryId,
     this.selectedSubcategoryId,
     this.selectedTypeFilter = 'all', // 'all', 'in', 'out'
@@ -29,6 +39,14 @@ class TreasuryLoaded extends TreasuryState {
   final List<TreasuryCategory> subcategories;
   final List<TreasuryCategorySummary> categorySummaries;
   final List<TreasuryTransactionWithCategory> transactions;
+  final double vaultBalanceSyp;
+  final double vaultBalanceUsd;
+  final List<TreasuryLedgerItem> unifiedLedger;
+  final List<TreasuryClosure> closures;
+  final int selectedTabIndex;
+  final String ledgerTypeFilter;
+  final String ledgerCurrencyFilter;
+  final String ledgerSearchQuery;
   final String? selectedCategoryId; // null = all
   final String? selectedSubcategoryId; // null = all in selected category
   final String selectedTypeFilter;
@@ -97,6 +115,37 @@ class TreasuryLoaded extends TreasuryState {
     return result;
   }
 
+  List<TreasuryLedgerItem> get filteredLedger {
+    var result = unifiedLedger;
+
+    if (ledgerTypeFilter != 'all') {
+      final isIn = ledgerTypeFilter == 'in';
+      result = result.where((m) => m.isCashIn == isIn).toList();
+    }
+
+    if (ledgerCurrencyFilter != 'all') {
+      result = result.where((m) => m.currency == ledgerCurrencyFilter).toList();
+    }
+
+    if (ledgerSearchQuery.trim().isNotEmpty) {
+      final q = ledgerSearchQuery.trim().toLowerCase();
+      result = result.where((m) {
+        final title = m.title.toLowerCase();
+        final party = m.partyName?.toLowerCase() ?? '';
+        final ref = m.referenceNumber?.toLowerCase() ?? '';
+        final notes = m.notes?.toLowerCase() ?? '';
+        final amount = m.amount.toString();
+        return title.contains(q) ||
+            party.contains(q) ||
+            ref.contains(q) ||
+            notes.contains(q) ||
+            amount.contains(q);
+      }).toList();
+    }
+
+    return result;
+  }
+
   // All transactions totals
   double get totalInSyp => transactions
       .where((t) => t.transaction.type == 'in' && t.transaction.currency != 'USD')
@@ -149,6 +198,14 @@ class TreasuryLoaded extends TreasuryState {
     List<TreasuryCategory>? subcategories,
     List<TreasuryCategorySummary>? categorySummaries,
     List<TreasuryTransactionWithCategory>? transactions,
+    double? vaultBalanceSyp,
+    double? vaultBalanceUsd,
+    List<TreasuryLedgerItem>? unifiedLedger,
+    List<TreasuryClosure>? closures,
+    int? selectedTabIndex,
+    String? ledgerTypeFilter,
+    String? ledgerCurrencyFilter,
+    String? ledgerSearchQuery,
     String? Function()? selectedCategoryId,
     String? Function()? selectedSubcategoryId,
     String? selectedTypeFilter,
@@ -163,6 +220,14 @@ class TreasuryLoaded extends TreasuryState {
       subcategories: subcategories ?? this.subcategories,
       categorySummaries: categorySummaries ?? this.categorySummaries,
       transactions: transactions ?? this.transactions,
+      vaultBalanceSyp: vaultBalanceSyp ?? this.vaultBalanceSyp,
+      vaultBalanceUsd: vaultBalanceUsd ?? this.vaultBalanceUsd,
+      unifiedLedger: unifiedLedger ?? this.unifiedLedger,
+      closures: closures ?? this.closures,
+      selectedTabIndex: selectedTabIndex ?? this.selectedTabIndex,
+      ledgerTypeFilter: ledgerTypeFilter ?? this.ledgerTypeFilter,
+      ledgerCurrencyFilter: ledgerCurrencyFilter ?? this.ledgerCurrencyFilter,
+      ledgerSearchQuery: ledgerSearchQuery ?? this.ledgerSearchQuery,
       selectedCategoryId: selectedCategoryId != null
           ? selectedCategoryId()
           : this.selectedCategoryId,

@@ -4,6 +4,8 @@ import 'package:small_mall/core/database/app_database.dart';
 import 'package:small_mall/core/logging/app_logger.dart';
 import 'package:small_mall/core/sync/sync_service.dart';
 import 'package:small_mall/features/reports/data/reports_repository.dart';
+import 'package:small_mall/features/treasury/data/models/cash_denominations.dart';
+import 'package:small_mall/features/treasury/data/models/treasury_closure.dart';
 import 'package:small_mall/features/treasury/data/treasury_repository.dart';
 import 'package:small_mall/features/treasury/presentation/cubit/treasury_cubit.dart';
 import 'package:small_mall/features/treasury/presentation/cubit/treasury_state.dart';
@@ -19,8 +21,8 @@ void main() {
     db = AppDatabase.forTesting(NativeDatabase.memory());
     logger = AppLogger();
     syncService = SyncService(db, logger);
-    repository = TreasuryRepository(db, syncService, logger);
     reportsRepository = ReportsRepository(db, logger);
+    repository = TreasuryRepository(db, syncService, logger, reportsRepo: reportsRepository);
   });
 
   tearDown(() async {
@@ -356,6 +358,151 @@ void main() {
         movements.any((m) => m.type == 'treasury_out' && m.partyName == 'سامر'),
         isTrue,
       );
+    });
+  });
+
+  group('Main Treasury: Denominations, Closures & Unified Ledger Tests', () {
+    test('CashDenominations correctly calculates totals for SYP and USD bills', () {
+      final counter = CashDenominations(
+        syp5000: 10, // 50,000
+        syp2000: 5,  // 10,000
+        syp1000: 20, // 20,000
+        syp500: 4,   // 2,000
+        usd100: 15,  // 1500
+        usd50: 2,    // 100
+        usd20: 3,    // 60
+        usd10: 1,    // 10
+        usd5: 2,     // 10
+        usd1: 7,     // 7
+      );
+
+      expect(counter.totalSyp, equals(82000.0));
+      expect(counter.totalUsd, equals(1687.0));
+
+      final jsonSyp = counter.toJsonSyp();
+      final jsonUsd = counter.toJsonUsd();
+
+      final restored = CashDenominations.fromJsonStrings(
+        sypJson: jsonSyp,
+        usdJson: jsonUsd,
+      );
+
+      expect(restored.totalSyp, equals(82000.0));
+      expect(restored.totalUsd, equals(1687.0));
+      expect(restored.syp5000, equals(10));
+      expect(restored.usd100, equals(15));
+    });
+
+    test('Can save and retrieve daily treasury closures with serial numbers', () async {
+      final closure1 = TreasuryClosure(
+        id: 'closure-1',
+        closedAt: DateTime(2026, 10, 15, 20, 0),
+        expectedBalanceSyp: 500000.0,
+        expectedBalanceUsd: 1200.0,
+        actualBalanceSyp: 500000.0,
+        actualBalanceUsd: 1200.0,
+        differenceSyp: 0.0,
+        differenceUsd: 0.0,
+        denominations: CashDenominations(syp5000: 100, usd100: 12),
+        notes: 'جرد نهاية اليوم - مطابق تماماً',
+        status: 'balanced',
+      );
+
+      await repository.saveClosure(closure1);
+
+      final closures = await repository.getClosures();
+      expect(closures.length, equals(1));
+      expect(closures.first.serialNumber, equals(1));
+      expect(closures.first.isBalanced, isTrue);
+      expect(closures.first.expectedBalanceSyp, equals(500000.0));
+      expect(closures.first.actualBalanceUsd, equals(1200.0));
+
+      final latest = await repository.getLatestClosure();
+      expect(latest?.id, equals('closure-1'));
+    });
+
+    test('saveClosure with createAdjustmentTransactions automatically creates vouchers on shortage or surplus', () async {
+      final closureShortage = TreasuryClosure(
+        id: 'closure-shortage-1',
+        closedAt: DateTime(2026, 10, 16, 21, 0),
+        expectedBalanceSyp: 100000.0,
+        expectedBalanceUsd: 500.0,
+        actualBalanceSyp: 95000.0, // shortage 5000 SYP
+        actualBalanceUsd: 510.0,   // surplus 10 USD
+        differenceSyp: -5000.0,
+        differenceUsd: 10.0,
+        denominations: CashDenominations(syp5000: 19, usd100: 5, usd10: 1),
+        notes: 'جرد بوجود فروقات',
+        status: 'shortage',
+      );
+
+      await repository.saveClosure(closureShortage, createAdjustmentTransactions: true);
+
+      final txs = await repository.getTransactions();
+      final sypAdj = txs.firstWhere((t) => t.currency == 'SYP');
+      expect(sypAdj.type, equals('out'));
+      expect(sypAdj.amount, equals(5000.0));
+      expect(sypAdj.categoryName, contains('عجز'));
+
+      final usdAdj = txs.firstWhere((t) => t.currency == 'USD');
+      expect(usdAdj.type, equals('in'));
+      expect(usdAdj.amount, equals(10.0));
+      expect(usdAdj.categoryName, contains('فائض'));
+    });
+
+    test('getUnifiedLedger computes cumulative running balances chronologically', () async {
+      final t1 = DateTime(2026, 10, 10, 10, 0);
+      final t2 = DateTime(2026, 10, 10, 11, 0);
+      final t3 = DateTime(2026, 10, 10, 12, 0);
+
+      // Deposit 100,000 SYP
+      await repository.addTransaction(
+        type: 'in',
+        amount: 100000.0,
+        categoryName: 'رأس مال افتتاحي',
+        currency: 'SYP',
+        createdAt: t1,
+      );
+
+      // Deposit 500 USD
+      await repository.addTransaction(
+        type: 'in',
+        amount: 500.0,
+        categoryName: 'رأس مال دولار',
+        currency: 'USD',
+        createdAt: t2,
+      );
+
+      // Withdraw 20,000 SYP
+      await repository.addTransaction(
+        type: 'out',
+        amount: 20000.0,
+        categoryName: 'مصاريف نثرية',
+        currency: 'SYP',
+        createdAt: t3,
+      );
+
+      final ledger = await repository.getUnifiedLedger();
+      expect(ledger.length, equals(3));
+
+      // Newest (t3): running balance SYP should be 80,000, USD should be 500
+      final latest = ledger.first;
+      expect(latest.amount, equals(20000.0));
+      expect(latest.isCashIn, isFalse);
+      expect(latest.runningBalanceSyp, equals(80000.0));
+      expect(latest.runningBalanceUsd, equals(500.0));
+
+      // Oldest (t1): running balance SYP should be 100,000, USD should be 0
+      final oldest = ledger.last;
+      expect(oldest.amount, equals(100000.0));
+      expect(oldest.isCashIn, isTrue);
+      expect(oldest.runningBalanceSyp, equals(100000.0));
+      expect(oldest.runningBalanceUsd, equals(0.0));
+
+      // Vault balances
+      final balances = await repository.getCurrentVaultBalances();
+      expect(balances['SYP'], equals(80000.0));
+      expect(balances['USD'], equals(500.0));
     });
   });
 }

@@ -1,9 +1,13 @@
 import 'package:drift/drift.dart';
 import 'package:small_mall/core/constants/app_currency.dart';
 import 'package:small_mall/core/database/app_database.dart';
+import 'package:small_mall/core/di/injection.dart';
 import 'package:small_mall/core/logging/app_logger.dart';
 import 'package:small_mall/core/logging/log_context.dart';
 import 'package:small_mall/core/sync/sync_service.dart';
+import 'package:small_mall/features/reports/data/reports_repository.dart';
+import 'package:small_mall/features/treasury/data/models/treasury_closure.dart';
+import 'package:small_mall/features/treasury/data/models/treasury_ledger_item.dart';
 import 'package:uuid/uuid.dart';
 
 class TreasuryTransactionWithCategory {
@@ -35,11 +39,17 @@ class TreasuryCategorySummary {
 }
 
 class TreasuryRepository {
-  TreasuryRepository(this._db, this._sync, this._logger);
+  TreasuryRepository(
+    this._db,
+    this._sync,
+    this._logger, {
+    ReportsRepository? reportsRepo,
+  }) : _reportsRepo = reportsRepo;
 
   final AppDatabase _db;
   final SyncService _sync;
   final AppLogger _logger;
+  final ReportsRepository? _reportsRepo;
   final _uuid = const Uuid();
 
   // --- Categories ---
@@ -524,5 +534,249 @@ class TreasuryRepository {
     }
 
     return result;
+  }
+
+  // --- Treasury Closures & Reconciliation (Z-Reports) ---
+
+  Future<void> _ensureClosuresTableExists() async {
+    await _db.customStatement('''
+      CREATE TABLE IF NOT EXISTS treasury_closures (
+        id TEXT PRIMARY KEY NOT NULL,
+        serial_number INTEGER,
+        closed_at INTEGER NOT NULL,
+        opening_balance_syp REAL NOT NULL DEFAULT 0.0,
+        opening_balance_usd REAL NOT NULL DEFAULT 0.0,
+        total_in_syp REAL NOT NULL DEFAULT 0.0,
+        total_in_usd REAL NOT NULL DEFAULT 0.0,
+        total_out_syp REAL NOT NULL DEFAULT 0.0,
+        total_out_usd REAL NOT NULL DEFAULT 0.0,
+        expected_balance_syp REAL NOT NULL,
+        expected_balance_usd REAL NOT NULL,
+        actual_balance_syp REAL NOT NULL,
+        actual_balance_usd REAL NOT NULL,
+        difference_syp REAL NOT NULL,
+        difference_usd REAL NOT NULL,
+        denominations_syp_json TEXT,
+        denominations_usd_json TEXT,
+        notes TEXT,
+        status TEXT NOT NULL DEFAULT 'balanced'
+      );
+    ''');
+  }
+
+  Future<int> getNextClosureSerialNumber() async {
+    await _ensureClosuresTableExists();
+    final result = await _db.customSelect(
+      'SELECT MAX(serial_number) as max_serial FROM treasury_closures',
+    ).getSingleOrNull();
+    final maxSerial = result?.data['max_serial'] as int?;
+    return (maxSerial ?? 0) + 1;
+  }
+
+  Future<void> saveClosure(
+    TreasuryClosure closure, {
+    bool createAdjustmentTransactions = false,
+  }) async {
+    _logger.info(
+      'Saving treasury closure: status=${closure.status}, diffSyp=${closure.differenceSyp}, diffUsd=${closure.differenceUsd}',
+      context: LogContext.treasury,
+    );
+    await _ensureClosuresTableExists();
+    final serial = closure.serialNumber ?? await getNextClosureSerialNumber();
+    final updatedClosure = TreasuryClosure(
+      id: closure.id,
+      serialNumber: serial,
+      closedAt: closure.closedAt,
+      openingBalanceSyp: closure.openingBalanceSyp,
+      openingBalanceUsd: closure.openingBalanceUsd,
+      totalInSyp: closure.totalInSyp,
+      totalInUsd: closure.totalInUsd,
+      totalOutSyp: closure.totalOutSyp,
+      totalOutUsd: closure.totalOutUsd,
+      expectedBalanceSyp: closure.expectedBalanceSyp,
+      expectedBalanceUsd: closure.expectedBalanceUsd,
+      actualBalanceSyp: closure.actualBalanceSyp,
+      actualBalanceUsd: closure.actualBalanceUsd,
+      differenceSyp: closure.differenceSyp,
+      differenceUsd: closure.differenceUsd,
+      denominations: closure.denominations,
+      notes: closure.notes,
+      status: closure.status,
+    );
+
+    await _db.customInsert(
+      '''
+      INSERT OR REPLACE INTO treasury_closures (
+        id, serial_number, closed_at,
+        opening_balance_syp, opening_balance_usd,
+        total_in_syp, total_in_usd,
+        total_out_syp, total_out_usd,
+        expected_balance_syp, expected_balance_usd,
+        actual_balance_syp, actual_balance_usd,
+        difference_syp, difference_usd,
+        denominations_syp_json, denominations_usd_json,
+        notes, status
+      ) VALUES (
+        ?, ?, ?,
+        ?, ?,
+        ?, ?,
+        ?, ?,
+        ?, ?,
+        ?, ?,
+        ?, ?,
+        ?, ?,
+        ?, ?
+      )
+      ''',
+      variables: [
+        Variable.withString(updatedClosure.id),
+        Variable.withInt(updatedClosure.serialNumber!),
+        Variable.withInt(updatedClosure.closedAt.millisecondsSinceEpoch),
+        Variable.withReal(updatedClosure.openingBalanceSyp),
+        Variable.withReal(updatedClosure.openingBalanceUsd),
+        Variable.withReal(updatedClosure.totalInSyp),
+        Variable.withReal(updatedClosure.totalInUsd),
+        Variable.withReal(updatedClosure.totalOutSyp),
+        Variable.withReal(updatedClosure.totalOutUsd),
+        Variable.withReal(updatedClosure.expectedBalanceSyp),
+        Variable.withReal(updatedClosure.expectedBalanceUsd),
+        Variable.withReal(updatedClosure.actualBalanceSyp),
+        Variable.withReal(updatedClosure.actualBalanceUsd),
+        Variable.withReal(updatedClosure.differenceSyp),
+        Variable.withReal(updatedClosure.differenceUsd),
+        Variable.withString(updatedClosure.denominations.toJsonSyp()),
+        Variable.withString(updatedClosure.denominations.toJsonUsd()),
+        Variable.withString(updatedClosure.notes ?? ''),
+        Variable.withString(updatedClosure.status),
+      ],
+    );
+
+    if (createAdjustmentTransactions) {
+      if (updatedClosure.differenceSyp.abs() > 0.001) {
+        final isShortage = updatedClosure.differenceSyp < 0;
+        await addTransaction(
+          type: isShortage ? 'out' : 'in',
+          amount: updatedClosure.differenceSyp.abs(),
+          categoryName: isShortage ? 'تسوية عجز جرد خزينة' : 'تسوية فائض جرد خزينة',
+          currency: AppCurrency.sypCode,
+          notes: 'تسوية آلية لمحضر جرد رقم #${updatedClosure.serialNumber}',
+          createdAt: updatedClosure.closedAt,
+        );
+      }
+
+      if (updatedClosure.differenceUsd.abs() > 0.001) {
+        final isShortage = updatedClosure.differenceUsd < 0;
+        await addTransaction(
+          type: isShortage ? 'out' : 'in',
+          amount: updatedClosure.differenceUsd.abs(),
+          categoryName: isShortage ? 'تسوية عجز جرد خزينة' : 'تسوية فائض جرد خزينة',
+          currency: AppCurrency.usdCode,
+          notes: 'تسوية آلية لمحضر جرد رقم #${updatedClosure.serialNumber}',
+          createdAt: updatedClosure.closedAt,
+        );
+      }
+    }
+  }
+
+  Future<List<TreasuryClosure>> getClosures() async {
+    await _ensureClosuresTableExists();
+    final rows = await _db.customSelect(
+      'SELECT * FROM treasury_closures ORDER BY closed_at DESC',
+    ).get();
+
+    return rows.map((row) => TreasuryClosure.fromMap(row.data)).toList();
+  }
+
+  Future<TreasuryClosure?> getLatestClosure() async {
+    await _ensureClosuresTableExists();
+    final row = await _db.customSelect(
+      'SELECT * FROM treasury_closures ORDER BY closed_at DESC LIMIT 1',
+    ).getSingleOrNull();
+
+    if (row == null) return null;
+    return TreasuryClosure.fromMap(row.data);
+  }
+
+  ReportsRepository get _effectiveReportsRepo {
+    if (_reportsRepo != null) return _reportsRepo;
+    if (getIt.isRegistered<ReportsRepository>()) {
+      return getIt<ReportsRepository>();
+    }
+    return ReportsRepository(_db, _logger);
+  }
+
+  // --- Real-Time Main Vault Balances ---
+
+  Future<Map<String, double>> getCurrentVaultBalances() async {
+    final reportsRepo = _effectiveReportsRepo;
+    final drawerReport = await reportsRepo.getCashDrawerReport(
+      DateTime(2020),
+      DateTime.now().add(const Duration(days: 1)),
+    );
+    return {
+      'SYP': drawerReport.netCashFlow,
+      'USD': drawerReport.netCashFlowUsd,
+    };
+  }
+
+  // --- Store-Wide Unified Ledger With Running Balance ---
+
+  Future<List<TreasuryLedgerItem>> getUnifiedLedger({
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    final reportsRepo = _effectiveReportsRepo;
+    final end = endDate ?? DateTime.now().add(const Duration(days: 1));
+
+    double runningSyp = 0.0;
+    double runningUsd = 0.0;
+
+    if (startDate != null) {
+      final priorReport = await reportsRepo.getCashDrawerReport(
+        DateTime(2020),
+        startDate.subtract(const Duration(milliseconds: 1)),
+      );
+      runningSyp = priorReport.netCashFlow;
+      runningUsd = priorReport.netCashFlowUsd;
+    }
+
+    final periodReport = await reportsRepo.getCashDrawerReport(
+      startDate ?? DateTime(2020),
+      end,
+    );
+
+    final chronMovements = List<CashMovementItem>.from(periodReport.movements)
+      ..sort((a, b) => a.date.compareTo(b.date));
+
+    final List<TreasuryLedgerItem> ledger = [];
+
+    for (final m in chronMovements) {
+      final isUsd = m.currency == 'USD';
+      final factor = m.isCashIn ? 1.0 : -1.0;
+      if (isUsd) {
+        runningUsd += factor * m.amount;
+      } else {
+        runningSyp += factor * m.amount;
+      }
+
+      ledger.add(
+        TreasuryLedgerItem(
+          id: m.id,
+          title: m.title,
+          type: m.type,
+          isCashIn: m.isCashIn,
+          amount: m.amount,
+          date: m.date,
+          currency: m.currency,
+          partyName: m.partyName,
+          referenceNumber: m.referenceNumber,
+          notes: m.notes,
+          runningBalanceSyp: runningSyp,
+          runningBalanceUsd: runningUsd,
+        ),
+      );
+    }
+
+    return ledger.reversed.toList();
   }
 }

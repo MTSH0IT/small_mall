@@ -12,11 +12,16 @@ import 'package:small_mall/core/widgets/empty_state_view.dart';
 import 'package:small_mall/core/widgets/loading_indicator.dart';
 import 'package:small_mall/core/widgets/primary_button.dart';
 import 'package:small_mall/core/widgets/split_pane_layout.dart';
+import 'package:small_mall/features/currency_exchange/presentation/widgets/new_exchange_dialog.dart';
 import 'package:small_mall/features/treasury/data/treasury_repository.dart';
 import 'package:small_mall/features/treasury/presentation/cubit/treasury_cubit.dart';
 import 'package:small_mall/features/treasury/presentation/cubit/treasury_state.dart';
 import 'package:small_mall/features/treasury/presentation/widgets/treasury_category_form_dialog.dart';
+import 'package:small_mall/features/treasury/presentation/widgets/treasury_closures_view.dart';
+import 'package:small_mall/features/treasury/presentation/widgets/treasury_ledger_view.dart';
+import 'package:small_mall/features/treasury/presentation/widgets/treasury_reconciliation_dialog.dart';
 import 'package:small_mall/features/treasury/presentation/widgets/treasury_transaction_form_dialog.dart';
+import 'package:small_mall/features/treasury/presentation/widgets/treasury_vault_cards.dart';
 
 class TreasuryScreen extends StatefulWidget {
   const TreasuryScreen({super.key});
@@ -471,6 +476,43 @@ class _TreasuryScreenState extends State<TreasuryScreen> {
     }
   }
 
+  void _showReconciliationDialog(
+    BuildContext context,
+    TreasuryCubit cubit,
+    TreasuryLoaded state,
+  ) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => TreasuryReconciliationDialog(
+        expectedBalanceSyp: state.vaultBalanceSyp,
+        expectedBalanceUsd: state.vaultBalanceUsd,
+        onSave: (closure, {required createAdjustmentTransactions}) async {
+          await cubit.saveClosure(
+            closure,
+            createAdjustmentTransactions: createAdjustmentTransactions,
+          );
+          if (context.mounted) {
+            AppToast.success(
+              context,
+              message: 'treasury.closure_success'.tr(),
+            );
+          }
+        },
+      ),
+    );
+  }
+
+  Future<void> _showExchangeDialog(
+    BuildContext context,
+    TreasuryCubit cubit,
+  ) async {
+    final result = await NewExchangeDialog.show(context);
+    if (result != null) {
+      cubit.loadTreasury();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocProvider<TreasuryCubit>(
@@ -488,20 +530,198 @@ class _TreasuryScreenState extends State<TreasuryScreen> {
           final cubit = context.read<TreasuryCubit>();
 
           return AppScreenScaffold(
-            title: 'treasury.title'.tr(),
+            title: 'treasury.main_treasury_title'.tr(),
             onRefresh: () => cubit.loadTreasury(),
             body: state is TreasuryLoading
                 ? LoadingIndicator(message: 'common.loading'.tr())
                 : state is TreasuryLoaded
-                    ? SplitPaneLayout(
-                        leftFlex: 2,
-                        rightFlex: 3,
-                        leftChild: _buildLeftPane(context, cubit, state),
-                        rightChild: _buildRightPane(context, cubit, state),
-                      )
+                    ? _buildLoadedContent(context, cubit, state)
                     : const SizedBox.shrink(),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildLoadedContent(
+    BuildContext context,
+    TreasuryCubit cubit,
+    TreasuryLoaded state,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // 1. Hero Vault Balances & Quick Actions Header
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+          child: TreasuryVaultCards(
+            vaultBalanceSyp: state.vaultBalanceSyp,
+            vaultBalanceUsd: state.vaultBalanceUsd,
+            onReconcile: () => _showReconciliationDialog(context, cubit, state),
+            onCashIn: () => _showAddTransactionDialog(
+              context,
+              cubit,
+              state.categories,
+              state.subcategories,
+              defaultType: 'in',
+              preselectedCategoryId: state.selectedCategoryId,
+              preselectedSubcategoryId: state.selectedSubcategoryId,
+            ),
+            onCashOut: () => _showAddTransactionDialog(
+              context,
+              cubit,
+              state.categories,
+              state.subcategories,
+              defaultType: 'out',
+              preselectedCategoryId: state.selectedCategoryId,
+              preselectedSubcategoryId: state.selectedSubcategoryId,
+            ),
+            onExchange: () => _showExchangeDialog(context, cubit),
+            onRefresh: () => cubit.loadTreasury(),
+          ),
+        ),
+
+        // 2. Navigation Tabs (Ledger, Closures, Categories/Manual Vouchers)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Row(
+              children: [
+                _buildTabButton(
+                  title: 'treasury.tab_ledger'.tr(),
+                  icon: Icons.receipt_long,
+                  badge: '${state.unifiedLedger.length}',
+                  isSelected: state.selectedTabIndex == 0,
+                  onTap: () => cubit.setTabIndex(0),
+                ),
+                _buildTabButton(
+                  title: 'treasury.tab_closures'.tr(),
+                  icon: Icons.inventory_2_outlined,
+                  badge: '${state.closures.length}',
+                  isSelected: state.selectedTabIndex == 1,
+                  onTap: () => cubit.setTabIndex(1),
+                ),
+                _buildTabButton(
+                  title: 'treasury.tab_categories'.tr(),
+                  icon: Icons.category_outlined,
+                  isSelected: state.selectedTabIndex == 2,
+                  onTap: () => cubit.setTabIndex(2),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // 3. Tab Body
+        Expanded(
+          child: IndexedStack(
+            index: state.selectedTabIndex,
+            children: [
+              // Tab 0: Unified Running Balance Ledger
+              TreasuryLedgerView(
+                ledger: state.filteredLedger,
+                selectedTypeFilter: state.ledgerTypeFilter,
+                selectedCurrencyFilter: state.ledgerCurrencyFilter,
+                searchQuery: state.ledgerSearchQuery,
+                startDate: state.startDate,
+                endDate: state.endDate,
+                onTypeFilterChanged: (type) => cubit.setLedgerTypeFilter(type),
+                onCurrencyFilterChanged: (curr) => cubit.setLedgerCurrencyFilter(curr),
+                onSearchChanged: (q) => cubit.setLedgerSearchQuery(q),
+                onSelectDateRange: () => _selectDateRange(
+                  context,
+                  cubit,
+                  state.startDate,
+                  state.endDate,
+                ),
+                onClearDateRange: () => cubit.setDateRange(null, null),
+              ),
+
+              // Tab 1: Closures & Z-Reports History
+              TreasuryClosuresView(
+                closures: state.closures,
+                onStartClosure: () => _showReconciliationDialog(context, cubit, state),
+              ),
+
+              // Tab 2: Manual Vouchers & Categories (Existing SplitPaneLayout)
+              SplitPaneLayout(
+                leftFlex: 2,
+                rightFlex: 3,
+                leftChild: _buildLeftPane(context, cubit, state),
+                rightChild: _buildRightPane(context, cubit, state),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTabButton({
+    required String title,
+    required IconData icon,
+    String? badge,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: isSelected ? AppColors.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 18,
+                color: isSelected ? Colors.white : AppColors.textSecondary,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  color: isSelected ? Colors.white : AppColors.textSecondary,
+                ),
+              ),
+              if (badge != null) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? Colors.white.withValues(alpha: 0.25)
+                        : AppColors.surfaceElevated,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: isSelected ? Colors.transparent : AppColors.border,
+                    ),
+                  ),
+                  child: Text(
+                    badge,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: isSelected ? Colors.white : AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }
